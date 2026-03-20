@@ -16,13 +16,29 @@ def render_active_upgrades(df):
     h5.write("**残り回数**")
     st.divider()
     
+    from src.logic.master import get_master_data
+    master = get_master_data()
+    series_map = {s['skill_parts']: s['skill_name'] for s in master.get("series_skills", [])}
+    group_map = {g['group_name']: g['skill_name'] for g in master.get("group_skills", [])}
+    
     from src.logic.equipment import execute_all_upgrades
     for _, row in df.iterrows():
         c1, c2, c3, c4, c5, c6 = st.columns(cols_ratio, vertical_alignment="center")
         c1.write(f"{row['weapon_type']}")
         c2.write(f"{row['element']}")
-        c3.write(f"{row['series_skill']}")
-        c4.write(f"{row['group_skill']}")
+        
+        # Display series skill part and its effect name
+        skill_part = row['series_skill']
+        skill_name = series_map.get(skill_part, "")
+        display_series = f"{skill_part} ({skill_name})" if skill_name and skill_part != "なし" else skill_part
+        c3.write(display_series)
+        
+        # Display group skill and its effect name
+        group_part = row['group_skill']
+        group_name = group_map.get(group_part, "")
+        display_group = f"{group_part} ({group_name})" if group_name and group_part != "なし" else group_part
+        c4.write(display_group)
+        
         c5.write(f"**{row['remaining_count']}**")
         with c6:
             if st.button("Execute", key=f"exec_{row['id']}", type="primary", use_container_width=True):

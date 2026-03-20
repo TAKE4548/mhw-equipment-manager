@@ -1,14 +1,29 @@
 import streamlit as st
 from src.logic.equipment import register_upgrade
 
+from src.logic.master import get_master_data
+
 st.set_page_config(page_title="Register Upgrade", page_icon="📝")
 st.title("Register New Skill Upgrade")
 
+# Load master data
+master = get_master_data()
+series_skills_master = master.get("series_skills", [])
+series_skill_labels = [f"{s['skill_parts']} ({s['skill_name']})" if s['skill_parts'] != "なし" else "なし" for s in series_skills_master]
+
+group_skills_master = master.get("group_skills", [])
+group_skill_labels = [f"{g['group_name']} ({g['skill_name']})" if g['group_name'] != "なし" else "なし" for g in group_skills_master]
+
 with st.form("register_form"):
-    w_type = st.selectbox("Weapon Type", ["大剣", "太刀", "片手剣", "双剣", "ハンマー", "狩猟笛", "ランス", "ガンランス", "スラッシュアックス", "チャージアックス", "操虫棍", "ライトボウガン", "ヘビィボウガン", "弓"])
-    element = st.selectbox("Element", ["無", "火", "水", "雷", "氷", "龍", "毒", "麻痺", "睡眠", "爆破"])
-    series_skill = st.selectbox("Series Skill", ["なし", "火竜の奥義", "角竜の奥義", "雷狼竜の奥義", "氷牙竜の秘技", "迅竜の秘技"])
-    group_skill = st.selectbox("Group Skill", ["なし", "星", "月", "太陽", "空", "海", "地"])
+    w_type = st.selectbox("Weapon Type", master.get("weapon_types", []))
+    element = st.selectbox("Element", master.get("elements", []))
+    
+    selected_series_idx = st.selectbox("Series Skill", range(len(series_skill_labels)), format_func=lambda i: series_skill_labels[i])
+    series_skill = series_skills_master[selected_series_idx]["skill_parts"]
+    
+    selected_group_idx = st.selectbox("Group Skill", range(len(group_skill_labels)), format_func=lambda i: group_skill_labels[i])
+    group_skill = group_skills_master[selected_group_idx]["group_name"]
+    
     count = st.number_input("Upgrade Count", min_value=1, value=1, step=1)
     
     submitted = st.form_submit_button("Register")
