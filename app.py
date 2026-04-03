@@ -8,8 +8,13 @@ def init_session_state():
         st.session_state['undo_stack'] = []
     if 'redo_stack' not in st.session_state:
         st.session_state['redo_stack'] = []
+    
+    # URL Persistence logic
     if 'gsheet_url' not in st.session_state:
-        st.session_state['gsheet_url'] = ""
+        # Priority: 1. Query Params, 2. Secrets, 3. Empty
+        url_from_query = st.query_params.get("url", "")
+        url_from_secrets = st.secrets.get("spreadsheet_url", "")
+        st.session_state['gsheet_url'] = url_from_query or url_from_secrets
 
 init_session_state()
 
@@ -22,13 +27,16 @@ st.set_page_config(
 # Sidebar for configuration
 with st.sidebar:
     st.header("Settings")
-    url = st.text_input("Google Sheet URL", value=st.session_state['gsheet_url'], help="Paste your Google Sheet URL here. Ensure it's shared with the app's service account.")
+    url = st.text_input("Google Sheet URL", value=st.session_state['gsheet_url'], help="Paste your Google Sheet URL here.")
     if url != st.session_state['gsheet_url']:
         st.session_state['gsheet_url'] = url
+        st.query_params["url"] = url
         st.rerun()
     
     if not st.session_state['gsheet_url']:
         st.warning("Please provide a Google Sheet URL to enable persistence.")
+    else:
+        st.info("💡 **Tip**: Bookmark this page now! The URL is saved in your browser's address bar so you won't have to re-enter it next time.")
 
 st.title("MHWs Equipment Manager ⚔️")
 st.sidebar.success("Choose an option from above.")

@@ -39,6 +39,7 @@ This application uses Google Sheets for data persistence on Streamlit Community 
     -   Copy the same TOML content into the "Secrets" section of your Streamlit Community Cloud dashboard.
 6.  **Paste the URL**:
     -   Copy the URL of your spreadsheet and paste it into the **Settings** sidebar of the app.
+    -   **💡 Tip**: After the URL is set, the browser's address bar will update to include `?url=...`. **Bookmark this page** to avoid re-entering the URL in the future!
 
 ## Project Structure
 - `app.py`: メインダッシュボード（アクティブな強化一覧と実行）

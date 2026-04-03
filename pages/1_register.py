@@ -1,7 +1,21 @@
 import streamlit as st
 from src.logic.equipment import register_upgrade
-
 from src.logic.master import get_master_data
+
+def init_session_state():
+    if 'undo_stack' not in st.session_state:
+        st.session_state['undo_stack'] = []
+    if 'redo_stack' not in st.session_state:
+        st.session_state['redo_stack'] = []
+    
+    # URL Persistence logic
+    if 'gsheet_url' not in st.session_state:
+        # Priority: 1. Query Params, 2. Secrets, 3. Empty
+        url_from_query = st.query_params.get("url", "")
+        url_from_secrets = st.secrets.get("spreadsheet_url", "")
+        st.session_state['gsheet_url'] = url_from_query or url_from_secrets
+
+init_session_state()
 
 st.set_page_config(page_title="Register Upgrade", page_icon="📝")
 st.title("Register New Skill Upgrade")
