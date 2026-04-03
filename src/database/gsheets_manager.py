@@ -12,34 +12,35 @@ def get_gsheets_connection():
     
     return st.connection("gsheets", type=GSheetsConnection)
 
-def load_data():
-    """Loads data from the configured Google Sheet."""
+def load_data(worksheet=0, required_columns=None):
+    """Loads data from a specific worksheet in the configured Google Sheet."""
     url = st.session_state.get("gsheet_url")
     if not url:
         return pd.DataFrame()
     
+    if required_columns is None:
+        required_columns = ["id", "weapon_type", "element", "series_skill", "group_skill", "remaining_count"]
+    
     conn = get_gsheets_connection()
     if conn:
         try:
-            df = conn.read(spreadsheet=url, ttl=0)
+            df = conn.read(spreadsheet=url, worksheet=worksheet, ttl=0)
             if df.empty:
-                return pd.DataFrame(columns=["id", "weapon_type", "element", "series_skill", "group_skill", "remaining_count"])
+                return pd.DataFrame(columns=required_columns)
             
-            required = ["id", "weapon_type", "element", "series_skill", "group_skill", "remaining_count"]
-            for col in required:
+            for col in required_columns:
                 if col not in df.columns:
                     df[col] = None
-            return df[required]
+            return df[required_columns]
         except Exception as e:
-            if "No columns to parse" in str(e):
-                return pd.DataFrame(columns=["id", "weapon_type", "element", "series_skill", "group_skill", "remaining_count"])
-            st.error(f"Error reading from Google Sheets: {repr(e)}")
-            st.exception(e)
-            return pd.DataFrame()
-    return pd.DataFrame()
+            if "No columns to parse" in str(e) or "WorksheetNotFound" in str(e):
+                return pd.DataFrame(columns=required_columns)
+            st.error(f"Error reading from Google Sheets (worksheet: {worksheet}): {repr(e)}")
+            return pd.DataFrame(columns=required_columns)
+    return pd.DataFrame(columns=required_columns)
 
-def save_data(df: pd.DataFrame):
-    """Saves the entire DataFrame to the configured Google Sheet."""
+def save_data(df: pd.DataFrame, worksheet=0):
+    """Saves the entire DataFrame to the specific worksheet in the configured Google Sheet."""
     url = st.session_state.get("gsheet_url")
     if not url:
         return False
@@ -47,9 +48,9 @@ def save_data(df: pd.DataFrame):
     conn = get_gsheets_connection()
     if conn:
         try:
-            conn.update(spreadsheet=url, data=df)
+            conn.update(spreadsheet=url, worksheet=worksheet, data=df)
             return True
         except Exception as e:
-            st.error(f"Error writing to Google Sheets: {e}. Make sure the sheet is shared with the service account.")
+            st.error(f"Error writing to Google Sheets (worksheet: {worksheet}): {e}. Make sure the sheet is shared and the worksheet exists.")
             return False
     return False

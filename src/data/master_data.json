@@ -52,5 +52,8 @@
     {"group_name": "祝祭の巡り", "skill_name": "剥ぎ取り名人"},
     {"group_name": "ヌシの魂", "skill_name": "根性【果敢】"},
     {"group_name": "拳を極めし者", "skill_name": "殺意の波動"}
+  ],
+  "restoration_bonuses": [
+    "なし", "攻撃力強化", "会心率強化", "属性・状態異常強化", "斬れ味強化", "防御力強化", "スロット強化"
   ]
 }
