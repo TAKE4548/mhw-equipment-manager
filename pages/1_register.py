@@ -26,17 +26,25 @@ with st.form("register_form"):
     
     count = st.number_input("Upgrade Count", min_value=1, value=1, step=1)
     
-    submitted = st.form_submit_button("Register")
+    submitted = st.form_submit_button("Register", disabled=not st.session_state.get('gsheet_url'))
     
+    if not st.session_state.get('gsheet_url'):
+        st.warning("Please set your Google Sheet URL in the sidebar of the Home page before registering.")
+
     if submitted:
-        if not series_skill.strip() or not group_skill.strip():
+        if not st.session_state.get('gsheet_url'):
+            st.error("Google Sheet URL is required for registration.")
+        elif not series_skill.strip() or not group_skill.strip():
             st.error("Series Skill and Group Skill are required.")
         else:
             record_id = register_upgrade(w_type, element, series_skill, group_skill, count)
-            # Add to history
-            st.session_state['undo_stack'].append({
-                'action_type': 'REGISTER',
-                'target_id': record_id,
-            })
-            st.session_state['redo_stack'].clear()
-            st.success("Successfully registered!")
+            if record_id:
+                # Add to history
+                st.session_state['undo_stack'].append({
+                    'action_type': 'REGISTER',
+                    'target_id': record_id,
+                })
+                st.session_state['redo_stack'].clear()
+                st.success("Successfully registered!")
+            else:
+                st.error("Failed to register. Please check your Google Sheet URL and permissions.")

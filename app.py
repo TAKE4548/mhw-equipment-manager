@@ -1,22 +1,34 @@
 import streamlit as st
 import os
 
-from src.database.sqlite_manager import init_db
+
 
 def init_session_state():
     if 'undo_stack' not in st.session_state:
         st.session_state['undo_stack'] = []
     if 'redo_stack' not in st.session_state:
         st.session_state['redo_stack'] = []
+    if 'gsheet_url' not in st.session_state:
+        st.session_state['gsheet_url'] = ""
 
 init_session_state()
-init_db()
 
 st.set_page_config(
     page_title="MHWs Equipment Manager",
     page_icon="⚔️",
     layout="wide",
 )
+
+# Sidebar for configuration
+with st.sidebar:
+    st.header("Settings")
+    url = st.text_input("Google Sheet URL", value=st.session_state['gsheet_url'], help="Paste your Google Sheet URL here. Ensure it's shared with the app's service account.")
+    if url != st.session_state['gsheet_url']:
+        st.session_state['gsheet_url'] = url
+        st.rerun()
+    
+    if not st.session_state['gsheet_url']:
+        st.warning("Please provide a Google Sheet URL to enable persistence.")
 
 st.title("MHWs Equipment Manager ⚔️")
 st.sidebar.success("Choose an option from above.")
@@ -28,6 +40,10 @@ Welcome to the Monster Hunter Wilds Equipment Manager MVP!
 
 This tool focuses on managing skill upgrade tables for Kyogeki Artia weapons.
 """)
+
+if not st.session_state.get('gsheet_url'):
+    st.info("👋 **Setup Required**: Please paste your Google Sheet URL in the **sidebar** to enable data persistence and start tracking upgrades.")
+    st.stop()
 
 st.divider()
 
