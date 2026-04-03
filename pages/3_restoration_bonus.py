@@ -49,7 +49,13 @@ else:
                 with c1:
                     st.markdown(f"**{row['weapon_name']}**<br><small>{row['weapon_type']} | {row['element']}</small>", unsafe_allow_html=True)
                 with c2:
-                    st.markdown(f"✨ {row['target_restoration_bonus']}")
+                    current_rbs = []
+                    for i in range(1, 6):
+                        rt = row.get(f'rest_{i}_type', 'なし')
+                        rl = row.get(f'rest_{i}_level', 'なし')
+                        if rt != 'なし':
+                            current_rbs.append(f"{rt}[{rl}]")
+                    st.markdown(f"✨ {' | '.join(current_rbs) if current_rbs else '未付与'}")
                 with c3:
                     st.metric(label="", value=f"{row['remaining_count_for_bonus']} 回", label_visibility="collapsed")
                 with c4:
