@@ -2,14 +2,31 @@
 
 ## Entities
 
-### `SkillUpgrade` (スキル強化レコード)
-Represents a user's registered skill upgrade target. Stored as a row in the Google Spreadsheet.
-- `id` (INTEGER/STRING): Unique identifier for the row.
-- `weapon_type` (TEXT): e.g., "大剣", "太刀"
-- `element` (TEXT): e.g., "火", "水", "無"
-- `series_skill` (TEXT): e.g., "闢獣の力"
-- `group_skill` (TEXT): e.g., "星"
-- `remaining_count` (INTEGER): The number of upgrades left. Must be >= 0.
+### `SkillUpgrade` (スキル強化レコード / Sheet: `SkillUpgrade`)
+錬成（スキル付与）の目標を管理します。
+- `id` (STRING/UUID): ユニークID
+- `weapon_type` (TEXT): 武器種
+- `element` (TEXT): 属性
+- `series_skill` (TEXT): シリーズスキル部品名
+- `group_skill` (TEXT): グループスキル名
+- `remaining_count` (INTEGER): 残り回数
+
+### `EquipmentBox` (所持武器台帳 / Sheet: `EquipmentBox`)
+所持している巨戟アーティア武器の現在のステータスを管理します。
+- `id` (STRING/UUID): ユニークID
+- `weapon_name` (TEXT): 武器の識別名（任意）
+- `weapon_type`, `element` (TEXT)
+- `current_series_skill`, `current_group_skill` (TEXT)
+- `enhancement_type` (TEXT): 巨戟強化種別（攻撃激化など）
+- `p_bonus_1` ~ `3` (TEXT): 生産ボーナス3枠
+- `rest_1_type` ~ `rest_5_level` (TEXT): 現在付与されている復元ボーナス5枠（種類とレベル）
+
+### `RestorationTracker` (復元厳選トラッカー / Sheet: `RestorationTracker`)
+未来の復元テーブルの抽選結果と目標を管理します。
+- `id` (STRING/UUID): ユニークID
+- `weapon_id` (STRING): `EquipmentBox.id` への参照
+- `remaining_count` (INTEGER): 到達までの残り回数
+- `target_rest_1_type` ~ `target_rest_5_level` (TEXT): 目標とする5枠の構成
 
 ## Storage (ストレージ)
 - **Primary**: Google Spreadsheets (per-user dynamic URL).
@@ -25,14 +42,11 @@ Not stored in SQLite. Stored in Streamlit's `st.session_state` as an in-memory s
 
 ### `master_data.json`
 Located at `src/data/master_data.json`.
-- `weapon_types` (ARRAY of TEXT): List of weapon types.
-- `elements` (ARRAY of TEXT): List of elemental types.
-- `series_skills` (ARRAY of OBJECT): 
-  - `skill_parts` (TEXT): The series part name (e.g., "闢獣の力").
-  - `skill_name` (TEXT): The activated skill name (e.g., "力自慢").
-- `group_skills` (ARRAY of OBJECT):
-  - `group_name` (TEXT): The group name (e.g., "毛皮の昂揚").
-  - `skill_name` (TEXT): The activated skill name (e.g., "不屈").
+- `weapon_types` / `elements`: 基本マスタ
+- `series_skills` / `group_skills`: スキル名称の定義
+- `production_bonuses`: 基礎攻撃, 会心
+- `kyogeki_enhancements`: 攻撃激化, 会心激化, 属性激化
+- `restoration_bonuses`: ボーナス種別ごとのレベル定義（1〜3, EX, 無印）
 
 ## Relationships
 - Single user local database, so no explicit User foreign keys are needed for MVP.

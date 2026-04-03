@@ -18,16 +18,24 @@ EQUIPMENT_COLUMNS = [
 
 def validate_restoration_bonuses(bonuses: list[dict]) -> tuple[bool, str]:
     """
-    Validates that there are no more than 2 identical bonus types (regardless of level) across the 5 slots.
-    bonuses should be a list of dicts: [{"type": "...", "level": "..."}, ...]
+    Validates that exact Type+Level combination does not exceed 2, EXCEPT for unenhanced levels (1 or 無印)
+    which can take up to 5 slots.
     """
-    type_counts = {}
+    type_level_counts = {}
     for b in bonuses:
         b_type = b.get("type", "なし")
+        b_level = str(b.get("level", "なし"))
+        
         if b_type != "なし":
-            type_counts[b_type] = type_counts.get(b_type, 0) + 1
-            if type_counts[b_type] > 2:
-                return False, f"同じ種類（{b_type}）のボーナスはレベルにかかわらず2つまでしか登録できません。"
+            tl_key = f"{b_type} [{b_level}]"
+            type_level_counts[tl_key] = type_level_counts.get(tl_key, 0) + 1
+            
+            # 初期レベル（レベル1 または 無印）は3枠以上の重複が存在し得るためスルー
+            if b_level in ["1", "無印"]:
+                continue
+                
+            if type_level_counts[tl_key] > 2:
+                return False, f"強化済みのボーナス「{tl_key}」が3枠以上重複することはシステム上あり得ません（最大2枠まで）。"
     return True, ""
 
 def load_equipment() -> pd.DataFrame:

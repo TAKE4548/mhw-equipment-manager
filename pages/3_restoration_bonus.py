@@ -2,13 +2,20 @@ import streamlit as st
 import pandas as pd
 from src.logic.master import get_master_data
 from src.logic.equipment_box import load_equipment, validate_restoration_bonuses
-from src.logic.restoration_tracker import load_trackers, register_tracker, advance_all_trackers, delete_tracker
+from src.logic.restoration_tracker import (
+    load_trackers, register_tracker, advance_all_trackers, 
+    delete_tracker, execute_apply_and_advance, undo_action, redo_action
+)
 
 def init_session_state():
     if 'gsheet_url' not in st.session_state:
         url_from_query = st.query_params.get("url", "")
         url_from_secrets = st.secrets.get("spreadsheet_url", "")
         st.session_state['gsheet_url'] = url_from_query or url_from_secrets
+    if 'history_undo' not in st.session_state:
+        st.session_state.history_undo = []
+    if 'history_redo' not in st.session_state:
+        st.session_state.history_redo = []
 
 init_session_state()
 
@@ -18,8 +25,25 @@ if not st.session_state.get('gsheet_url'):
     st.info("👋 **Setup Required**: Please paste your Google Sheet URL in the Home page sidebar.")
     st.stop()
 
+# --- Header ---
 st.title("Restoration Bonus Tracker ✨")
-st.markdown("武器ごとに、未来の引く回数と付与される復元ボーナスの組み合わせ（複数）をトラッキングします。")
+st.markdown("武器ごとに、未来の抽選結果（複数）をトラッキングします。")
+
+# History Controls
+h_col1, h_col2, h_col3 = st.columns([1, 1, 6])
+with h_col1:
+    undo_disabled = not st.session_state.history_undo
+    if st.button("Undo ↩️", disabled=undo_disabled, use_container_width=True):
+        if undo_action():
+            st.toast("元に戻しました")
+            st.rerun()
+with h_col2:
+    redo_disabled = not st.session_state.history_redo
+    if st.button("Redo ↪️", disabled=redo_disabled, use_container_width=True):
+        if redo_action():
+            st.toast("やり直しました")
+            st.rerun()
+
 st.divider()
 
 eq_df = load_equipment()
@@ -37,7 +61,7 @@ master = get_master_data()
 
 st.subheader("新しい目標組み合わせを記録")
 with st.expander("➕ 目標を登録する", expanded=False):
-    sel_w_id = st.selectbox("対象の武器を選択", list(weapon_options.keys()), format_func=lambda x: weapon_options[x])
+    sel_w_id = st.selectbox("対象の武器を選択", list(weapon_options.keys()), format_func=lambda x: weapon_options[x], key="reg_sel_w")
     
     # Get selected weapon type for filtering
     sel_w_type = eq_df[eq_df['id'] == sel_w_id].iloc[0]['weapon_type']
@@ -62,7 +86,7 @@ with st.expander("➕ 目標を登録する", expanded=False):
     with rc4: tb4 = st.selectbox("枠4", dynamic_rest_options, key="tb4")
     with rc5: tb5 = st.selectbox("枠5", dynamic_rest_options, key="tb5")
     
-    count = st.number_input("この組み合わせが出るまでの残り回数", min_value=1, value=1, step=1)
+    count_val = st.number_input("この組み合わせが出るまでの残り回数", min_value=1, value=1, step=1)
         
     if st.button("トラッキングに追加", type="primary"):
         parsed_rbs = []
@@ -76,7 +100,7 @@ with st.expander("➕ 目標を登録する", expanded=False):
         if not is_valid:
             st.error(err_msg)
         else:
-            record_id = register_tracker(sel_w_id, count, parsed_rbs)
+            record_id = register_tracker(sel_w_id, count_val, parsed_rbs)
             if record_id:
                 st.success("トラッキング情報を追加しました！")
                 st.rerun()
@@ -91,18 +115,7 @@ tracker_df = load_trackers()
 if tracker_df.empty:
     st.info("トラッキング中の復元ボーナスはありません。")
 else:
-    # 復元テーブルは共通なので、1回引けば全部進む
-    col1, col2 = st.columns([1, 4])
-    with col1:
-        if st.button("🔄 テーブル進行 (全武器 -1)", use_container_width=True, type="primary"):
-            if advance_all_trackers():
-                st.toast("一斉に進行しました！")
-                st.rerun()
-                
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Sort trackers by weapon, then remaining count
-    # Merge to get weapon names easily, but we can just map it
+    # Sort trackers
     tracker_df['weapon_label'] = tracker_df['weapon_id'].map(lambda wid: weapon_options.get(wid, "不明な武器"))
     tracker_df = tracker_df.sort_values(by=["weapon_label", "remaining_count"])
     
@@ -113,10 +126,13 @@ else:
             st.markdown(f"#### 🗡️ {current_weapon}")
             
         with st.container(border=True):
-            tc1, tc2, tc3 = st.columns([1, 4, 1], vertical_alignment="center")
+            tc1, tc2, tc3 = st.columns([1.5, 4, 2], vertical_alignment="center")
             with tc1:
-                col_c = "red" if row['remaining_count'] == 0 else ("orange" if row['remaining_count'] < 5 else "green")
-                st.markdown(f"<h3 style='color:{col_c}; text-align:center; margin:0;'>あと <b>{row['remaining_count']}</b></h3>", unsafe_allow_html=True)
+                rem = row['remaining_count']
+                col_c = "red" if rem <= 1 else ("orange" if rem < 5 else "green")
+                st.markdown(f"<h3 style='color:{col_c}; text-align:center; margin:0;'>あと <b>{rem}</b></h3>", unsafe_allow_html=True)
+                if rem <= 1:
+                    st.markdown("<p style='color:red; font-size:0.8em; text-align:center;'>⚠️ 次回スキップ対象</p>", unsafe_allow_html=True)
             with tc2:
                 target_rbs = []
                 for i in range(1, 6):
@@ -126,6 +142,14 @@ else:
                         target_rbs.append(f"{rt}[{rl}]")
                 st.markdown(f"✨ {' | '.join(target_rbs) if target_rbs else '未付与'}")
             with tc3:
-                if st.button("削除", key=f"del_track_{row['id']}"):
-                    delete_tracker(row['id'])
-                    st.rerun()
+                # 適用ボタン
+                btn_label = f"適用して完了🎁\n(-{row['remaining_count']}回分)"
+                if st.button(btn_label, key=f"apply_{row['id']}", use_container_width=True, type="primary"):
+                    if execute_apply_and_advance(row['id']):
+                        st.success("武器に適用し、テーブルを進行させました！")
+                        st.rerun()
+                
+                # 削除ボタン
+                if st.button("削除 🗑️", key=f"del_track_{row['id']}", use_container_width=True):
+                    if delete_tracker(row['id']):
+                        st.rerun()

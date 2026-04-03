@@ -36,10 +36,10 @@ def ensure_worksheet_exists(url, worksheet_name):
         worksheet_list = [w.title for w in spreadsheet.worksheets()]
         if worksheet_name not in worksheet_list:
             spreadsheet.add_worksheet(title=worksheet_name, rows="100", cols="20")
-            st.toast(f"Created new worksheet: {worksheet_name}")
+            print(f"Created new worksheet: {worksheet_name}")
     except Exception as e:
-        # Don't silently fail, log it so we know why it failed
-        st.error(f"Failed to auto-create worksheet '{worksheet_name}': {type(e).__name__} - {e}")
+        # Print the error to console instead of using st.error to avoid Streamlit cache replay issues
+        print(f"Failed to auto-create worksheet '{worksheet_name}': {type(e).__name__} - {e}")
 
 def load_data(worksheet=0, required_columns=None):
     """Loads data from a specific worksheet in the configured Google Sheet."""
