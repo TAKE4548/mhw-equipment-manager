@@ -15,6 +15,7 @@ def get_gsheets_connection():
     
     return st.connection("gsheets", type=GSheetsConnection)
 
+@st.cache_data(show_spinner=False)
 def ensure_worksheet_exists(url, worksheet_name):
     """Ensures a worksheet with the given name exists in the spreadsheet."""
     if isinstance(worksheet_name, int) or not worksheet_name:
@@ -23,7 +24,11 @@ def ensure_worksheet_exists(url, worksheet_name):
     try:
         # Use gspread directly for advanced operations like creating worksheets
         creds_dict = st.secrets["connections"]["gsheets"]
-        credentials = Credentials.from_service_account_info(creds_dict)
+        scopes = [
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive'
+        ]
+        credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
         client = gspread.authorize(credentials)
         spreadsheet = client.open_by_url(url)
         
@@ -33,8 +38,8 @@ def ensure_worksheet_exists(url, worksheet_name):
             spreadsheet.add_worksheet(title=worksheet_name, rows="100", cols="20")
             st.toast(f"Created new worksheet: {worksheet_name}")
     except Exception as e:
-        # Silently fail if we can't create it, the standard connection will error out later anyway
-        pass
+        # Don't silently fail, log it so we know why it failed
+        st.error(f"Failed to auto-create worksheet '{worksheet_name}': {type(e).__name__} - {e}")
 
 def load_data(worksheet=0, required_columns=None):
     """Loads data from a specific worksheet in the configured Google Sheet."""
@@ -51,7 +56,8 @@ def load_data(worksheet=0, required_columns=None):
     conn = get_gsheets_connection()
     if conn:
         try:
-            df = conn.read(spreadsheet=url, worksheet=worksheet, ttl=0)
+            # Set ttl to 60 seconds to prevent Rate Limit 429 on every dropdown rerendering
+            df = conn.read(spreadsheet=url, worksheet=worksheet, ttl=60)
             if df.empty:
                 return pd.DataFrame(columns=required_columns)
             
@@ -78,6 +84,7 @@ def save_data(df: pd.DataFrame, worksheet=0):
     if conn:
         try:
             conn.update(spreadsheet=url, worksheet=worksheet, data=df)
+            st.cache_data.clear() # Clear cache to instantly reflect changes
             return True
         except Exception as e:
             st.error(f"Error writing to Google Sheets (worksheet: {worksheet}): {e}. Make sure the sheet is shared and the worksheet exists.")

@@ -40,72 +40,86 @@ for r_type, levels in master.get("restoration_bonuses", {}).items():
         rest_options.append(f"{r_type} [{lv}]")
 
 with st.expander("➕ 武器を新規登録する", expanded=False):
-    with st.form("register_weapon_form"):
-        weapon_name = st.text_input("武器の識別名 (例: 火竜大剣用)")
-        
-        c1, c2, c3 = st.columns([2, 1, 1])
-        with c1:
-            w_type = st.selectbox("Weapon Type", master.get("weapon_types", []))
-        with c2:
-            element = st.selectbox("Element", master.get("elements", []))
-        with c3:
-            enhancement = st.selectbox("巨戟強化種別", enhancement_opts)
+    # Form input starts here, but without st.form so selectboxes trigger rerun
+    st.markdown("##### 基本情報")
+    weapon_name = st.text_input("武器の識別名 (例: 火竜大剣用)")
+    
+    c1, c2, c3 = st.columns([2, 1, 1])
+    with c1:
+        w_type = st.selectbox("Weapon Type", master.get("weapon_types", []))
+    with c2:
+        element = st.selectbox("Element", master.get("elements", []))
+    with c3:
+        enhancement = st.selectbox("巨戟強化種別", enhancement_opts)
 
-        st.markdown("**付与されているスキル**")
-        sc1, sc2 = st.columns(2)
-        with sc1:
-            sel_s = st.selectbox("シリーズスキル", range(len(series_skill_labels)), format_func=lambda i: series_skill_labels[i])
-            current_series = series_skills_master[sel_s]["skill_parts"]
-        with sc2:
-            sel_g = st.selectbox("グループスキル", range(len(group_skill_labels)), format_func=lambda i: group_skill_labels[i])
-            current_group = group_skills_master[sel_g]["group_name"]
-            
-        st.markdown("**生産ボーナス (最大3枠)**")
-        pc1, pc2, pc3 = st.columns(3)
-        with pc1: pb1 = st.selectbox("枠1", p_bonus_opts, key="pb1")
-        with pc2: pb2 = st.selectbox("枠2", p_bonus_opts, key="pb2")
-        with pc3: pb3 = st.selectbox("枠3", p_bonus_opts, key="pb3")
+    st.markdown("##### 付与されているスキル")
+    sc1, sc2 = st.columns(2)
+    with sc1:
+        sel_s = st.selectbox("シリーズスキル", range(len(series_skill_labels)), format_func=lambda i: series_skill_labels[i])
+        current_series = series_skills_master[sel_s]["skill_parts"]
+    with sc2:
+        sel_g = st.selectbox("グループスキル", range(len(group_skill_labels)), format_func=lambda i: group_skill_labels[i])
+        current_group = group_skills_master[sel_g]["group_name"]
         
-        st.markdown("**復元ボーナス (最大5枠)**")
-        rc1, rc2, rc3, rc4, rc5 = st.columns(5)
-        with rc1: rb1 = st.selectbox("枠1", rest_options, key="rb1")
-        with rc2: rb2 = st.selectbox("枠2", rest_options, key="rb2")
-        with rc3: rb3 = st.selectbox("枠3", rest_options, key="rb3")
-        with rc4: rb4 = st.selectbox("枠4", rest_options, key="rb4")
-        with rc5: rb5 = st.selectbox("枠5", rest_options, key="rb5")
-        
-        st.markdown("**厳選トラッキング**")
-        count = st.number_input("次の目標ボーナス発現までの残り回数", min_value=1, value=1, step=1)
+    st.markdown("##### 生産ボーナス (必ず3枠設定)")
+    # No 'なし' option anymore
+    pc1, pc2, pc3 = st.columns(3)
+    with pc1: pb1 = st.selectbox("枠1", p_bonus_opts, key="pb1")
+    with pc2: pb2 = st.selectbox("枠2", p_bonus_opts, key="pb2")
+    with pc3: pb3 = st.selectbox("枠3", p_bonus_opts, key="pb3")
+    
+    # Dynamic Restoration Options based on Weapon Type
+    is_bow = ("弓" in w_type and "ボウガン" not in w_type)
+    is_bowgun = ("ボウガン" in w_type)
+    
+    dynamic_rest_options = ["なし"]
+    for r_type, levels in master.get("restoration_bonuses", {}).items():
+        if r_type == "なし": continue
+        # Filter based on weapon type constraints
+        if r_type == "切れ味(近接)" and (is_bow or is_bowgun):
+            continue
+        if r_type == "装填数(遠隔)" and not is_bowgun:
+            continue
             
-        submitted = st.form_submit_button("武器を登録")
-        if submitted:
-            if not weapon_name.strip():
-                st.error("武器の識別名を入力してください。")
+        for lv in levels:
+            dynamic_rest_options.append(f"{r_type} [{lv}]")
+            
+    st.markdown("##### 復元ボーナス (最大5枠)")
+    rc1, rc2, rc3, rc4, rc5 = st.columns(5)
+    with rc1: rb1 = st.selectbox("枠1", dynamic_rest_options, key="rb1")
+    with rc2: rb2 = st.selectbox("枠2", dynamic_rest_options, key="rb2")
+    with rc3: rb3 = st.selectbox("枠3", dynamic_rest_options, key="rb3")
+    with rc4: rb4 = st.selectbox("枠4", dynamic_rest_options, key="rb4")
+    with rc5: rb5 = st.selectbox("枠5", dynamic_rest_options, key="rb5")
+    
+    if st.button("武器を登録", type="primary"):
+        # Auto-generate a name if none is provided
+        final_weapon_name = weapon_name.strip() or f"無銘の{w_type}"
+        
+        # Parse Rest bonuses
+        parsed_rbs = []
+        for rb in [rb1, rb2, rb3, rb4, rb5]:
+            if rb == "なし":
+                parsed_rbs.append({"type": "なし", "level": "なし"})
             else:
-                # Parse Rest bonuses
-                parsed_rbs = []
-                for rb in [rb1, rb2, rb3, rb4, rb5]:
-                    if rb == "なし":
-                        parsed_rbs.append({"type": "なし", "level": "なし"})
-                    else:
-                        parts = rb.split(" [")
-                        parsed_rbs.append({"type": parts[0], "level": parts[1][:-1]})
-                
-                # Check EX constraints
-                is_valid, err_msg = validate_restoration_bonuses(parsed_rbs)
-                if not is_valid:
-                    st.error(err_msg)
-                else:
-                    record_id = register_equipment(
-                        weapon_name, w_type, element, 
-                        current_series, current_group, enhancement, count,
-                        [pb1, pb2, pb3], parsed_rbs
-                    )
-                    if record_id:
-                        st.success(f"{weapon_name} を登録しました！")
-                        st.rerun()
-                    else:
-                        st.error("登録に失敗しました。")
+                parts = rb.split(" [")
+                parsed_rbs.append({"type": parts[0], "level": parts[1][:-1]})
+        
+        # Check EX constraints
+        is_valid, err_msg = validate_restoration_bonuses(parsed_rbs)
+        if not is_valid:
+            st.error(err_msg)
+        else:
+            record_id = register_equipment(
+                final_weapon_name, w_type, element, 
+                current_series, current_group, enhancement,
+                [pb1, pb2, pb3], parsed_rbs
+            )
+            if record_id:
+                st.success(f"{final_weapon_name} を登録しました！")
+                st.rerun()
+            else:
+                st.error("登録に失敗しました。")
 
 st.divider()
 st.subheader("所持武器一覧")

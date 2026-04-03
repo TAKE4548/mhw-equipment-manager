@@ -53,7 +53,7 @@
     {"group_name": "ヌシの魂", "skill_name": "根性【果敢】"},
     {"group_name": "拳を極めし者", "skill_name": "殺意の波動"}
   ],
-  "production_bonuses": ["なし", "基礎攻撃", "会心"],
+  "production_bonuses": ["基礎攻撃", "会心"],
   "kyogeki_enhancements": ["なし", "攻撃激化", "会心激化", "属性激化"],
   "restoration_bonuses": {
     "なし": ["なし"],
