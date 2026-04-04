@@ -61,8 +61,11 @@ def redo_action():
 
 # --- Tracker Logic ---
 
-def load_trackers() -> pd.DataFrame:
+def load_trackers():
     df = load_data(TRACKER_TABLE, required_columns=TRACKER_COLUMNS)
+    if df is None:
+        return None
+    
     if "remaining_count" in df.columns:
         df["remaining_count"] = pd.to_numeric(df["remaining_count"], errors="coerce").fillna(0).astype(int)
     

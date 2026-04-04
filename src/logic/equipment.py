@@ -25,9 +25,12 @@ def register_upgrade(weapon_type: str, element: str, series_skill: str, group_sk
     save_data(UPGRADES_TABLE, df)
     return new_id
 
-def get_active_upgrades() -> pd.DataFrame:
-    """Returns active upgrades from storage as a DataFrame."""
+def get_active_upgrades():
+    """Returns active upgrades from storage as a DataFrame. Returns None if loading."""
     df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
+    if df is None:
+        return None
+    
     if df.empty:
         return pd.DataFrame(columns=UPGRADES_COLUMNS)
     

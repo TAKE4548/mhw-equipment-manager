@@ -150,8 +150,11 @@ def validate_restoration_bonuses(bonuses: list[dict]) -> tuple[bool, str]:
                 return False, f"強化済みのボーナス「{tl_key}」が3枠以上重複することはあり得ません（最大2枠まで）。"
     return True, ""
 
-def load_equipment() -> pd.DataFrame:
+def load_equipment():
     df = load_data(EQUIPMENT_TABLE, required_columns=EQUIPMENT_COLUMNS)
+    if df is None:
+        return None
+    
     if not df.empty:
         for idx, row in df.iterrows():
             # Normalize Production
