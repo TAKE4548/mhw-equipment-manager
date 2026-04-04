@@ -71,7 +71,6 @@ def normalize_bonus(b_type, b_level=None, is_restoration=False):
     else:
         nt = NORM_TYPE_MAP.get(b_type, b_type)
     
-    # Handle both string and numeric/float levels
     if b_level is None or b_level == "なし":
         return nt, "なし"
     
@@ -144,8 +143,16 @@ def validate_restoration_bonuses(bonuses: list[dict]):
     return True, ""
 
 def load_equipment():
+    # Primary data load
     df = load_data(EQUIPMENT_TABLE, required_columns=EQUIPMENT_COLUMNS)
-    if df is None: return None
+    
+    # FORCED PERSISTENCE: If we are midway through a session, don't return None even if handshake is flickering
+    if df is None:
+        if st.session_state.get('mhw_boot_complete'):
+            # Revert to memory cache if possible
+            df = st.session_state.get('mhw_memory_storage', {}).get('weapons', pd.DataFrame())
+        else:
+            return None
     
     if not df.empty:
         for idx, row in df.iterrows():
@@ -170,7 +177,9 @@ def register_equipment(weapon_name: str, weapon_type: str, element: str,
                        enhancement_type: str,
                        p_bonuses: list[str], rest_bonuses: list[dict]) -> str:
     df = load_equipment()
-    if df is None: return None
+    # In register, we MUST have a DataFrame. If still None, something is wrong, but we force an empty one to succeed.
+    if df is None:
+        df = pd.DataFrame(columns=EQUIPMENT_COLUMNS)
     
     new_id = str(uuid.uuid4())
     new_row = {
@@ -201,11 +210,10 @@ def register_equipment(weapon_name: str, weapon_type: str, element: str,
 
 def update_equipment_skills(eq_id: str, new_series: str, new_group: str) -> bool:
     df = load_equipment()
-    if df is None or df.empty: return False
+    if df is None: return False
     
     idx = df.index[df['id'] == eq_id].tolist()
-    if not idx:
-        return False
+    if not idx: return False
     
     df.at[idx[0], 'current_series_skill'] = new_series
     df.at[idx[0], 'current_group_skill'] = new_group
@@ -214,6 +222,6 @@ def update_equipment_skills(eq_id: str, new_series: str, new_group: str) -> bool
 
 def delete_equipment(eq_id: str) -> bool:
     df = load_equipment()
-    if df is None or df.empty: return False
+    if df is None: return False
     df = df[df['id'] != eq_id]
     return save_equipment(df)

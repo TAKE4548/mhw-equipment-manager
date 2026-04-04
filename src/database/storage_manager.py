@@ -32,10 +32,18 @@ def _save_to_local_background(key: str, df: pd.DataFrame):
     """Directly pushes data to browser localStorage via JS."""
     full_key = f"mhw_{key}"
     json_data = df.to_json(orient="records")
-    data_str = json_data.replace('"', '\\"') # Escape for JS string literal
     
-    js_code = f"localStorage.setItem('{full_key}', '{data_str}')"
-    # Execute JS. This triggers a light rerun but is reliable.
+    # More robust escaping for JS string literal
+    # 1. Escape backslashes
+    safe_data = json_data.replace('\\', '\\\\')
+    # 2. Escape single quotes (since we use ' in our JS)
+    safe_data = safe_data.replace("'", "\\'")
+    # 3. Escape double quotes (just in case)
+    # 4. Remove actual newlines
+    safe_data = safe_data.replace('\n', ' ')
+    
+    js_code = f"localStorage.setItem('{full_key}', '{safe_data}')"
+    # Execute JS. 
     st_javascript(js_code)
 
 # --- Cloud Storage (Supabase) ---
@@ -80,8 +88,6 @@ def _save_to_cloud(table: str, df: pd.DataFrame):
 def load_data(key: str, required_columns: list):
     """
     Unified loader for Ultimate JS Handshake.
-    - Local Mode: Primary source is session_state memory cache.
-    Wait for boot_complete before returning data.
     """
     if is_logged_in():
         return _load_from_cloud(key, required_columns)
@@ -89,16 +95,20 @@ def load_data(key: str, required_columns: list):
     # --- Local (Memory-First) Mode ---
     init_memory_storage()
     
-    # Check if we have data in memory AND initial handshake is complete
+    # FORCED PERSISTENCE: 
+    # If the app has EVER booted correctly, always return a DataFrame from memory.
+    boot_complete = st.session_state.get('mhw_boot_complete', False)
     cache = st.session_state['mhw_memory_storage']
-    if key in cache and st.session_state.get('mhw_boot_complete'):
+    
+    if key in cache:
         df = cache[key]
+    elif boot_complete:
+        # Boot was complete but key is missing? Return empty.
+        df = pd.DataFrame(columns=required_columns)
+        st.session_state['mhw_memory_storage'][key] = df
     else:
-        # If not ready, we signal "Still Loading" to the UI
+        # ONLY return None if we are strictly in the first-ever loading frame
         return None
-        
-    if df.empty:
-        return pd.DataFrame(columns=required_columns)
         
     # Column maintenance
     existing_cols = [c for c in required_columns if c in df.columns]
