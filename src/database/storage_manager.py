@@ -1,13 +1,13 @@
 import streamlit as st
 import pandas as pd
 import json
+import zlib
+import base64
 from supabase import create_client, Client
-from streamlit_local_storage import LocalStorage
+from streamlit_cookies_controller import CookieController
 
-# --- The ONE localStorage key ---
-MHW_STORAGE_KEY = "mhw_all_data"
-
-# Table names
+# --- Configuration ---
+COOKIE_KEY = "mhw_all_data"
 MANAGED_TABLES = ["weapons", "trackers", "upgrades"]
 
 # --- Supabase ---
@@ -23,68 +23,80 @@ def get_supabase_client() -> Client:
 def is_logged_in() -> bool:
     return "user" in st.session_state and st.session_state.user is not None
 
-# --- Memory Cache ---
+# --- Compression helpers (to fit data in 4KB cookie limit) ---
+
+def _compress(data: dict) -> str:
+    """Compress dict → base64 string for cookie storage."""
+    json_bytes = json.dumps(data, ensure_ascii=False).encode("utf-8")
+    compressed = zlib.compress(json_bytes, level=9)
+    return base64.b64encode(compressed).decode("ascii")
+
+def _decompress(s: str) -> dict:
+    """Decompress base64 string → dict."""
+    compressed = base64.b64decode(s.encode("ascii"))
+    json_bytes = zlib.decompress(compressed)
+    return json.loads(json_bytes.decode("utf-8"))
+
+# --- Cookie controller singleton ---
+
+def _get_controller() -> CookieController:
+    if "mhw_cookie_ctrl" not in st.session_state:
+        st.session_state["mhw_cookie_ctrl"] = CookieController()
+    return st.session_state["mhw_cookie_ctrl"]
+
+# --- Memory cache ---
 
 def init_memory_storage():
-    if 'mhw_data' not in st.session_state:
-        st.session_state['mhw_data'] = {t: pd.DataFrame() for t in MANAGED_TABLES}
-    if 'mhw_ready' not in st.session_state:
-        st.session_state['mhw_ready'] = False
-    if 'mhw_ls' not in st.session_state:
-        st.session_state['mhw_ls'] = LocalStorage()
+    if "mhw_data" not in st.session_state:
+        st.session_state["mhw_data"] = {t: pd.DataFrame() for t in MANAGED_TABLES}
+    if "mhw_ready" not in st.session_state:
+        st.session_state["mhw_ready"] = False
 
-def get_ls() -> LocalStorage:
-    """Returns the singleton LocalStorage instance."""
-    init_memory_storage()
-    return st.session_state['mhw_ls']
-
-# --- Boot Handshake: read ALL data from browser in one shot ---
+# --- Boot: Read from cookie (INSTANT via st.context.cookies) ---
 
 def boot_from_browser():
     """
-    Called once per session. Reads all data from localStorage into memory.
-    Returns True if successful, False if still waiting.
+    Reads persisted data from browser cookies into memory.
+    Uses st.context.cookies which is available immediately on every page load —
+    no component render or extra reruns required.
     """
     init_memory_storage()
-    
-    if st.session_state['mhw_ready']:
-        return True  # Already loaded
-    
-    ls = get_ls()
-    raw = ls.getItem(MHW_STORAGE_KEY)
-    
-    if raw is not None:
-        # Browser responded (raw may be a dict, list, or string)
-        try:
-            if isinstance(raw, str):
-                data = json.loads(raw)
-            elif isinstance(raw, dict):
-                data = raw
-            else:
-                data = {}
-            
+
+    if st.session_state["mhw_ready"]:
+        return True
+
+    # CookieController must be instantiated (renders hidden component for writes)
+    _get_controller()
+
+    # Read immediately from HTTP request cookies — zero latency, no rerun needed
+    try:
+        raw = st.context.cookies.get(COOKIE_KEY)
+        if raw:
+            data = _decompress(raw)
             for t in MANAGED_TABLES:
                 records = data.get(t, [])
-                st.session_state['mhw_data'][t] = pd.DataFrame(records)
-        except Exception:
-            pass  # Parse error → use empty DataFrames
-        
-        st.session_state['mhw_ready'] = True
-        return True
-    
-    return False  # Still waiting for browser
+                st.session_state["mhw_data"][t] = pd.DataFrame(records) if records else pd.DataFrame()
+    except Exception:
+        # Parse / decompress error → start fresh
+        pass
 
-# --- Persist ALL data to browser in one shot ---
+    st.session_state["mhw_ready"] = True
+    return True
+
+# --- Persist: Write to cookie via CookieController ---
 
 def persist_to_browser():
-    """Writes all in-memory data to localStorage as a single JSON object."""
-    ls = get_ls()
+    """Writes all in-memory data to a single browser cookie (compressed)."""
+    ctrl = _get_controller()
     data = {}
     for t in MANAGED_TABLES:
-        df = st.session_state['mhw_data'].get(t, pd.DataFrame())
-        records = json.loads(df.to_json(orient="records")) if not df.empty else []
-        data[t] = records
-    ls.setItem(MHW_STORAGE_KEY, data)
+        df = st.session_state["mhw_data"].get(t, pd.DataFrame())
+        data[t] = json.loads(df.to_json(orient="records")) if not df.empty else []
+    try:
+        compressed = _compress(data)
+        ctrl.set(COOKIE_KEY, compressed)
+    except Exception as e:
+        st.warning(f"⚠️ 保存エラー: {e}")
 
 # --- Cloud Storage (Supabase) ---
 
@@ -118,20 +130,16 @@ def _save_to_cloud(table: str, df: pd.DataFrame) -> bool:
 # --- Unified Interface ---
 
 def load_data(key: str, required_columns: list) -> pd.DataFrame:
-    """
-    Always returns a DataFrame.
-    - Cloud mode: fetch from Supabase
-    - Local mode: read from memory (populated by boot_from_browser)
-    """
+    """Always returns a DataFrame immediately."""
     if is_logged_in():
         return _load_from_cloud(key, required_columns)
-    
+
     init_memory_storage()
-    df = st.session_state['mhw_data'].get(key, pd.DataFrame())
-    
+    df = st.session_state["mhw_data"].get(key, pd.DataFrame())
+
     if df.empty:
         return pd.DataFrame(columns=required_columns)
-    
+
     for col in required_columns:
         if col not in df.columns:
             df[col] = None
@@ -139,12 +147,12 @@ def load_data(key: str, required_columns: list) -> pd.DataFrame:
     return df[existing]
 
 def save_data(key: str, df: pd.DataFrame) -> bool:
-    """Saves data to memory + persists all data to browser localStorage."""
+    """Saves to memory and persists to browser cookie."""
     if is_logged_in():
         return _save_to_cloud(key, df)
-    
+
     init_memory_storage()
-    st.session_state['mhw_data'][key] = df
+    st.session_state["mhw_data"][key] = df
     persist_to_browser()
     return True
 
@@ -152,6 +160,6 @@ def sync_local_to_cloud():
     if not is_logged_in():
         return
     for table in MANAGED_TABLES:
-        df = st.session_state.get('mhw_data', {}).get(table, pd.DataFrame())
+        df = st.session_state.get("mhw_data", {}).get(table, pd.DataFrame())
         if not df.empty:
             _save_to_cloud(table, df)

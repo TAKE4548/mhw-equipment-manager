@@ -7,13 +7,8 @@ from src.components.sidebar import render_shared_sidebar
 
 st.set_page_config(page_title="スキル抽選結果", page_icon="⚔️", layout="wide")
 
-# Render shared sidebar (also performs browser boot handshake)
+# Render shared sidebar (boots from cookie instantly)
 render_shared_sidebar()
-
-# Wait for localStorage data to be available
-if not st.session_state.get('mhw_ready') and not st.session_state.get('user'):
-    st.info("⏳ データを読み込み中...")
-    st.stop()
 
 st.title("スキル抽選結果 🏹")
 st.markdown("巨戟強化の抽選順序を確認し、スキルを武器に割り当てます。")
