@@ -33,13 +33,9 @@ def _save_to_local_background(key: str, df: pd.DataFrame):
     full_key = f"mhw_{key}"
     json_data = df.to_json(orient="records")
     
-    # More robust escaping for JS string literal
-    # 1. Escape backslashes
+    # Robust escaping for JS string literal
     safe_data = json_data.replace('\\', '\\\\')
-    # 2. Escape single quotes (since we use ' in our JS)
     safe_data = safe_data.replace("'", "\\'")
-    # 3. Escape double quotes (just in case)
-    # 4. Remove actual newlines
     safe_data = safe_data.replace('\n', ' ')
     
     js_code = f"localStorage.setItem('{full_key}', '{safe_data}')"
@@ -88,6 +84,7 @@ def _save_to_cloud(table: str, df: pd.DataFrame):
 def load_data(key: str, required_columns: list):
     """
     Unified loader for Ultimate JS Handshake.
+    Always returns a DataFrame once boot is complete (forced or successful).
     """
     if is_logged_in():
         return _load_from_cloud(key, required_columns)
@@ -95,19 +92,17 @@ def load_data(key: str, required_columns: list):
     # --- Local (Memory-First) Mode ---
     init_memory_storage()
     
-    # FORCED PERSISTENCE: 
-    # If the app has EVER booted correctly, always return a DataFrame from memory.
     boot_complete = st.session_state.get('mhw_boot_complete', False)
     cache = st.session_state['mhw_memory_storage']
     
     if key in cache:
         df = cache[key]
     elif boot_complete:
-        # Boot was complete but key is missing? Return empty.
+        # Boot was complete but key is missing? Return empty but cache it.
         df = pd.DataFrame(columns=required_columns)
         st.session_state['mhw_memory_storage'][key] = df
     else:
-        # ONLY return None if we are strictly in the first-ever loading frame
+        # Strictly return None ONLY while waiting for handshake
         return None
         
     # Column maintenance

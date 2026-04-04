@@ -44,7 +44,13 @@ def redo_action() -> bool:
 
 def load_trackers():
     df = load_data(TRACKER_TABLE, required_columns=TRACKER_COLUMNS)
-    if df is None: return None
+    
+    if df is None:
+        if st.session_state.get('mhw_boot_complete'):
+            # Forced persistence fallback
+            df = st.session_state.get('mhw_memory_storage', {}).get('trackers', pd.DataFrame())
+        else:
+            return None
     
     if "remaining_count" in df.columns:
         df["remaining_count"] = pd.to_numeric(df["remaining_count"], errors="coerce").fillna(0).astype(int)
@@ -53,8 +59,10 @@ def load_trackers():
 
 def register_tracker(weapon_id: str, remaining_count: int, target_bonuses: list[dict]) -> bool:
     df = load_trackers()
-    if df is None: return False
-    
+    if df is None:
+        # Fallback to empty if still loading
+        df = pd.DataFrame(columns=TRACKER_COLUMNS)
+        
     prev_df = df.copy()
     
     new_id = int(time.time() * 1000)
@@ -80,7 +88,10 @@ def register_tracker(weapon_id: str, remaining_count: int, target_bonuses: list[
 
 def advance_all_trackers(decrement: int = 1) -> bool:
     df = load_trackers()
-    if df is None or df.empty: return False
+    if df is None:
+        df = st.session_state.get('mhw_memory_storage', {}).get('trackers', pd.DataFrame())
+        
+    if df.empty: return False
     
     prev_df = df.copy()
     df["remaining_count"] = df["remaining_count"].apply(lambda x: max(0, x - decrement))
@@ -92,7 +103,10 @@ def advance_all_trackers(decrement: int = 1) -> bool:
 
 def delete_tracker(tracker_id: int) -> bool:
     df = load_trackers()
-    if df is None or df.empty: return False
+    if df is None:
+        df = st.session_state.get('mhw_memory_storage', {}).get('trackers', pd.DataFrame())
+        
+    if df.empty: return False
         
     prev_df = df.copy()
     df = df[df["id"] != tracker_id]
@@ -109,7 +123,9 @@ def execute_apply_and_advance(tracker_id: int) -> bool:
     trackers_df = load_trackers()
     eq_df = load_equipment()
     
-    if trackers_df is None or eq_df is None: return False
+    if trackers_df is None: trackers_df = st.session_state.get('mhw_memory_storage', {}).get('trackers', pd.DataFrame())
+    if eq_df is None: eq_df = st.session_state.get('mhw_memory_storage', {}).get('weapons', pd.DataFrame())
+    
     if trackers_df.empty or eq_df.empty: return False
         
     target_tracker = trackers_df[trackers_df["id"] == tracker_id]
