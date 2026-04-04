@@ -7,7 +7,7 @@ from src.database.gsheets_manager import load_data, save_data
 EQUIPMENT_WORKSHEET = "EquipmentBox"
 EQUIPMENT_COLUMNS = [
     "id", "weapon_name", "weapon_type", "element", 
-    "current_series_skill", "current_group_skill", 
+    "current_series_skill", "current_group_skill",
     "enhancement_type",
     "p_bonus_1", "p_bonus_2", "p_bonus_3",
     "rest_1_type", "rest_1_level",
@@ -29,9 +29,6 @@ ABBR_MAP = {
     "装填強化": "装填"
 }
 
-def get_abbr(full_name):
-    return ABBR_MAP.get(full_name, full_name)
-
 NORM_TYPE_MAP = {
     # Production
     "基礎攻撃": "基礎攻撃力増強",
@@ -49,36 +46,48 @@ REST_TYPE_MAP = {
 
 NORM_LV_MAP = {
     "1": "Ⅰ", "2": "Ⅱ", "3": "Ⅲ",
+    "1.0": "Ⅰ", "2.0": "Ⅱ", "3.0": "Ⅲ",
     "無印": "無印", "EX": "EX", "なし": "なし"
 }
 
 def normalize_bonus(b_type, b_level=None, is_restoration=False):
-    """Maps old terminology to new labels."""
+    """Maps old terminology to new labels and ensures Roman numerals."""
     nt = b_type
     if is_restoration and b_type in REST_TYPE_MAP:
         nt = REST_TYPE_MAP[b_type]
     else:
         nt = NORM_TYPE_MAP.get(b_type, b_type)
-        
-    nl = b_level
-    if b_level:
-        nl = NORM_LV_MAP.get(str(b_level), b_level)
     
+    # Handle both string and numeric/float levels
+    if b_level is None or b_level == "なし":
+        return nt, "なし"
+    
+    nl_raw = str(b_level).strip()
+    if nl_raw.endswith(".0"):
+        nl_raw = nl_raw[:-2]
+        
+    nl = NORM_LV_MAP.get(nl_raw, nl_raw)
     return nt, nl
 
 def get_abbr_item(item: str) -> str:
-    """Helper to apply abbreviation to a single item name + level string."""
+    """Helper to apply abbreviation to a single item name + level string. Handles .0 floats too."""
     if not item or item == "なし":
         return "なし"
     
-    # First, handle the level part if it's a numeric suffix like '1', '2', '3'
-    # By mapping it to Roman numerals
-    res = item
+    # Normalize the string first (strip .0 if present anywhere)
+    res = item.strip()
+    if ".0" in res:
+        # e.g., "基礎攻撃力強化3.0" -> "基礎攻撃力強化3"
+        res = res.replace(".0", "")
+        
+    # Map trailing digits for safety
     for old, new in NORM_LV_MAP.items():
-        if item.endswith(old) and old.isdigit():
-            res = item[:-len(old)] + new
+        if res.endswith(old) and not old.endswith(".0"): # Avoid re-matching .0 here
+            # e.g., "基礎攻撃力強化3" -> "基礎攻撃力強化Ⅲ"
+            res = res[:-len(old)] + new
             break
 
+    # Apply type abbreviations
     for full, short in ABBR_MAP.items():
         if res.startswith(full):
             return f"{short}{res[len(full):]}"
@@ -93,7 +102,6 @@ def format_bonus_summary(items: list[str]) -> str:
     abbr_items = [get_abbr_item(i) for i in items]
     counts = Counter(abbr_items)
     parts = []
-    # Sort for consistent comparison
     for item in sorted(counts.keys()):
         parts.append(f"{item}x{counts[item]}")
     return "、".join(parts)
@@ -129,29 +137,21 @@ def get_weapon_label(row) -> str:
 # --- Core Logic ---
 
 def validate_restoration_bonuses(bonuses: list[dict]) -> tuple[bool, str]:
-    """
-    Validates duplicates. Unenhanced (Ⅰ or 無印) can be up to 5. Enhanced max 2.
-    """
+    """Validates duplicates for restoration bonuses."""
     type_level_counts = {}
     for b in bonuses:
         b_type = b.get("type", "なし")
-        # Normalize incoming validation data if it's old (though usually UI sends new)
         b_type, b_level = normalize_bonus(b_type, b.get("level", "なし"), is_restoration=True)
         
         if b_type != "なし":
             tl_key = f"{b_type} [{b_level}]"
             type_level_counts[tl_key] = type_level_counts.get(tl_key, 0) + 1
-            
-            if b_level in ["Ⅰ", "1", "無印"]: # Allow 1 for compat
-                continue
-                
-            if type_level_counts[tl_key] > 2:
+            if b_level not in ["Ⅰ", "1", "無印"] and type_level_counts[tl_key] > 2:
                 return False, f"強化済みのボーナス「{tl_key}」が3枠以上重複することはあり得ません（最大2枠まで）。"
     return True, ""
 
 def load_equipment() -> pd.DataFrame:
     df = load_data(worksheet=EQUIPMENT_WORKSHEET, required_columns=EQUIPMENT_COLUMNS)
-    # Apply normalization to the dataframe for consistency in UI
     if not df.empty:
         for idx, row in df.iterrows():
             # Normalize Production
@@ -175,7 +175,6 @@ def register_equipment(weapon_name: str, weapon_type: str, element: str,
                        enhancement_type: str,
                        p_bonuses: list[str], rest_bonuses: list[dict]) -> str:
     df = load_equipment()
-    
     new_id = str(uuid.uuid4())
     new_row = {
         "id": new_id,
@@ -189,10 +188,8 @@ def register_equipment(weapon_name: str, weapon_type: str, element: str,
         "p_bonus_2": p_bonuses[1] if len(p_bonuses) > 1 else "なし",
         "p_bonus_3": p_bonuses[2] if len(p_bonuses) > 2 else "なし",
     }
-    
     for i in range(5):
-        rt = f"rest_{i+1}_type"
-        rl = f"rest_{i+1}_level"
+        rt, rl = f"rest_{i+1}_type", f"rest_{i+1}_level"
         if i < len(rest_bonuses):
             new_row[rt] = rest_bonuses[i].get("type", "なし")
             new_row[rl] = rest_bonuses[i].get("level", "なし")
@@ -221,8 +218,6 @@ def update_equipment_skills(eq_id: str, new_series: str, new_group: str) -> bool
 
 def delete_equipment(eq_id: str) -> bool:
     df = load_equipment()
-    if df.empty:
-        return False
-    
+    if df.empty: return False
     df = df[df['id'] != eq_id]
     return save_equipment(df)

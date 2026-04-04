@@ -44,9 +44,15 @@ Not stored in SQLite. Stored in Streamlit's `st.session_state` as an in-memory s
 Located at `src/data/master_data.json`.
 - `weapon_types` / `elements`: 基本マスタ
 - `series_skills` / `group_skills`: スキル名称の定義
-- `production_bonuses`: 基礎攻撃, 会心
+- `production_bonuses`: 基礎攻撃力増強, 会心率増強
 - `kyogeki_enhancements`: 攻撃激化, 会心激化, 属性激化
-- `restoration_bonuses`: ボーナス種別ごとのレベル定義（1〜3, EX, 無印）
+- `restoration_bonuses`: 標準化されたレベル定義（Ⅰ, Ⅱ, Ⅲ, EX, 無印）
+
+## Data Normalization (正規化)
+- **Terminology Normalization**: 
+  - 旧用語（"属性", "切れ味(近接)"など）を正式名称（"属性強化", "切れ味強化"など）へロード時に変換。
+- **Level Notation Normalization**: 
+  - 数値（1, 2, 3）や浮動小数点（1.0, 2.0, 3.0）をローマ数字（Ⅰ, Ⅱ, Ⅲ）へロード時および表示時に変換し、視認性を統一。
 
 ## Relationships
-- Single user local database, so no explicit User foreign keys are needed for MVP.
+- Single user local database environment, utilizing Google Spreadsheets via URL-based session states.

@@ -65,6 +65,16 @@ def load_trackers() -> pd.DataFrame:
     df = load_data(worksheet=TRACKER_WORKSHEET, required_columns=TRACKER_COLUMNS)
     if "remaining_count" in df.columns:
         df["remaining_count"] = pd.to_numeric(df["remaining_count"], errors="coerce").fillna(0).astype(int)
+    
+    # Normalize bonuses for consistency (e.g., 1 -> Ⅰ)
+    if not df.empty:
+        from src.logic.equipment_box import normalize_bonus
+        for idx, row in df.iterrows():
+            for i in range(1, 6):
+                tc, lc = f"target_rest_{i}_type", f"target_rest_{i}_level"
+                nt, nl = normalize_bonus(row[tc], row[lc], is_restoration=True)
+                df.at[idx, tc] = nt
+                df.at[idx, lc] = nl
     return df
 
 def save_trackers(df: pd.DataFrame) -> bool:
