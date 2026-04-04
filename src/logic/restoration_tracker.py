@@ -62,7 +62,8 @@ def redo_action():
 # --- Tracker Logic ---
 
 def load_trackers() -> pd.DataFrame:
-    df = load_data(worksheet=TRACKER_WORKSHEET, required_columns=TRACKER_COLUMNS)
+    url = st.session_state.get("gsheet_url")
+    df = load_data(url, TRACKER_WORKSHEET, required_columns=TRACKER_COLUMNS)
     if "remaining_count" in df.columns:
         df["remaining_count"] = pd.to_numeric(df["remaining_count"], errors="coerce").fillna(0).astype(int)
     
@@ -78,7 +79,8 @@ def load_trackers() -> pd.DataFrame:
     return df
 
 def save_trackers(df: pd.DataFrame) -> bool:
-    return save_data(df, worksheet=TRACKER_WORKSHEET)
+    url = st.session_state.get("gsheet_url")
+    return save_data(df, url, TRACKER_WORKSHEET)
 
 def register_tracker(weapon_id: str, count: int, rest_bonuses: list[dict]) -> str:
     push_history()

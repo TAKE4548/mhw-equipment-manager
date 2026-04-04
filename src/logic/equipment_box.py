@@ -151,7 +151,8 @@ def validate_restoration_bonuses(bonuses: list[dict]) -> tuple[bool, str]:
     return True, ""
 
 def load_equipment() -> pd.DataFrame:
-    df = load_data(worksheet=EQUIPMENT_WORKSHEET, required_columns=EQUIPMENT_COLUMNS)
+    url = st.session_state.get("gsheet_url")
+    df = load_data(url, EQUIPMENT_WORKSHEET, required_columns=EQUIPMENT_COLUMNS)
     if not df.empty:
         for idx, row in df.iterrows():
             # Normalize Production
@@ -168,7 +169,8 @@ def load_equipment() -> pd.DataFrame:
     return df
 
 def save_equipment(df: pd.DataFrame) -> bool:
-    return save_data(df, worksheet=EQUIPMENT_WORKSHEET)
+    url = st.session_state.get("gsheet_url")
+    return save_data(df, url, EQUIPMENT_WORKSHEET)
 
 def register_equipment(weapon_name: str, weapon_type: str, element: str, 
                        current_series: str, current_group: str,
