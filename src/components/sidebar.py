@@ -1,12 +1,10 @@
 import streamlit as st
 from src.components.auth import render_auth_component
 from src.utils.session import init_session_state
-from src.database.storage_manager import boot_from_browser, get_debug_info, setup_cookie_controller
+from src.database.storage_manager import boot_from_browser, get_debug_info
 
 def render_shared_sidebar():
     init_session_state()
-    # CRITICAL: render CookieController on EVERY script run so ctrl.set() works
-    setup_cookie_controller()
     boot_from_browser()
 
     with st.sidebar:
@@ -15,9 +13,8 @@ def render_shared_sidebar():
         if "user" in st.session_state and st.session_state.user:
             st.info("🌐 **モード: クラウド同期**\n\nデータは Supabase に保存されます。")
         else:
-            st.success("💻 **モード: ローカル保存**\n\nデータはこのブラウザの Cookie に保存されています。")
+            st.success("💻 **モード: ローカル保存**\n\nデータはこのブラウザに保存されています。")
 
-        # --- Debug Panel ---
         with st.expander("🔍 デバッグ情報", expanded=True):
             info = get_debug_info()
             st.write(f"Cookie 書き込み済み: `{info['cookie_exists']}`")
@@ -28,4 +25,4 @@ def render_shared_sidebar():
 
         render_auth_component()
         st.divider()
-        st.caption("MHWs Equipment Manager v6.0 (Cookie)")
+        st.caption("MHWs Equipment Manager v7.0 (st.html Cookie)")

@@ -4,10 +4,9 @@ import json
 import zlib
 import base64
 from supabase import create_client, Client
-from streamlit_cookies_controller import CookieController
 
 # --- Configuration ---
-COOKIE_KEY = "mhw_all_data"
+COOKIE_KEY = "mhw_data"
 MANAGED_TABLES = ["weapons", "trackers", "upgrades"]
 
 # --- Supabase ---
@@ -23,34 +22,19 @@ def get_supabase_client() -> Client:
 def is_logged_in() -> bool:
     return "user" in st.session_state and st.session_state.user is not None
 
-# --- Compression helpers (to fit data in 4KB cookie limit) ---
+# --- Compression helpers (fit data in ~4KB cookie) ---
 
 def _compress(data: dict) -> str:
-    """Compress dict → base64 string for cookie storage."""
     json_bytes = json.dumps(data, ensure_ascii=False).encode("utf-8")
     compressed = zlib.compress(json_bytes, level=9)
-    return base64.b64encode(compressed).decode("ascii")
+    return base64.urlsafe_b64encode(compressed).decode("ascii")
 
 def _decompress(s: str) -> dict:
-    """Decompress base64 string → dict."""
-    compressed = base64.b64decode(s.encode("ascii"))
+    compressed = base64.urlsafe_b64decode(s.encode("ascii"))
     json_bytes = zlib.decompress(compressed)
     return json.loads(json_bytes.decode("utf-8"))
 
-# --- Cookie controller singleton ---
-
-def _get_controller() -> CookieController:
-    """Retrieves the CookieController rendered by the sidebar this run."""
-    return st.session_state.get("mhw_cookie_ctrl")
-
-def setup_cookie_controller():
-    """Call this on EVERY script run from the sidebar to keep the
-    CookieController component rendered and able to receive set() calls."""
-    ctrl = CookieController()  # renders the hidden component in the UI
-    st.session_state["mhw_cookie_ctrl"] = ctrl
-    return ctrl
-
-# --- Memory cache ---
+# --- Memory Cache ---
 
 def init_memory_storage():
     if "mhw_data" not in st.session_state:
@@ -58,19 +42,14 @@ def init_memory_storage():
     if "mhw_ready" not in st.session_state:
         st.session_state["mhw_ready"] = False
 
-# --- Boot: Read from cookie (INSTANT via st.context.cookies) ---
+# --- Boot: Read from cookie via st.context.cookies (INSTANT) ---
 
 def boot_from_browser():
-    """
-    Reads persisted data from browser cookies into memory.
-    Must be called AFTER setup_cookie_controller() in the sidebar.
-    """
+    """Read cookies from HTTP request headers. Zero latency, no component needed."""
     init_memory_storage()
-
     if st.session_state["mhw_ready"]:
         return True
 
-    # Read immediately from HTTP request cookies — zero latency, no rerun needed
     try:
         raw = st.context.cookies.get(COOKIE_KEY)
         if raw:
@@ -79,30 +58,32 @@ def boot_from_browser():
                 records = data.get(t, [])
                 st.session_state["mhw_data"][t] = pd.DataFrame(records) if records else pd.DataFrame()
     except Exception:
-        # Parse / decompress error → start fresh
-        pass
+        pass  # corrupt/missing cookie → start fresh
 
     st.session_state["mhw_ready"] = True
     return True
 
-# --- Persist: Write to cookie via CookieController ---
+# --- Persist: Write cookie via st.html (NO iframe, NO component) ---
 
 def persist_to_browser():
-    """Writes all in-memory data to a single browser cookie (compressed, 30-day expiry)."""
-    ctrl = _get_controller()
+    """Write all data to a browser cookie using st.html().
+    st.html() renders JavaScript directly in the page (not an iframe),
+    so document.cookie works on the actual page origin."""
     data = {}
     for t in MANAGED_TABLES:
-        df = st.session_state["mhw_data"].get(t, pd.DataFrame())
+        df = st.session_state.get("mhw_data", {}).get(t, pd.DataFrame())
         data[t] = json.loads(df.to_json(orient="records")) if not df.empty else []
-    try:
-        compressed = _compress(data)
-        # max_age: 30 days in seconds — must be explicit or cookie is session-scoped and wiped on reload
-        ctrl.set(COOKIE_KEY, compressed, max_age=2592000)
-    except Exception as e:
-        st.warning(f"⚠️ 保存エラー: {e}")
+
+    compressed = _compress(data)
+    # Use st.html to inject a script tag directly into the page
+    js = f"""<script>
+document.cookie = "{COOKIE_KEY}={compressed}; path=/; max-age=2592000; SameSite=Lax";
+</script>"""
+    st.html(js)
+
+# --- Debug ---
 
 def get_debug_info() -> dict:
-    """Returns debug info about current storage state."""
     raw_cookie = st.context.cookies.get(COOKIE_KEY, "")
     return {
         "cookie_exists": bool(raw_cookie),
@@ -145,16 +126,12 @@ def _save_to_cloud(table: str, df: pd.DataFrame) -> bool:
 # --- Unified Interface ---
 
 def load_data(key: str, required_columns: list) -> pd.DataFrame:
-    """Always returns a DataFrame immediately."""
     if is_logged_in():
         return _load_from_cloud(key, required_columns)
-
     init_memory_storage()
     df = st.session_state["mhw_data"].get(key, pd.DataFrame())
-
     if df.empty:
         return pd.DataFrame(columns=required_columns)
-
     for col in required_columns:
         if col not in df.columns:
             df[col] = None
@@ -162,10 +139,8 @@ def load_data(key: str, required_columns: list) -> pd.DataFrame:
     return df[existing]
 
 def save_data(key: str, df: pd.DataFrame) -> bool:
-    """Saves to memory and persists to browser cookie."""
     if is_logged_in():
         return _save_to_cloud(key, df)
-
     init_memory_storage()
     st.session_state["mhw_data"][key] = df
     persist_to_browser()
