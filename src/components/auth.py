@@ -23,30 +23,32 @@ def render_auth_component():
                 
                 if col1.button("ログイン", use_container_width=True):
                     client = get_supabase_client()
-                    if client:
-                        try:
-                            # Supabase auth handles login
-                            res = client.auth.sign_in_with_password({"email": email, "password": password})
-                            st.session_state.user = res.user
-                            # After login, trigger sync from local to cloud
-                            sync_local_to_cloud()
-                            st.success("ログインしました！同期を開始します。")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"❌ ログイン失敗: {e}")
+                    if not client:
+                        st.warning("⚠️ Supabase の設定（URL/Key）が `.streamlit/secrets.toml` に未設定です。")
                     else:
-                        st.warning("⚠️ Supabase の設定（URL/Key）が未完了です。")
+                        with st.spinner("認証中..."):
+                            try:
+                                # Supabase auth handles login
+                                res = client.auth.sign_in_with_password({"email": email, "password": password})
+                                st.session_state.user = res.user
+                                # After login, trigger sync from local to cloud
+                                sync_local_to_cloud()
+                                st.toast("✅ ログイン成功", icon="🎉")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"❌ ログイン失敗: {e}")
 
                 if col2.button("新規登録", use_container_width=True):
                     client = get_supabase_client()
-                    if client:
-                        try:
-                            client.auth.sign_up({"email": email, "password": password})
-                            st.info("✉️ 確認メールを送信しました。リンクをクリックして承認後にログインしてください。")
-                        except Exception as e:
-                            st.error(f"❌ 登録失敗: {e}")
+                    if not client:
+                        st.warning("⚠️ Supabase の設定が未設定です。")
                     else:
-                        st.warning("⚠️ Supabase の設定が未完了です。")
+                        with st.spinner("登録処理中..."):
+                            try:
+                                client.auth.sign_up({"email": email, "password": password})
+                                st.info("✉️ 確認メールを送信しました。リンクをクリックして承認後にログインしてください。")
+                            except Exception as e:
+                                st.error(f"❌ 登録失敗: {e}")
         else:
             # Logged In State
             st.success(f"✅ ログイン中: {st.session_state.user.email}")
