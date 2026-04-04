@@ -54,7 +54,7 @@
     {"group_name": "拳を極めし者", "skill_name": "殺意の波動"}
   ],
   "production_bonuses": ["基礎攻撃力増強", "会心率増強"],
-  "kyogeki_enhancements": ["なし", "攻撃激化", "会心激化", "属性激化"],
+  "kyogeki_enhancements": ["攻撃激化", "会心激化", "属性激化"],
   "restoration_bonuses": {
     "なし": ["なし"],
     "基礎攻撃力強化": ["Ⅱ", "Ⅲ", "EX"],

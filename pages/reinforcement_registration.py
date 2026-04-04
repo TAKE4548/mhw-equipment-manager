@@ -107,6 +107,7 @@ with st.expander("➕ 抽選結果を登録する", expanded=exp_expanded):
         st.markdown(f"##### 2. 「{sel_row['weapon_name']}」の抽選結果を入力")
         
         sel_w_type = sel_row['weapon_type']
+        sel_element = sel_row['element']
         is_bow = ("弓" in sel_w_type and "ボウガン" not in sel_w_type)
         is_bowgun = ("ボウガン" in sel_w_type)
         
@@ -115,6 +116,9 @@ with st.expander("➕ 抽選結果を登録する", expanded=exp_expanded):
             if r_type == "なし": continue
             if r_type == "切れ味強化" and (is_bow or is_bowgun): continue
             if r_type == "装填強化" and not is_bowgun: continue
+            if r_type == "属性強化":
+                if sel_element == "無": continue
+                if is_bow and sel_element in ["毒", "麻痺", "睡眠", "爆破"]: continue
             for lv in levels:
                 label = r_type if lv == "無印" else f"{r_type} [{lv}]"
                 dynamic_rest_options.append(label)

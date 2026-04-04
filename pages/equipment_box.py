@@ -73,6 +73,11 @@ with st.expander("➕ 武器を新規登録する", expanded=False):
             continue
         if r_type == "装填強化" and not is_bowgun:
             continue
+        if r_type == "属性強化":
+            if element == "無":
+                continue
+            if is_bow and element in ["毒", "麻痺", "睡眠", "爆破"]:
+                continue
             
         for lv in levels:
             label = r_type if lv == "無印" else f"{r_type} [{lv}]"
