@@ -1,4 +1,4 @@
 streamlit
 pandas
 supabase
-streamlit-javascript
+streamlit-local-storage
