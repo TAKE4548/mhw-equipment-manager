@@ -121,7 +121,7 @@ def format_bonus_list(items: list[str]) -> str:
 
 def get_weapon_label(weapon_id: str, df: pd.DataFrame) -> str:
     """Returns a readable label for a weapon from the equipment dataframe."""
-    row = df[df['id'] == weapon_id]
+    row = df[df['id'].astype(str) == str(weapon_id)]
     if row.empty:
         return "Unknown Weapon"
     row = row.iloc[0]
@@ -146,11 +146,6 @@ def validate_restoration_bonuses(bonuses: list[dict]):
             return False, f"強化済みのボーナス「{label}」が3枠以上重複することはあり得ません（最大2枠まで）。"
     return True, ""
 
-def load_equipment():
-    # Primary data load
-    df = load_data(EQUIPMENT_TABLE, required_columns=EQUIPMENT_COLUMNS)
-    
-    # FORCED PERSISTENCE: If we are midway through a session, don't return None even if handshake is flickering
 def load_equipment() -> pd.DataFrame:
     df = load_data(EQUIPMENT_TABLE, required_columns=EQUIPMENT_COLUMNS)
     if not df.empty:
@@ -204,7 +199,7 @@ def register_equipment(weapon_name: str, weapon_type: str, element: str,
 def update_equipment_skills(eq_id: str, new_series: str, new_group: str) -> bool:
     df = load_equipment()
     if df.empty: return False
-    idx = df.index[df['id'] == eq_id].tolist()
+    idx = df.index[df['id'].astype(str) == str(eq_id)].tolist()
     if not idx: return False
     df.at[idx[0], 'current_series_skill'] = new_series
     df.at[idx[0], 'current_group_skill'] = new_group
@@ -213,5 +208,5 @@ def update_equipment_skills(eq_id: str, new_series: str, new_group: str) -> bool
 def delete_equipment(eq_id: str) -> bool:
     df = load_equipment()
     if df.empty: return False
-    df = df[df['id'] != eq_id]
+    df = df[df['id'].astype(str) != str(eq_id)]
     return save_equipment(df)

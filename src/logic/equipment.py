@@ -34,7 +34,7 @@ def get_active_upgrades() -> pd.DataFrame:
 def execute_upgrade(record_id: str, decrement: int = 1) -> bool:
     df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
     if df.empty: return False
-    idx = df[df["id"] == record_id].index
+    idx = df[df["id"].astype(str) == str(record_id)].index
     if not idx.empty:
         df.loc[idx, "remaining_count"] = df.loc[idx, "remaining_count"].apply(lambda x: max(0, int(x) - decrement))
         save_data(UPGRADES_TABLE, df)
@@ -52,7 +52,7 @@ def execute_all_upgrades(decrement: int) -> bool:
 def delete_upgrade(record_id: str) -> bool:
     df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
     if df.empty: return False
-    idx = df[df["id"] == record_id].index
+    idx = df[df["id"].astype(str) == str(record_id)].index
     if not idx.empty:
         df = df.drop(idx)
         save_data(UPGRADES_TABLE, df)

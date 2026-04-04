@@ -4,6 +4,7 @@ from src.logic.equipment import get_active_upgrades, register_upgrade
 from src.logic.master import get_master_data
 from src.components.tables import render_active_upgrades
 from src.components.sidebar import render_shared_sidebar
+from src.logic.history import undo_last_action, redo_last_action
 
 st.set_page_config(page_title="スキル抽選結果", page_icon="⚔️", layout="wide")
 
@@ -47,8 +48,7 @@ with st.expander("🆕 未登録の強化抽選結果を追加する", expanded=
                 if record_id:
                     st.session_state['undo_stack'].append({'action_type': 'REGISTER', 'target_id': record_id})
                     st.session_state['redo_stack'].clear()
-                    st.success("抽選結果を登録しました！")
-                    st.success("抽選結果を登録しました！")
+                    st.toast("抽選結果を登録しました！", icon="✅")
 
 st.divider()
 

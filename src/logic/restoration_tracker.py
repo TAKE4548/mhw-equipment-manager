@@ -76,7 +76,7 @@ def delete_tracker(tracker_id: str) -> bool:
     df = load_trackers()
     if df.empty: return False
     prev_df = df.copy()
-    df = df[df["id"] != tracker_id]
+    df = df[df["id"].astype(str) != str(tracker_id)]
     if save_data(TRACKER_TABLE, df):
         record_history("DELETE", prev_df, df)
         return True
@@ -87,11 +87,11 @@ def execute_apply_and_advance(tracker_id: str) -> bool:
     trackers_df = load_trackers()
     eq_df = load_equipment()
     if trackers_df.empty or eq_df.empty: return False
-    target_tracker = trackers_df[trackers_df["id"] == tracker_id]
+    target_tracker = trackers_df[trackers_df["id"].astype(str) == str(tracker_id)]
     if target_tracker.empty: return False
     tracker_row = target_tracker.iloc[0]
     w_id = tracker_row["weapon_id"]
-    idx = eq_df.index[eq_df['id'] == w_id].tolist()
+    idx = eq_df.index[eq_df['id'].astype(str) == str(w_id)].tolist()
     if idx:
         for i in range(1, 6):
             eq_df.at[idx[0], f"rest_{i}_type"] = tracker_row[f"target_rest_{i}_type"]
