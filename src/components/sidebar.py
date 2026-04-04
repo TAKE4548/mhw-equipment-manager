@@ -1,57 +1,66 @@
 import streamlit as st
 import json
 import pandas as pd
+from streamlit_javascript import st_javascript
 from src.components.auth import render_auth_component
 from src.utils.session import init_session_state
 from src.database.storage_manager import init_memory_storage
-from streamlit_local_storage import LocalStorage
 
 def render_shared_sidebar():
     """
-    Renders a shared sidebar and handles the Global Memory Sync (Handshake).
-    This part ensures data is loaded from browser into memory once per session.
+    Ultimate JS Handshake Sidebar.
+    Directly fetches all mhw_ data from browser localStorage via JS.
     """
-    # 1. Base Session Init
     init_session_state()
     init_memory_storage()
     
-    # 2. Central LocalStorage Handler Init
-    if 'ls_handler' not in st.session_state:
-        st.session_state['ls_handler'] = LocalStorage()
+    # 1. Global JS Fetch Handshake
+    # We use a single JS call to get all MHW-related persistent data
+    js_code = """
+    (function() {
+        const items = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('mhw_')) {
+                items[key] = localStorage.getItem(key);
+            }
+        }
+        return JSON.stringify(items);
+    })()
+    """
     
-    ls = st.session_state['ls_handler']
+    # st_javascript returns the result of the JS execution
+    all_data_json = st_javascript(js_code)
     
-    # 3. Initial Boot Handshake (Browser -> Memory)
-    # We do this until all managed keys are loaded into session storage
-    managed_keys = ["weapons", "trackers", "upgrades"]
-    all_ready = True
-    
-    for key in managed_keys:
-        if key not in st.session_state['mhw_memory_storage']:
-            full_key = f"mhw_{key}"
-            val = ls.getItem(full_key)
-            
-            if val is not None:
-                # Browser responded!
-                if val == "null" or not val:
-                    st.session_state['mhw_memory_storage'][key] = pd.DataFrame()
-                else:
+    # 2. Populate Memory Storage if not already done and data arrived
+    if all_data_json and isinstance(all_data_json, str) and not st.session_state.get('mhw_boot_complete'):
+        try:
+            raw_items = json.loads(all_data_json)
+            # Map "mhw_weapons" -> "weapons"
+            for full_key, val in raw_items.items():
+                if full_key.startswith('mhw_'):
+                    short_key = full_key[4:]
                     try:
-                        # Handle both JSON string and dict return depending on component behavior
                         data = json.loads(val) if isinstance(val, str) else val
-                        st.session_state['mhw_memory_storage'][key] = pd.DataFrame(data)
+                        st.session_state['mhw_memory_storage'][short_key] = pd.DataFrame(data)
                     except:
-                        st.session_state['mhw_memory_storage'][key] = pd.DataFrame()
-            else:
-                all_ready = False # Still waiting for at least one key
-    
+                        st.session_state['mhw_memory_storage'][short_key] = pd.DataFrame()
+            
+            # Ensure managed keys exist even if not in localStorage yet
+            for k in ["weapons", "trackers", "upgrades"]:
+                if k not in st.session_state['mhw_memory_storage']:
+                    st.session_state['mhw_memory_storage'][k] = pd.DataFrame()
+                    
+            st.session_state['mhw_boot_complete'] = True
+        except:
+            pass # Wait for valid JSON
+
     with st.sidebar:
         st.header("⚙️ ストレージ設定")
         
-        # Display Loading status if not ready
-        if not all_ready and not st.session_state.get('user'):
+        # Display Loading status if boot is not complete
+        if not st.session_state.get('mhw_boot_complete') and not st.session_state.get('user'):
             st.warning("⏳ ブラウザからデータを読み込み中...")
-            # We don't stop here, we let the inner pages handle the stop if they need data
         
         # Mode display
         if "user" in st.session_state and st.session_state.user:
@@ -63,4 +72,4 @@ def render_shared_sidebar():
         render_auth_component()
         
         st.divider()
-        st.caption("MHWs Equipment Manager v3.3 (Memory-First)")
+        st.caption("MHWs Equipment Manager v4.0 (JavaScript Handshake)")

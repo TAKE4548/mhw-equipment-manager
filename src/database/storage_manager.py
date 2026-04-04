@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 from supabase import create_client, Client
+from streamlit_javascript import st_javascript
 
 # --- Configuration & Initialization ---
 
@@ -24,25 +25,18 @@ def init_memory_storage():
     """Initializes the memory storage dictionary in session state."""
     if 'mhw_memory_storage' not in st.session_state:
         st.session_state['mhw_memory_storage'] = {}
-    if 'mhw_storage_ready' not in st.session_state:
-        st.session_state['mhw_storage_ready'] = {}
 
-# --- Local Storage (Browser Background Persistence) ---
-
-def _get_ls_handler():
-    """Returns the central LocalStorage handler from session state."""
-    return st.session_state.get('ls_handler')
+# --- Local Storage (Direct JS Persistence) ---
 
 def _save_to_local_background(key: str, df: pd.DataFrame):
-    """Quietly pushes data to browser localStorage."""
-    ls = _get_ls_handler()
-    if ls is None:
-        return
-        
+    """Directly pushes data to browser localStorage via JS."""
     full_key = f"mhw_{key}"
     json_data = df.to_json(orient="records")
-    data = json.loads(json_data)
-    ls.setItem(full_key, data)
+    data_str = json_data.replace('"', '\\"') # Escape for JS string literal
+    
+    js_code = f"localStorage.setItem('{full_key}', '{data_str}')"
+    # Execute JS. This triggers a light rerun but is reliable.
+    st_javascript(js_code)
 
 # --- Cloud Storage (Supabase) ---
 
@@ -85,9 +79,9 @@ def _save_to_cloud(table: str, df: pd.DataFrame):
 
 def load_data(key: str, required_columns: list):
     """
-    Unified loader.
-    - Cloud Mode: Always fetches from Supabase.
-    - Local Mode: Primary fetch from memory cache.
+    Unified loader for Ultimate JS Handshake.
+    - Local Mode: Primary source is session_state memory cache.
+    Wait for boot_complete before returning data.
     """
     if is_logged_in():
         return _load_from_cloud(key, required_columns)
@@ -95,42 +89,37 @@ def load_data(key: str, required_columns: list):
     # --- Local (Memory-First) Mode ---
     init_memory_storage()
     
-    # Check if we have data in memory
-    if key in st.session_state['mhw_memory_storage']:
-        df = st.session_state['mhw_memory_storage'][key]
+    # Check if we have data in memory AND initial handshake is complete
+    cache = st.session_state['mhw_memory_storage']
+    if key in cache and st.session_state.get('mhw_boot_complete'):
+        df = cache[key]
     else:
-        # If not in memory, we might be in the initial 'Loading from Browser' phase
-        # The Sidebar's boot-up handshake will populate this.
-        return None  # Signal "Wait for initial boot"
+        # If not ready, we signal "Still Loading" to the UI
+        return None
         
     if df.empty:
         return pd.DataFrame(columns=required_columns)
         
-    # Ensure columns exist
+    # Column maintenance
     existing_cols = [c for c in required_columns if c in df.columns]
     df = df[existing_cols]
     for col in required_columns:
         if col not in df.columns:
             df[col] = None
-            
     return df[required_columns]
 
 def save_data(key: str, df: pd.DataFrame) -> bool:
-    """
-    Unified saver.
-    - Cloud Mode: Syncs to Supabase.
-    - Local Mode: Saves to memory instantly, then pushes to browser background.
-    """
+    """Unified saver using direct JS setItem."""
     if is_logged_in():
         return _save_to_cloud(key, df)
     
     # --- Local Mode ---
     init_memory_storage()
     
-    # Update memory immediately (Instant Feedback)
+    # 1. Update memory FIRST (Instant feedback)
     st.session_state['mhw_memory_storage'][key] = df
     
-    # Push to browser background persistence
+    # 2. Push to browser background via raw JS
     _save_to_local_background(key, df)
     return True
 
@@ -140,7 +129,6 @@ def sync_local_to_cloud():
         return
     
     tables = ["weapons", "trackers", "upgrades"] 
-    # Try to load each from memory if available, otherwise browser
     for table in tables:
         df = st.session_state.get('mhw_memory_storage', {}).get(table)
         if df is not None and not df.empty:
