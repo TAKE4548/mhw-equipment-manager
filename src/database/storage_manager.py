@@ -1,13 +1,30 @@
 import streamlit as st
 import pandas as pd
 import json
-import zlib
-import base64
 from supabase import create_client, Client
+from streamlit_cookies_manager import EncryptedCookieManager
 
 # --- Configuration ---
-COOKIE_KEY = "mhw_data"
+COOKIE_KEY = "mhw_all"
 MANAGED_TABLES = ["weapons", "trackers", "upgrades"]
+
+# --- Cookie Manager ---
+
+def make_cookie_manager() -> EncryptedCookieManager:
+    """Creates and renders the EncryptedCookieManager component.
+    Call ONCE per script run at the top level (e.g., sidebar).
+    Returns the instance for use throughout the run."""
+    return EncryptedCookieManager(
+        prefix="mhw/",
+        password=st.secrets.get("COOKIES_PASSWORD", "mhw-local-dev-default-password-2026"),
+    )
+
+def _get_cookies() -> EncryptedCookieManager:
+    """Gets the manager created this run. Raises if make_cookie_manager() wasn't called."""
+    cookies = st.session_state.get("_cookie_manager")
+    if cookies is None:
+        raise RuntimeError("make_cookie_manager() must be called before using cookies.")
+    return cookies
 
 # --- Supabase ---
 
@@ -22,18 +39,6 @@ def get_supabase_client() -> Client:
 def is_logged_in() -> bool:
     return "user" in st.session_state and st.session_state.user is not None
 
-# --- Compression helpers (fit data in ~4KB cookie) ---
-
-def _compress(data: dict) -> str:
-    json_bytes = json.dumps(data, ensure_ascii=False).encode("utf-8")
-    compressed = zlib.compress(json_bytes, level=9)
-    return base64.urlsafe_b64encode(compressed).decode("ascii")
-
-def _decompress(s: str) -> dict:
-    compressed = base64.urlsafe_b64decode(s.encode("ascii"))
-    json_bytes = zlib.decompress(compressed)
-    return json.loads(json_bytes.decode("utf-8"))
-
 # --- Memory Cache ---
 
 def init_memory_storage():
@@ -42,57 +47,55 @@ def init_memory_storage():
     if "mhw_ready" not in st.session_state:
         st.session_state["mhw_ready"] = False
 
-# --- Boot: Read from cookie via st.context.cookies (INSTANT) ---
+# --- Boot: Read from cookie ---
 
-def boot_from_browser():
-    """Read cookies from HTTP request headers. Zero latency, no component needed."""
+def boot_from_browser(cookies: EncryptedCookieManager) -> bool:
+    """Reads persisted data from browser cookies into memory.
+    Requires a ready() EncryptedCookieManager instance."""
     init_memory_storage()
     if st.session_state["mhw_ready"]:
         return True
 
     try:
-        raw = st.context.cookies.get(COOKIE_KEY)
+        raw = cookies.get(COOKIE_KEY)
         if raw:
-            data = _decompress(raw)
+            data = json.loads(raw)
             for t in MANAGED_TABLES:
                 records = data.get(t, [])
                 st.session_state["mhw_data"][t] = pd.DataFrame(records) if records else pd.DataFrame()
     except Exception:
-        pass  # corrupt/missing cookie → start fresh
+        pass  # Fresh start on error
 
     st.session_state["mhw_ready"] = True
     return True
 
-# --- Persist: Write cookie via st.html (NO iframe, NO component) ---
+# --- Persist: Write to cookie ---
 
-def persist_to_browser():
-    """Write all data to a browser cookie using st.html().
-    st.html() renders JavaScript directly in the page (not an iframe),
-    so document.cookie works on the actual page origin."""
+def persist_to_browser(cookies: EncryptedCookieManager) -> bool:
+    """Writes memory data back to the browser cookie."""
+    if not cookies.ready():
+        return False
+
     data = {}
     for t in MANAGED_TABLES:
         df = st.session_state.get("mhw_data", {}).get(t, pd.DataFrame())
         data[t] = json.loads(df.to_json(orient="records")) if not df.empty else []
 
-    compressed = _compress(data)
-    # Use st.html to inject a script tag directly into the page
-    js = f"""<script>
-document.cookie = "{COOKIE_KEY}={compressed}; path=/; max-age=2592000; SameSite=Lax";
-</script>"""
-    st.html(js)
+    try:
+        json_str = json.dumps(data, ensure_ascii=False)
+        cookies[COOKIE_KEY] = json_str
+        cookies.save()
+    except Exception as e:
+        st.error(f"Cookie 保存に失敗しました: {e}")
+        return False
+    return True
 
-# --- Debug ---
+# --- Usage Monitoring ---
 
-def get_debug_info() -> dict:
-    raw_cookie = st.context.cookies.get(COOKIE_KEY, "")
-    return {
-        "cookie_exists": bool(raw_cookie),
-        "cookie_size_bytes": len(raw_cookie.encode()) if raw_cookie else 0,
-        "mhw_ready": st.session_state.get("mhw_ready", False),
-        "weapons_count": len(st.session_state.get("mhw_data", {}).get("weapons", pd.DataFrame())),
-        "trackers_count": len(st.session_state.get("mhw_data", {}).get("trackers", pd.DataFrame())),
-        "upgrades_count": len(st.session_state.get("mhw_data", {}).get("upgrades", pd.DataFrame())),
-    }
+def get_cookie_usage_bytes(cookies: EncryptedCookieManager) -> int:
+    """Returns the size of the current cookie data in bytes."""
+    raw = cookies.get(COOKIE_KEY, "")
+    return len(raw.encode("utf-8")) if raw else 0
 
 # --- Cloud Storage (Supabase) ---
 
@@ -143,7 +146,10 @@ def save_data(key: str, df: pd.DataFrame) -> bool:
         return _save_to_cloud(key, df)
     init_memory_storage()
     st.session_state["mhw_data"][key] = df
-    persist_to_browser()
+    # Get the manager created this run by sidebar
+    cookies = st.session_state.get("_cookie_manager")
+    if cookies and cookies.ready():
+        persist_to_browser(cookies)
     return True
 
 def sync_local_to_cloud():
