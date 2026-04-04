@@ -144,6 +144,11 @@ st.divider()
 st.subheader("トラッキング中の抽選結果 (残り回数順)")
 tracker_df = load_trackers()
 
+# --- Loading Guard ---
+if tracker_df is None or eq_df is None:
+    st.spinner("ブラウザからデータを読み込み中...")
+    st.stop()
+
 if tracker_df.empty:
     st.info("トラッキング中の強化抽選結果はありません。")
 else:

@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 from supabase import create_client, Client
-from streamlit_javascript import st_javascript
+from streamlit_local_storage import LocalStorage
 
 # --- Configuration & Initialization ---
 
@@ -13,35 +13,86 @@ def get_supabase_client() -> Client:
         key = st.secrets["connections"]["supabase"]["key"]
         return create_client(url, key)
     except Exception as e:
-        # Fallback if secrets are not set yet
         return None
 
 def is_logged_in() -> bool:
     """Checks if a user is currently logged in via Supabase."""
     return "user" in st.session_state and st.session_state.user is not None
 
-# --- Local Storage (Browser) ---
+# --- Local Storage (Browser) Consistency ---
+
+def _get_ls_handler():
+    """Initializes the LocalStorage handler."""
+    return LocalStorage()
+
+def is_storage_ready(key: str) -> bool:
+    """Checks if the local storage has successfully communicated with the browser."""
+    # If logged in, we use Supabase (always ready through st.connection or simple API)
+    if is_logged_in():
+        return True
+        
+    full_key = f"mhw_{key}"
+    ready_key = f"ready_{full_key}"
+    
+    # Initialize session state for this key
+    if ready_key not in st.session_state:
+        st.session_state[ready_key] = False
+    
+    # Try to fetch from browser
+    ls = _get_ls_handler()
+    result = ls.getItem(full_key)
+    
+    # If we get anything (even 'null' string or empty list), browser has responded
+    if result is not None:
+        st.session_state[ready_key] = True
+        st.session_state[f"cache_{full_key}"] = result
+        return True
+    
+    # If result is None, check if we were already ready from a previous run in this session
+    return st.session_state[ready_key]
+
+# --- Local Storage (Browser) Operations ---
 
 def _load_from_local(key: str) -> pd.DataFrame:
-    """Reads data from browser localStorage using JavaScript."""
-    js_code = f"localStorage.getItem('mhw_{key}')"
-    result = st_javascript(js_code)
+    """Reads data from browser localStorage with a 'Ready' check."""
+    full_key = f"mhw_{key}"
     
-    if result and result != "null":
+    if not is_storage_ready(key):
+        # We return a special signal to indicate 'Waiting for browser'
+        return None 
+        
+    # At this point, we know storage is ready and cache is populated
+    final_val = st.session_state.get(f"cache_{full_key}")
+    
+    if final_val and final_val != "null":
         try:
-            data = json.loads(result)
+            if isinstance(final_val, str):
+                data = json.loads(final_val)
+            else:
+                data = final_val
             return pd.DataFrame(data)
         except Exception as e:
             print(f"Error parsing local storage for {key}: {e}")
+            
     return pd.DataFrame()
 
 def _save_to_local(key: str, df: pd.DataFrame):
-    """Writes data to browser localStorage using JavaScript."""
+    """Writes data to browser localStorage only if we have successfully loaded it once."""
+    if not is_storage_ready(key):
+        # PROTECT: Do not save if we haven't confirmed current browser state yet.
+        # This prevents overwriting existing data with an empty set on first load.
+        return False
+
+    full_key = f"mhw_{key}"
     json_data = df.to_json(orient="records")
-    # Escape single quotes for JS
-    json_data_escaped = json_data.replace("'", "\\'")
-    js_code = f"localStorage.setItem('mhw_{key}', '{json_data_escaped}')"
-    st_javascript(js_code)
+    data = json.loads(json_data)
+    
+    ls = _get_ls_handler()
+    ls.setItem(full_key, data)
+    
+    # Update cache immediately
+    st.session_state[f"cache_{full_key}"] = data
+    return True
 
 # --- Cloud Storage (Supabase) ---
 
@@ -69,15 +120,12 @@ def _save_to_cloud(table: str, df: pd.DataFrame):
         return False
     
     user_id = st.session_state.user.id
-    # Add user_id to all rows
     df_to_save = df.copy()
     df_to_save["user_id"] = user_id
     
-    # Convert DataFrame to list of dicts
     data = df_to_save.to_dict(orient="records")
     
     try:
-        # Supabase upsert requires a unique constraint (usually 'id')
         client.table(table).upsert(data).execute()
         return True
     except Exception as e:
@@ -86,14 +134,19 @@ def _save_to_cloud(table: str, df: pd.DataFrame):
 
 # --- Unified Interface ---
 
-def load_data(key: str, required_columns: list) -> pd.DataFrame:
-    """Unified loader that switches between Local and Cloud."""
+def load_data(key: str, required_columns: list):
+    """
+    Unified loader. 
+    RETURNS: pd.DataFrame if ready, or None if still loading from browser.
+    """
     if is_logged_in():
         df = _load_from_cloud(key, required_columns)
     else:
         df = _load_from_local(key)
     
-    # Ensure columns exist and cleanup
+    if df is None:
+        return None # Signal 'Still loading'
+        
     if df.empty:
         return pd.DataFrame(columns=required_columns)
     
@@ -107,23 +160,22 @@ def load_data(key: str, required_columns: list) -> pd.DataFrame:
     return df[required_columns]
 
 def save_data(key: str, df: pd.DataFrame) -> bool:
-    """Unified saver that switches between Local and Cloud."""
+    """Unified saver."""
     if is_logged_in():
         return _save_to_cloud(key, df)
     else:
-        _save_to_local(key, df)
-        return True
+        return _save_to_local(key, df)
 
 def sync_local_to_cloud():
     """Pushes any data found in localStorage to Supabase after login."""
     if not is_logged_in():
         return
     
-    tables = ["weapons", "trackers"] # These match our GSheets names for now
+    tables = ["weapons", "trackers", "upgrades"] 
     for table in tables:
+        # Note: We skip the ready check here because we are logged in, 
+        # but we need to ensure local storage was AT LEAST once read.
         local_df = _load_from_local(table)
-        if not local_df.empty:
+        if local_df is not None and not local_df.empty:
             if _save_to_cloud(table, local_df):
-                # Optionally clear local storage after successful sync
-                # st_javascript(f"localStorage.removeItem('mhw_{table}')")
                 pass

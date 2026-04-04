@@ -1,11 +1,15 @@
 import streamlit as st
 from src.components.auth import render_auth_component
 from src.utils.session import init_session_state
+from streamlit_local_storage import LocalStorage
 
 def render_shared_sidebar():
     """Renders a shared sidebar with Hybrid Storage (Local/Cloud) management."""
-    # Ensure session state is always initialized on every page rerun
+    # Ensure session state is always initialized
     init_session_state()
+    
+    # Initialize LocalStorage component (must be rendered in the UI)
+    ls = LocalStorage()
     
     with st.sidebar:
         st.header("⚙️ ストレージ設定")
@@ -20,4 +24,4 @@ def render_shared_sidebar():
         render_auth_component()
         
         st.divider()
-        st.caption("MHWs Equipment Manager v3.0 (Hybrid Storage)")
+        st.caption("MHWs Equipment Manager v3.1 (Sync Stable)")

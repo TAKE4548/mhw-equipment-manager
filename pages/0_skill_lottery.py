@@ -69,4 +69,8 @@ with h_col2:
 
 # --- Main Dashboard List ---
 df = get_active_upgrades()
+if df is None:
+    st.spinner("ブラウザからデータを読み込み中...")
+    st.stop()
+
 render_active_upgrades(df)
