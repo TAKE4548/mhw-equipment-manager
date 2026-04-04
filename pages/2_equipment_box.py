@@ -168,7 +168,12 @@ else:
             from src.logic.equipment_box import format_bonus_list
             cols[4].markdown(f"<small>🛠️ {format_bonus_list(pbs)}<br>✨ {format_bonus_list(rbs_with_lv)}</small>", unsafe_allow_html=True)
             
-            # 6. Action
-            if cols[5].button("🗑️", key=f"del_{row['id']}", use_container_width=True):
+            # 6. Actions
+            ac1, ac2 = cols[5].columns(2)
+            if ac1.button("🎯", key=f"tr_{row['id']}", use_container_width=True, help="この武器の強化厳選登録へ"):
+                st.session_state.tracker_reg_w_id = row['id']
+                st.switch_page("pages/3_reinforcement_registration.py")
+                
+            if ac2.button("🗑️", key=f"del_{row['id']}", use_container_width=True):
                 delete_equipment(row['id'])
                 st.rerun()

@@ -63,3 +63,16 @@ def execute_all_upgrades(decrement: int) -> bool:
     
     save_data(df)
     return True
+
+def delete_upgrade(record_id: int) -> bool:
+    """Removes a specific upgrade record from Google Sheets."""
+    df = load_data()
+    if df.empty:
+        return False
+    
+    idx = df[df["id"] == record_id].index
+    if not idx.empty:
+        df = df.drop(idx)
+        save_data(df)
+        return True
+    return False
