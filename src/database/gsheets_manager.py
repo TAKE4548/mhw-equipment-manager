@@ -5,19 +5,16 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 def normalize_gsheet_url(url: str) -> str:
-    """Removes common suffixes like /edit, /view, etc. from Google Sheet URLs to avoid 400 errors."""
+    """Standardizes Google Sheet URLs to include the /edit suffix for best library compatibility."""
     if not url:
         return ""
     
-    # Standardize the base URL: https://docs.google.com/spreadsheets/d/ID
-    parts = url.split('/')
-    if 'spreadsheets' in parts and 'd' in parts:
-        d_idx = parts.index('d')
-        if len(parts) > d_idx + 1:
-            # Reconstruct up to /d/SPREADSHEET_ID
-            return '/'.join(parts[:d_idx+2])
+    if '/spreadsheets/d/' in url:
+        # Extract base and append /edit, removing any view/edit suffixes or query params
+        base = url.split('/edit')[0].split('/view')[0].split('?')[0].split('#')[0]
+        return base.rstrip('/') + '/edit'
             
-    return url # Return as-is if pattern doesn't match
+    return url
 
 def get_gsheets_connection():
     """Returns a GSheets connection if a URL is provided in session state."""
@@ -88,9 +85,11 @@ def load_data(worksheet=0, required_columns=None):
             if "No columns to parse" in err_msg or "WorksheetNotFound" in err_msg:
                 return pd.DataFrame(columns=required_columns)
             
-            # Diagnose 400 Bad Request
+            # Diagnose 400/404 errors
             if "400" in err_msg:
-                st.error(f"❌ **Google Sheets API エラー (400 Bad Request)**\n\nURL または ワークシート名「{worksheet}」が正しく解釈されていません。\n\n- **解決策**: スプレッドシート名に特殊文字が含まれていないか確認し、かつ Service Account が「編集者（Editor）」として共有されているか確認してください。")
+                st.error(f"❌ **Google Sheets API エラー (400 Bad Request)**\n\nURL または ワークシート名「{worksheet}」が正しく解釈されていません。スプレッドシートが正しく認識されているか確認してください。")
+            elif "404" in err_msg:
+                st.error(f"❌ **Google Sheets API エラー (404 Not Found)**\n\n指定されたスプレッドシートが見つかりません。以下の点をご確認ください。\n\n1.  **URLの確認**: 入力したURLが正しいか確認してください。\n2.  **共有設定の確認**: Service Accountのメールアドレス（Secrets 参照）が、スプレッドシートに対して「編集者 (Editor)」として共有されている必要があります。\n3.  **シート名の確認**: スプレッドシート内に「{worksheet}」という名称のタブが存在するか確認してください。")
             else:
                 st.error(f"Error reading from Google Sheets (worksheet: {worksheet}): {repr(e)}")
             return pd.DataFrame(columns=required_columns)
