@@ -86,7 +86,7 @@ def boot_from_browser():
 # --- Persist: Write to cookie via CookieController ---
 
 def persist_to_browser():
-    """Writes all in-memory data to a single browser cookie (compressed)."""
+    """Writes all in-memory data to a single browser cookie (compressed, 30-day expiry)."""
     ctrl = _get_controller()
     data = {}
     for t in MANAGED_TABLES:
@@ -94,9 +94,22 @@ def persist_to_browser():
         data[t] = json.loads(df.to_json(orient="records")) if not df.empty else []
     try:
         compressed = _compress(data)
-        ctrl.set(COOKIE_KEY, compressed)
+        # max_age: 30 days in seconds — must be explicit or cookie is session-scoped and wiped on reload
+        ctrl.set(COOKIE_KEY, compressed, max_age=2592000)
     except Exception as e:
         st.warning(f"⚠️ 保存エラー: {e}")
+
+def get_debug_info() -> dict:
+    """Returns debug info about current storage state."""
+    raw_cookie = st.context.cookies.get(COOKIE_KEY, "")
+    return {
+        "cookie_exists": bool(raw_cookie),
+        "cookie_size_bytes": len(raw_cookie.encode()) if raw_cookie else 0,
+        "mhw_ready": st.session_state.get("mhw_ready", False),
+        "weapons_count": len(st.session_state.get("mhw_data", {}).get("weapons", pd.DataFrame())),
+        "trackers_count": len(st.session_state.get("mhw_data", {}).get("trackers", pd.DataFrame())),
+        "upgrades_count": len(st.session_state.get("mhw_data", {}).get("upgrades", pd.DataFrame())),
+    }
 
 # --- Cloud Storage (Supabase) ---
 
