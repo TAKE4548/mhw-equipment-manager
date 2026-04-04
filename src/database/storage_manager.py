@@ -129,24 +129,42 @@ def _load_from_cloud(table: str, required_columns: list) -> pd.DataFrame:
     if not client or not is_logged_in():
         return pd.DataFrame(columns=required_columns)
     try:
+        # Select specifically the columns we need (+ user_id for management)
         response = client.table(table).select("*").eq("user_id", st.session_state.user.id).execute()
         df = pd.DataFrame(response.data)
-        return df if not df.empty else pd.DataFrame(columns=required_columns)
+        if df.empty:
+            return pd.DataFrame(columns=required_columns)
+            
+        # Ensure all required columns are present
+        for col in required_columns:
+            if col not in df.columns:
+                df[col] = None
+        return df[required_columns] # Strict column ordering
     except Exception as e:
-        st.error(f"Cloud load error: {e}")
+        st.error(f"Cloud load error (table: {table}): {e}")
         return pd.DataFrame(columns=required_columns)
 
 def _save_to_cloud(table: str, df: pd.DataFrame) -> bool:
     client = get_supabase_client()
     if not client or not is_logged_in():
         return False
+    
+    if df.empty:
+        # If we want to support deleting all data in cloud, we might call a delete.
+        # For now, let's just return True.
+        return True
+        
     df_save = df.copy()
     df_save["user_id"] = st.session_state.user.id
+    
     try:
-        client.table(table).upsert(df_save.to_dict(orient="records")).execute()
+        # Perform upsert based on 'id' if present, otherwise insert
+        # We assume the tables have 'id' as primary key as defined in supabase_setup.sql
+        data_to_save = df_save.to_dict(orient="records")
+        client.table(table).upsert(data_to_save).execute()
         return True
     except Exception as e:
-        st.error(f"Cloud save error: {e}")
+        st.error(f"Cloud save error (table: {table}): {e}")
         return False
 
 # --- Unified Interface ---
@@ -175,9 +193,22 @@ def save_data(key: str, df: pd.DataFrame) -> bool:
     return True
 
 def sync_local_to_cloud():
+    """Migrates local session data to cloud after login.
+    Currently overwrites cloud data with local data for managed tables."""
     if not is_logged_in():
         return
+        
+    progress_text = st.empty()
+    progress_text.info("🔃 ローカルデータをクラウドに同期中...")
+    
+    success_count = 0
     for table in MANAGED_TABLES:
         df = st.session_state.get("mhw_data", {}).get(table, pd.DataFrame())
         if not df.empty:
-            _save_to_cloud(table, df)
+            if _save_to_cloud(table, df):
+                success_count += 1
+                
+    if success_count > 0:
+        progress_text.success(f"✅ {success_count} 個のテーブルをクラウドに同期しました。")
+    else:
+        progress_text.empty()
