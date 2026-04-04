@@ -29,9 +29,9 @@ if not st.session_state.get('gsheet_url'):
     st.info("👋 **Setup Required**: Please paste your Google Sheet URL in the Home page sidebar.")
     st.stop()
 
-# Badge CSS helper
+# Helper for badges
 def get_badge_html(text, bgcolor="#444", color="white"):
-    return f'<span style="background-color: {bgcolor}; color: {color}; padding: 1px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; margin-right: 8px; display: inline-block;">{text}</span>'
+    return f'<span style="background-color: {bgcolor}; color: {color}; padding: 1px 10px; border-radius: 4px; font-size: 0.8em; font-weight: bold; display: inline-block; min-width: 45px; text-align: center;">{text}</span>'
 
 # --- Header ---
 st.title("Restoration Bonus Tracker ✨")
@@ -119,33 +119,40 @@ else:
         rem = row['remaining_count']
         
         with st.container(border=True):
-            # Slim row layout
-            c1, c2, c3 = st.columns([1, 6, 2], vertical_alignment="center")
-            with c1:
-                # Square count badge
-                col_c = "#ff4b4b" if rem <= 1 else ("#f39c12" if rem < 5 else "#27ae60")
-                st.markdown(f"<div style='text-align:center; background:{col_c}22; border-radius:4px; padding:4px;'><p style='margin:0; font-size:0.7em;'>AFTER</p><h3 style='margin:0; color:{col_c};'>{rem}</h3></div>", unsafe_allow_html=True)
-            with c2:
-                elem = w_row['element']
-                bg = ATTRIBUTE_COLORS.get(elem, "#444")
-                txt_c = "black" if elem in ["氷", "雷", "無", "睡眠"] else "white"
-                badge_html = get_badge_html(f"{w_row['weapon_type']} | {elem}", bgcolor=bg, color=txt_c)
-                
-                target_rbs_list = []
-                for i in range(1, 6):
-                    rt = row.get(f'target_rest_{i}_type', 'なし')
-                    rl = row.get(f'target_rest_{i}_level', 'なし')
-                    if rt != 'なし':
-                        suffix = rl if rl and rl != "無印" else ""
-                        target_rbs_list.append(f"{rt}{suffix}")
-                
-                name_str = f"**{w_row['weapon_name']}**" if w_row['weapon_name'] and not w_row['weapon_name'].startswith("無銘の") else f"**{w_row['weapon_type']}**"
-                st.markdown(f"{badge_html} {name_str} &nbsp; ✨ **目標**: {format_bonus_summary(target_rbs_list)}", unsafe_allow_html=True)
-            with c3:
-                sc1, sc2 = st.columns(2)
-                with sc1:
-                    if st.button(f"適用🎁", key=f"ap_{row['id']}", use_container_width=True, type="primary"):
-                        if execute_apply_and_advance(row['id']): st.rerun()
-                with sc2:
-                    if st.button("🗑️", key=f"dl_{row['id']}", use_container_width=True):
-                        if delete_tracker(row['id']): st.rerun()
+            cols = st.columns([0.6, 0.6, 1.4, 4.0, 1.2], vertical_alignment="center")
+            
+            # 1. Remaining Count
+            col_c = "#ff4b4b" if rem <= 1 else ("#f39c12" if rem < 5 else "#27ae60")
+            cols[0].markdown(f"<div style='text-align:center; background:{col_c}22; border-radius:4px; padding:2px;'><small style='color:{col_c};'><b>{rem}</b>回</small></div>", unsafe_allow_html=True)
+            
+            # 2. Badge (Element Only)
+            elem = w_row['element']
+            bg = ATTRIBUTE_COLORS.get(elem, "#444")
+            txt_c = "black" if elem in ["氷", "雷", "無", "睡眠"] else "white"
+            badge_html = get_badge_html(elem, bgcolor=bg, color=txt_c)
+            cols[1].markdown(badge_html, unsafe_allow_html=True)
+            
+            # 3. Name
+            name_str = f"**{w_row['weapon_name']}**" if w_row['weapon_name'] and not w_row['weapon_name'].startswith("無銘の") else f"**{w_row['weapon_type']}**"
+            cols[2].markdown(name_str)
+            
+            # 4. Target
+            target_rbs_list = []
+            for i in range(1, 6):
+                rt = row.get(f'target_rest_{i}_type', 'なし')
+                rl = row.get(f'target_rest_{i}_level', 'なし')
+                if rt != 'なし':
+                    suffix = rl if rl and rl != "無印" else ""
+                    target_rbs_list.append(f"{rt}{suffix}")
+                else:
+                    target_rbs_list.append("なし")
+            
+            from src.logic.equipment_box import format_bonus_list
+            cols[3].markdown(f"✨ <small>{format_bonus_list(target_rbs_list)}</small>", unsafe_allow_html=True)
+            
+            # 5. Actions
+            ac1, ac2 = cols[4].columns(2)
+            if ac1.button("🎁", key=f"ap_{row['id']}", use_container_width=True):
+                if execute_apply_and_advance(row['id']): st.rerun()
+            if ac2.button("🗑️", key=f"dl_{row['id']}", use_container_width=True):
+                if delete_tracker(row['id']): st.rerun()

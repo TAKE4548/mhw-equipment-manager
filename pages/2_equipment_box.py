@@ -124,45 +124,51 @@ df = load_equipment()
 
 # Badge CSS helper
 def get_badge_html(text, bgcolor="#444", color="white"):
-    return f'<span style="background-color: {bgcolor}; color: {color}; padding: 1px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; margin-right: 8px; display: inline-block;">{text}</span>'
+    return f'<span style="background-color: {bgcolor}; color: {color}; padding: 1px 10px; border-radius: 4px; font-size: 0.8em; font-weight: bold; display: inline-block; min-width: 45px; text-align: center;">{text}</span>'
 
 if df.empty:
     st.info("登録されている武器がありません。")
 else:
     for index, row in df.iterrows():
         with st.container(border=True):
-            # Row 1: Header + Enhancement
-            h_col1, h_col2 = st.columns([7, 1])
-            with h_col1:
-                elem = row['element']
-                bg = ATTRIBUTE_COLORS.get(elem, "#444")
-                txt_c = "black" if elem in ["氷", "雷", "無", "睡眠"] else "white"
-                badge_html = get_badge_html(f"{row['weapon_type']} | {elem}", bgcolor=bg, color=txt_c)
-                
-                display_name = row['weapon_name']
-                is_named = display_name and not display_name.startswith("無銘の")
-                
-                enh_html = f"<span style='color: #aaa; font-size: 0.9em; margin-left: 10px;'>📋 <b>{row['enhancement_type']}</b></span>"
-                st.markdown(f"{badge_html} **{display_name if is_named else row['weapon_type']}** {enh_html}", unsafe_allow_html=True)
-            with h_col2:
-                if st.button("削除🗑️", key=f"del_{row['id']}", use_container_width=True):
-                    delete_equipment(row['id'])
-                    st.rerun()
+            # 6 columns for a clean table-like row
+            cols = st.columns([0.6, 1.8, 1.2, 2.0, 2.5, 0.4], vertical_alignment="center")
             
-            # Row 2 (Slim): Skills and Bonuses on one line
-            s_col1, s_col2 = st.columns([1, 1])
-            with s_col1:
-                st.markdown(f"<small>🛡️ {row['current_series_skill']} &nbsp; | &nbsp; 👥 {row['current_group_skill']}</small>", unsafe_allow_html=True)
-            with s_col2:
-                # Summary of Bonuses
-                pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
-                rbs_list = []
-                for i in range(1, 6):
-                    rt = row.get(f'rest_{i}_type', 'なし')
-                    rl = row.get(f'rest_{i}_level', 'なし')
-                    if rt != 'なし':
-                        suffix = rl if rl and rl != "無印" else ""
-                        rbs_list.append(f"{rt}{suffix}")
-                
-                bonus_str = f"🛠️ {format_bonus_summary(pbs)} | ✨ {format_bonus_summary(rbs_list)}"
-                st.markdown(f"<p style='text-align: right; margin:0;'><small>{bonus_str}</small></p>", unsafe_allow_html=True)
+            # 1. Attribute Badge (Element Only)
+            elem = row['element']
+            bg = ATTRIBUTE_COLORS.get(elem, "#444")
+            txt_c = "black" if elem in ["氷", "雷", "無", "睡眠"] else "white"
+            badge_html = get_badge_html(elem, bgcolor=bg, color=txt_c)
+            cols[0].markdown(badge_html, unsafe_allow_html=True)
+            
+            # 2. Name / Type
+            display_name = row['weapon_name']
+            is_named = display_name and not display_name.startswith("無銘の")
+            cols[1].markdown(f"**{display_name if is_named else row['weapon_type']}**")
+            
+            # 3. Enhancement
+            cols[2].markdown(f"<small>📋 {row['enhancement_type']}</small>", unsafe_allow_html=True)
+            
+            # 4. Skills (Stacked)
+            cols[3].markdown(f"<small>🛡️ {row['current_series_skill']}<br>👥 {row['current_group_skill']}</small>", unsafe_allow_html=True)
+            
+            # 5. Bonuses (Stacked)
+            pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
+            
+            rbs_with_lv = []
+            for i in range(1, 6):
+                rt = row.get(f'rest_{i}_type', 'なし')
+                rl = row.get(f'rest_{i}_level', 'なし')
+                if rt != 'なし':
+                    suffix = rl if rl and rl != "無印" else ""
+                    rbs_with_lv.append(f"{rt}{suffix}")
+                else:
+                    rbs_with_lv.append("なし")
+            
+            from src.logic.equipment_box import format_bonus_list
+            cols[4].markdown(f"<small>🛠️ {format_bonus_list(pbs)}<br>✨ {format_bonus_list(rbs_with_lv)}</small>", unsafe_allow_html=True)
+            
+            # 6. Action
+            if cols[5].button("🗑️", key=f"del_{row['id']}", use_container_width=True):
+                delete_equipment(row['id'])
+                st.rerun()

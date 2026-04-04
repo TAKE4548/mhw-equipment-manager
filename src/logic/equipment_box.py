@@ -66,31 +66,44 @@ def normalize_bonus(b_type, b_level=None, is_restoration=False):
     
     return nt, nl
 
+def get_abbr_item(item: str) -> str:
+    """Helper to apply abbreviation to a single item name + level string."""
+    if not item or item == "なし":
+        return "なし"
+    
+    # First, handle the level part if it's a numeric suffix like '1', '2', '3'
+    # By mapping it to Roman numerals
+    res = item
+    for old, new in NORM_LV_MAP.items():
+        if item.endswith(old) and old.isdigit():
+            res = item[:-len(old)] + new
+            break
+
+    for full, short in ABBR_MAP.items():
+        if res.startswith(full):
+            return f"{short}{res[len(full):]}"
+    return res
+
 def format_bonus_summary(items: list[str]) -> str:
-    """Converts a list of bonus strings like ['基礎攻撃力強化Ⅰ', '基礎攻撃力強化Ⅰ'] to '攻撃Ⅰx2'."""
+    """Converts a list of bonus strings using aggregation (e.g., '攻撃Ⅰx2')."""
     items = [i for i in items if i and i != "なし"]
     if not items:
         return "なし"
     
-    # Apply abbreviations to items first
-    abbr_items = []
-    for item in items:
-        # If it has a level suffix (e.g., Ⅰ, Ⅱ, Ⅲ, EX), protect it
-        found_abbr = False
-        for full, short in ABBR_MAP.items():
-            if item.startswith(full):
-                suffix = item[len(full):]
-                abbr_items.append(f"{short}{suffix}")
-                found_abbr = True
-                break
-        if not found_abbr:
-            abbr_items.append(item)
-
+    abbr_items = [get_abbr_item(i) for i in items]
     counts = Counter(abbr_items)
     parts = []
+    # Sort for consistent comparison
     for item in sorted(counts.keys()):
         parts.append(f"{item}x{counts[item]}")
     return "、".join(parts)
+
+def format_bonus_list(items: list[str], separator=" | ") -> str:
+    """Converts a list of bonus strings to a flat list (e.g., '攻撃 | 攻撃 | なし')."""
+    if not items:
+        return "なし"
+    abbr_items = [get_abbr_item(i) for i in items]
+    return separator.join(abbr_items)
 
 # --- UI & Styling Helpers ---
 
