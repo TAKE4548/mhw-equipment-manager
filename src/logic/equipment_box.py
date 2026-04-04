@@ -1,6 +1,7 @@
 import pandas as pd
 import uuid
 import streamlit as st
+from collections import Counter
 from src.database.gsheets_manager import load_data, save_data
 
 EQUIPMENT_WORKSHEET = "EquipmentBox"
@@ -16,30 +17,133 @@ EQUIPMENT_COLUMNS = [
     "rest_5_type", "rest_5_level"
 ]
 
+# --- Normalization & Labeling Helpers ---
+
+NORM_TYPE_MAP = {
+    # Production
+    "基礎攻撃": "基礎攻撃力増強",
+    "会心": "会心率増強",
+    # Restoration
+    "属性": "属性強化",
+    "切れ味(近接)": "切れ味強化",
+    "装填数(遠隔)": "装填強化"
+}
+# Special case for restoration types that shared the same old name as production
+# We'll detect if it's a restoration field by its column name or context.
+REST_TYPE_MAP = {
+    "基礎攻撃": "基礎攻撃力強化",
+    "会心": "会心率強化"
+}
+
+NORM_LV_MAP = {
+    "1": "Ⅰ",
+    "2": "Ⅱ",
+    "3": "Ⅲ",
+    "無印": "無印",
+    "EX": "EX",
+    "なし": "なし"
+}
+
+def normalize_bonus(b_type, b_level=None, is_restoration=False):
+    """Maps old terminology to new labels."""
+    nt = b_type
+    if is_restoration and b_type in REST_TYPE_MAP:
+        nt = REST_TYPE_MAP[b_type]
+    else:
+        nt = NORM_TYPE_MAP.get(b_type, b_type)
+        
+    nl = b_level
+    if b_level:
+        nl = NORM_LV_MAP.get(str(b_level), b_level)
+    
+    return nt, nl
+
+def format_bonus_summary(items: list[str]) -> str:
+    """Converts a list of bonus strings like ['攻撃Ⅰ', '攻撃Ⅰ'] to '攻撃Ⅰx2'."""
+    items = [i for i in items if i and i != "なし"]
+    if not items:
+        return "なし"
+    counts = Counter(items)
+    # Maintain some order? Sort by standard priority if needed, but alphabetical is fine
+    parts = []
+    for item in sorted(counts.keys()):
+        parts.append(f"{item}x{counts[item]}")
+    return "、".join(parts)
+
+def get_weapon_label(row) -> str:
+    """Generates a detailed summary label for the weapon."""
+    w_type = row.get("weapon_type", "")
+    element = row.get("element", "")
+    enhancement = row.get("enhancement_type", "なし")
+    if enhancement == "なし": enhancement = ""
+    
+    # Process Production Bonuses
+    pbs = []
+    for i in range(1, 4):
+        val = row.get(f"p_bonus_{i}", "なし")
+        if val != "なし":
+            norm_t, _ = normalize_bonus(val)
+            pbs.append(norm_t)
+    pb_str = format_bonus_summary(pbs)
+    
+    # Process Restoration Bonuses
+    rbs = []
+    for i in range(1, 6):
+        rt = row.get(f"rest_{i}_type", "なし")
+        rl = row.get(f"rest_{i}_level", "なし")
+        if rt != "なし":
+            nt, nl = normalize_bonus(rt, rl, is_restoration=True)
+            # Level "無印" is not displayed as suffix
+            suffix = nl if nl and nl != "無印" else ""
+            rbs.append(f"{nt}{suffix}")
+    rb_str = format_bonus_summary(rbs)
+    
+    series = row.get("current_series_skill", "なし")
+    group = row.get("current_group_skill", "なし")
+    
+    # Combine
+    parts = [w_type, element, enhancement, pb_str, rb_str, series, group]
+    return " ".join([p for p in parts if p and p != "なし"])
+
+# --- Core Logic ---
+
 def validate_restoration_bonuses(bonuses: list[dict]) -> tuple[bool, str]:
     """
-    Validates that exact Type+Level combination does not exceed 2, EXCEPT for unenhanced levels (1 or 無印)
-    which can take up to 5 slots.
+    Validates duplicates. Unenhanced (Ⅰ or 無印) can be up to 5. Enhanced max 2.
     """
     type_level_counts = {}
     for b in bonuses:
         b_type = b.get("type", "なし")
-        b_level = str(b.get("level", "なし"))
+        # Normalize incoming validation data if it's old (though usually UI sends new)
+        b_type, b_level = normalize_bonus(b_type, b.get("level", "なし"), is_restoration=True)
         
         if b_type != "なし":
             tl_key = f"{b_type} [{b_level}]"
             type_level_counts[tl_key] = type_level_counts.get(tl_key, 0) + 1
             
-            # 初期レベル（レベル1 または 無印）は3枠以上の重複が存在し得るためスルー
-            if b_level in ["1", "無印"]:
+            if b_level in ["Ⅰ", "1", "無印"]: # Allow 1 for compat
                 continue
                 
             if type_level_counts[tl_key] > 2:
-                return False, f"強化済みのボーナス「{tl_key}」が3枠以上重複することはシステム上あり得ません（最大2枠まで）。"
+                return False, f"強化済みのボーナス「{tl_key}」が3枠以上重複することはあり得ません（最大2枠まで）。"
     return True, ""
 
 def load_equipment() -> pd.DataFrame:
     df = load_data(worksheet=EQUIPMENT_WORKSHEET, required_columns=EQUIPMENT_COLUMNS)
+    # Apply normalization to the dataframe for consistency in UI
+    if not df.empty:
+        for idx, row in df.iterrows():
+            # Normalize Production
+            for i in range(1, 4):
+                col = f"p_bonus_{i}"
+                t, _ = normalize_bonus(row[col])
+                df.at[idx, col] = t
+            # Normalize Restoration
+            for i in range(1, 6):
+                tc, lc = f"rest_{i}_type", f"rest_{i}_level"
+                nt, nl = normalize_bonus(row[tc], row[lc], is_restoration=True)
+                df.at[idx, tc] = nt
+                df.at[idx, lc] = nl
     return df
 
 def save_equipment(df: pd.DataFrame) -> bool:
@@ -79,8 +183,6 @@ def register_equipment(weapon_name: str, weapon_type: str, element: str,
     if save_equipment(df):
         return new_id
     return None
-
-
 
 def update_equipment_skills(eq_id: str, new_series: str, new_group: str) -> bool:
     df = load_equipment()

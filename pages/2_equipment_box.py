@@ -1,7 +1,10 @@
 import streamlit as st
 import pandas as pd
 from src.logic.master import get_master_data
-from src.logic.equipment_box import load_equipment, register_equipment, delete_equipment, validate_restoration_bonuses
+from src.logic.equipment_box import (
+    load_equipment, register_equipment, delete_equipment, 
+    validate_restoration_bonuses, get_weapon_label, format_bonus_summary, normalize_bonus
+)
 
 def init_session_state():
     if 'gsheet_url' not in st.session_state:
@@ -32,17 +35,9 @@ group_skill_labels = [f"{g['group_name']} ({g['skill_name']})" if g['group_name'
 p_bonus_opts = master.get("production_bonuses", [])
 enhancement_opts = master.get("kyogeki_enhancements", [])
 
-# Build flat restoration options for forms
-rest_options = ["なし"]
-for r_type, levels in master.get("restoration_bonuses", {}).items():
-    if r_type == "なし": continue
-    for lv in levels:
-        rest_options.append(f"{r_type} [{lv}]")
-
 with st.expander("➕ 武器を新規登録する", expanded=False):
-    # Form input starts here, but without st.form so selectboxes trigger rerun
     st.markdown("##### 基本情報")
-    weapon_name = st.text_input("武器の識別名 (例: 火竜大剣用)")
+    weapon_name = st.text_input("武器の識別名 (任意)", placeholder="例: 火竜大剣用")
     
     c1, c2, c3 = st.columns([2, 1, 1])
     with c1:
@@ -62,7 +57,6 @@ with st.expander("➕ 武器を新規登録する", expanded=False):
         current_group = group_skills_master[sel_g]["group_name"]
         
     st.markdown("##### 生産ボーナス (必ず3枠設定)")
-    # No 'なし' option anymore
     pc1, pc2, pc3 = st.columns(3)
     with pc1: pb1 = st.selectbox("枠1", p_bonus_opts, key="pb1")
     with pc2: pb2 = st.selectbox("枠2", p_bonus_opts, key="pb2")
@@ -75,14 +69,14 @@ with st.expander("➕ 武器を新規登録する", expanded=False):
     dynamic_rest_options = ["なし"]
     for r_type, levels in master.get("restoration_bonuses", {}).items():
         if r_type == "なし": continue
-        # Filter based on weapon type constraints
-        if r_type == "切れ味(近接)" and (is_bow or is_bowgun):
+        if r_type == "切れ味強化" and (is_bow or is_bowgun):
             continue
-        if r_type == "装填数(遠隔)" and not is_bowgun:
+        if r_type == "装填強化" and not is_bowgun:
             continue
             
         for lv in levels:
-            dynamic_rest_options.append(f"{r_type} [{lv}]")
+            label = r_type if lv == "無印" else f"{r_type} [{lv}]"
+            dynamic_rest_options.append(label)
             
     st.markdown("##### 復元ボーナス (最大5枠)")
     rc1, rc2, rc3, rc4, rc5 = st.columns(5)
@@ -101,11 +95,13 @@ with st.expander("➕ 武器を新規登録する", expanded=False):
         for rb in [rb1, rb2, rb3, rb4, rb5]:
             if rb == "なし":
                 parsed_rbs.append({"type": "なし", "level": "なし"})
-            else:
+            elif " [" in rb:
                 parts = rb.split(" [")
                 parsed_rbs.append({"type": parts[0], "level": parts[1][:-1]})
+            else:
+                # "無印" case
+                parsed_rbs.append({"type": rb, "level": "無印"})
         
-        # Check EX constraints
         is_valid, err_msg = validate_restoration_bonuses(parsed_rbs)
         if not is_valid:
             st.error(err_msg)
@@ -131,31 +127,34 @@ if df.empty:
 else:
     for index, row in df.iterrows():
         with st.container(border=True):
-            r1c1, r1c2, r1c3, r1c4 = st.columns([3, 2, 3, 1])
+            r1c1, r1c2 = st.columns([7, 1])
             with r1c1:
-                st.markdown(f"**{row['weapon_name']}** <span style='color:gray; font-size: 0.9em'>({row['weapon_type']} | {row['element']})</span>", unsafe_allow_html=True)
+                full_label = get_weapon_label(row)
+                display_name = row['weapon_name']
+                # If the user didn't give a specific identifying name (or used the default), just show the label
+                if display_name and not display_name.startswith("無銘の"):
+                    st.markdown(f"**{display_name}**")
+                    st.caption(full_label)
+                else:
+                    st.markdown(f"**{full_label}**")
             with r1c2:
-                st.markdown(f"**強化:** {row['enhancement_type']}")
-            with r1c3:
-                st.markdown(f"**Skill:** {row['current_series_skill']} / {row['current_group_skill']}")
-            with r1c4:
-                if st.button("削除🗑️", key=f"del_{row['id']}"):
+                if st.button("削除🗑️", key=f"del_{row['id']}", use_container_width=True):
                     delete_equipment(row['id'])
                     st.rerun()
             
-            # Second row for slots
+            # Summarized bonus displays in smaller text
             r2c1, r2c2 = st.columns(2)
             with r2c1:
-                st.markdown("**生産ボーナス:**")
-                pbs = [row.get('p_bonus_1', 'なし'), row.get('p_bonus_2', 'なし'), row.get('p_bonus_3', 'なし')]
-                st.write(" | ".join([p for p in pbs if p != "なし"]) or "なし")
+                pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4) if row.get(f'p_bonus_{i}', 'なし') != 'なし']
+                st.markdown(f"<small>生産: {format_bonus_summary(pbs)}</small>", unsafe_allow_html=True)
             with r2c2:
-                st.markdown("**復元ボーナス:**")
-                rbs = []
+                rbs_list = []
                 for i in range(1, 6):
-                    r_type = row.get(f'rest_{i}_type', 'なし')
-                    r_level = row.get(f'rest_{i}_level', 'なし')
-                    if r_type != "なし":
-                        fw = "**" if r_level == "EX" else ""
-                        rbs.append(f"{r_type}[{fw}{r_level}{fw}]")
-                st.write(" | ".join(rbs) or "なし")
+                    rt = row.get(f'rest_{i}_type', 'なし')
+                    rl = row.get(f'rest_{i}_level', 'なし')
+                    if rt != 'なし':
+                        # Use normalized strings for summary even if stored as old
+                        nt, nl = normalize_bonus(rt, rl, is_restoration=True)
+                        suffix = nl if nl and nl != "無印" else ""
+                        rbs_list.append(f"{nt}{suffix}")
+                st.markdown(f"<small>復元: {format_bonus_summary(rbs_list)}</small>", unsafe_allow_html=True)

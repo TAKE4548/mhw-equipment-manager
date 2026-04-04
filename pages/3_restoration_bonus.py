@@ -1,7 +1,10 @@
 import streamlit as st
 import pandas as pd
 from src.logic.master import get_master_data
-from src.logic.equipment_box import load_equipment, validate_restoration_bonuses
+from src.logic.equipment_box import (
+    load_equipment, validate_restoration_bonuses, 
+    get_weapon_label, format_bonus_summary, normalize_bonus
+)
 from src.logic.restoration_tracker import (
     load_trackers, register_tracker, advance_all_trackers, 
     delete_tracker, execute_apply_and_advance, undo_action, redo_action
@@ -51,11 +54,10 @@ if eq_df.empty:
     st.warning("まず Equipment Box に武器を登録してください。")
     st.stop()
 
-# Build dropdown of available weapons
+# Build dropdown with detailed labels
 weapon_options = {}
 for _, row in eq_df.iterrows():
-    label = f"{row['weapon_name']} / {row['weapon_type']} ({row['element']})"
-    weapon_options[row['id']] = label
+    weapon_options[row['id']] = get_weapon_label(row)
 
 master = get_master_data()
 
@@ -64,19 +66,21 @@ with st.expander("➕ 目標を登録する", expanded=False):
     sel_w_id = st.selectbox("対象の武器を選択", list(weapon_options.keys()), format_func=lambda x: weapon_options[x], key="reg_sel_w")
     
     # Get selected weapon type for filtering
-    sel_w_type = eq_df[eq_df['id'] == sel_w_id].iloc[0]['weapon_type']
+    sel_row = eq_df[eq_df['id'] == sel_w_id].iloc[0]
+    sel_w_type = sel_row['weapon_type']
     is_bow = ("弓" in sel_w_type and "ボウガン" not in sel_w_type)
     is_bowgun = ("ボウガン" in sel_w_type)
     
     dynamic_rest_options = ["なし"]
     for r_type, levels in master.get("restoration_bonuses", {}).items():
         if r_type == "なし": continue
-        if r_type == "切れ味(近接)" and (is_bow or is_bowgun):
+        if r_type == "切れ味強化" and (is_bow or is_bowgun):
             continue
-        if r_type == "装填数(遠隔)" and not is_bowgun:
+        if r_type == "装填強化" and not is_bowgun:
             continue
         for lv in levels:
-            dynamic_rest_options.append(f"{r_type} [{lv}]")
+            label = r_type if lv == "無印" else f"{r_type} [{lv}]"
+            dynamic_rest_options.append(label)
             
     st.markdown("##### 目標の復元ボーナス (最大5枠)")
     rc1, rc2, rc3, rc4, rc5 = st.columns(5)
@@ -91,10 +95,13 @@ with st.expander("➕ 目標を登録する", expanded=False):
     if st.button("トラッキングに追加", type="primary"):
         parsed_rbs = []
         for rb in [tb1, tb2, tb3, tb4, tb5]:
-            if rb == "なし": parsed_rbs.append({"type": "なし", "level": "なし"})
-            else:
+            if rb == "なし":
+                parsed_rbs.append({"type": "なし", "level": "なし"})
+            elif " [" in rb:
                 parts = rb.split(" [")
                 parsed_rbs.append({"type": parts[0], "level": parts[1][:-1]})
+            else:
+                parsed_rbs.append({"type": rb, "level": "無印"})
         
         is_valid, err_msg = validate_restoration_bonuses(parsed_rbs)
         if not is_valid:
@@ -115,6 +122,8 @@ tracker_df = load_trackers()
 if tracker_df.empty:
     st.info("トラッキング中の復元ボーナスはありません。")
 else:
+    st.caption("※適用により他武器のチャンスが追い越された場合、それらの目標はリストから自動削除されます。")
+    
     # Sort trackers
     tracker_df['weapon_label'] = tracker_df['weapon_id'].map(lambda wid: weapon_options.get(wid, "不明な武器"))
     tracker_df = tracker_df.sort_values(by=["weapon_label", "remaining_count"])
@@ -134,22 +143,26 @@ else:
                 if rem <= 1:
                     st.markdown("<p style='color:red; font-size:0.8em; text-align:center;'>⚠️ 次回スキップ対象</p>", unsafe_allow_html=True)
             with tc2:
-                target_rbs = []
+                # Summarize Target Bonuses
+                target_rbs_list = []
                 for i in range(1, 6):
                     rt = row.get(f'target_rest_{i}_type', 'なし')
                     rl = row.get(f'target_rest_{i}_level', 'なし')
                     if rt != 'なし':
-                        target_rbs.append(f"{rt}[{rl}]")
-                st.markdown(f"✨ {' | '.join(target_rbs) if target_rbs else '未付与'}")
+                        # Normalize just in case
+                        nt, nl = normalize_bonus(rt, rl, is_restoration=True)
+                        suffix = nl if nl and nl != "無印" else ""
+                        target_rbs_list.append(f"{nt}{suffix}")
+                st.markdown(f"✨ {format_bonus_summary(target_rbs_list)}")
+                
             with tc3:
                 # 適用ボタン
-                btn_label = f"適用して完了🎁\n(-{row['remaining_count']}回分)"
+                btn_label = f"適用して完了🎁 (-{row['remaining_count']})"
                 if st.button(btn_label, key=f"apply_{row['id']}", use_container_width=True, type="primary"):
                     if execute_apply_and_advance(row['id']):
                         st.success("武器に適用し、テーブルを進行させました！")
                         st.rerun()
                 
-                # 削除ボタン
                 if st.button("削除 🗑️", key=f"del_track_{row['id']}", use_container_width=True):
                     if delete_tracker(row['id']):
                         st.rerun()
