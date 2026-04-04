@@ -36,8 +36,9 @@
 - `tracker_reg_w_id`: 画面間をまたぐ武器選択状態
 
 ## Storage (ストレージ)
-- **Primary**: Google Spreadsheets (per-user dynamic URL).
-- **Secondary**: Local SQLite is deprecated and replaced by GSheets for cloud compatibility.
+- **Primary (Anonymous)**: Local Browser Cookie (`st.html` injection bypassing Streamlit iframe sandbox via `window.parent.document.cookie`). Data is compressed using `zlib` and `base64` to circumvent 4KB limits.
+- **Cloud/Syncing (Authenticated)**: Supabase (Provides cross-device synchronization and permanent backup).
+- **Google Sheets / SQLite**: Deprecated.
 
 ### `ActionHistory` (アクション履歴)
 Not stored in SQLite. Stored in Streamlit's `st.session_state` as an in-memory stack to support Undo/Redo during the current session.
@@ -62,4 +63,4 @@ Located at `src/data/master_data.json`.
   - 数値（1, 2, 3）や浮動小数点（1.0, 2.0, 3.0）をローマ数字（Ⅰ, Ⅱ, Ⅲ）へロード時および表示時に変換し、視認性を統一。
 
 ## Relationships
-- Single user local database environment, utilizing Google Spreadsheets via URL-based session states.
+- Single user local database environment by default (Cookie), scaling to cloud-synced environment via Supabase upon user login.

@@ -38,13 +38,11 @@ with h_col1:
     if st.button("Undo ↩️", disabled=undo_disabled, use_container_width=True):
         if undo_action():
             st.toast("元に戻しました")
-            st.rerun()
 with h_col2:
     redo_disabled = not st.session_state.history_redo
     if st.button("Redo ↪️", disabled=redo_disabled, use_container_width=True):
         if redo_action():
             st.toast("やり直しました")
-            st.rerun()
 
 st.divider()
 
@@ -99,7 +97,6 @@ with st.expander("➕ 抽選結果を登録する", expanded=exp_expanded):
             # Select button
             if sc5.button("選択", key=f"sel_{w_row['id']}", use_container_width=True, type="primary" if is_selected else "secondary"):
                 st.session_state.tracker_reg_w_id = w_row['id']
-                st.rerun()
 
     # Step 2: Show form only if selected
     if st.session_state.tracker_reg_w_id:
@@ -143,7 +140,6 @@ with st.expander("➕ 抽選結果を登録する", expanded=exp_expanded):
                 if register_tracker(st.session_state.tracker_reg_w_id, count_val, parsed_rbs):
                     st.session_state.tracker_reg_w_id = None # Clear after success
                     st.success("追加しました")
-                    st.rerun()
 
 st.divider()
 st.subheader("トラッキング中の抽選結果 (残り回数順)")
@@ -181,15 +177,15 @@ else:
             pbs = [w_row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
             from src.logic.equipment_box import format_bonus_list
             cols[3].markdown(f"<small>📋 {w_row['enhancement_type']}<br>🛠️ {format_bonus_list(pbs)}</small>", unsafe_allow_html=True)
-
+ 
             # Skills (Stacked)
             cols[4].markdown(f"<small>🛡️ {w_row['current_series_skill']}<br>👥 {w_row['current_group_skill']}</small>", unsafe_allow_html=True)
-
+ 
             # Comparison Table (Current vs Target)
             from src.logic.equipment_box import get_abbr_item
             curr_slots = [get_abbr_item(f"{w_row.get(f'rest_{i}_type','なし')}{w_row.get(f'rest_{i}_level','')}" if w_row.get(f'rest_{i}_type','なし') != "なし" else "なし") for i in range(1,6)]
             target_slots = [get_abbr_item(f"{row.get(f'target_rest_{i}_type','なし')}{row.get(f'target_rest_{i}_level','')}" if row.get(f'target_rest_{i}_type','なし') != "なし" else "なし") for i in range(1,6)]
-
+ 
             def build_comparison_row(title, slots, diff_against=None):
                 row_html = f'<tr><td style="padding-right:8px; color:#aaa; font-size:0.75em; border:none; text-align:right;">{title}</td>'
                 for i, s in enumerate(slots):
@@ -200,7 +196,7 @@ else:
                     row_html += f'<td style="{style}">{s}</td>'
                 row_html += '</tr>'
                 return row_html
-
+ 
             table_html = f"""
             <table style="border-collapse:separate; border-spacing:0 2px; border:none; background:transparent; margin:0;">
                 {build_comparison_row('現:', curr_slots)}
@@ -212,6 +208,6 @@ else:
             # Actions
             ac1, ac2 = cols[6].columns([3, 1])
             if ac1.button("🔨 強化実施", key=f"ap_{row['id']}", use_container_width=True):
-                if execute_apply_and_advance(row['id']): st.rerun()
+                execute_apply_and_advance(row['id'])
             if ac2.button("🗑️", key=f"dl_{row['id']}", use_container_width=True):
-                if delete_tracker(row['id']): st.rerun()
+                delete_tracker(row['id'])

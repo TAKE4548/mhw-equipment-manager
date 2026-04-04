@@ -48,7 +48,7 @@ with st.expander("🆕 未登録の強化抽選結果を追加する", expanded=
                     st.session_state['undo_stack'].append({'action_type': 'REGISTER', 'target_id': record_id})
                     st.session_state['redo_stack'].clear()
                     st.success("抽選結果を登録しました！")
-                    st.rerun()
+                    st.success("抽選結果を登録しました！")
 
 st.divider()
 
@@ -57,15 +57,11 @@ h_col1, h_col2, h_col3 = st.columns([1, 1, 6], vertical_alignment="center")
 with h_col1:
     undo_disabled = not st.session_state.get('undo_stack', [])
     if st.button("Undo ↩️", disabled=undo_disabled, use_container_width=True):
-        from src.logic.history import undo_last_action
         undo_last_action()
-        st.rerun()
 with h_col2:
     redo_disabled = not st.session_state.get('redo_stack', [])
     if st.button("Redo ↪️", disabled=redo_disabled, use_container_width=True):
-        from src.logic.history import redo_last_action
         redo_last_action()
-        st.rerun()
 
 # --- Main Dashboard List ---
 df = get_active_upgrades()

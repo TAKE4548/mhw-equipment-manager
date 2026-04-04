@@ -9,7 +9,7 @@ from supabase import create_client, Client
 COOKIE_KEY = "mhw_data"
 MANAGED_TABLES = ["weapons", "trackers", "upgrades"]
 
-# --- Compression (keep data under 4KB) ---
+# --- Compression ---
 
 def _compress(data: dict) -> str:
     json_bytes = json.dumps(data, ensure_ascii=False).encode("utf-8")
@@ -38,12 +38,12 @@ def init_memory_storage():
         st.session_state["mhw_data"] = {t: pd.DataFrame() for t in MANAGED_TABLES}
     if "mhw_ready" not in st.session_state:
         st.session_state["mhw_ready"] = False
+    if "needs_persist" not in st.session_state:
+        st.session_state["needs_persist"] = False
 
-# --- Boot: Read from HTTP cookie headers (instantaneous, no component) ---
+# --- Boot: Read from HTTP cookie headers ---
 
 def boot_from_browser():
-    """Reads data from cookies sent in the HTTP request headers.
-    st.context.cookies is available the moment the page is requested — zero latency."""
     init_memory_storage()
     if st.session_state["mhw_ready"]:
         return True
@@ -58,35 +58,56 @@ def boot_from_browser():
                     pd.DataFrame(records) if records else pd.DataFrame()
                 )
     except Exception:
-        pass  # corrupt / missing → start fresh
+        pass
 
     st.session_state["mhw_ready"] = True
     return True
 
-# --- Persist: Write cookie via st.html(unsafe_allow_javascript=True) ---
-#
-# KEY INSIGHT:
-#   st.html(unsafe_allow_javascript=False) → inert <script> inside sandbox iframe
-#   st.html(unsafe_allow_javascript=True)  → runs directly in main page context
-#   ↑ This means document.cookie works on the real page origin!
-#
-# On the *next* page load the cookie appears in the HTTP request headers
-# and st.context.cookies.get() picks it up instantly.
+# --- Persist: Write cookie via st.html ---
 
 def persist_to_browser():
-    """Writes all session data to a browser cookie."""
+    """Immediately injects a JS snippet to write the cookie to the browser.
+    This should be called at the end of the script (e.g. in the sidebar)
+    to ensure the script is not killed by a premature st.rerun()."""
     data = {}
     for t in MANAGED_TABLES:
         df = st.session_state.get("mhw_data", {}).get(t, pd.DataFrame())
         data[t] = json.loads(df.to_json(orient="records")) if not df.empty else []
 
-    compressed = _compress(data)
-    cookie_str = f"{COOKIE_KEY}={compressed}; path=/; max-age=2592000; SameSite=Lax"
+    try:
+        compressed = _compress(data)
+        cookie_str = f"{COOKIE_KEY}={compressed}; path=/; max-age=2592000; SameSite=Lax"
 
-    st.html(
-        f"<script>document.cookie = {json.dumps(cookie_str)};</script>",
-        unsafe_allow_javascript=True,
-    )
+        # V10: Use more robust script that logs to console for debugging
+        # Using unsafe_allow_javascript=True to escape sandbox iframe
+            # V10-fix: Try to write to both local and parent document just in case.
+        # This is the most aggressive way to set a cookie from within a Streamlit component.
+        js = f"""
+        <script>
+            (function() {{
+                const cookie = {json.dumps(cookie_str)};
+                console.log("MHW Sync: Attempting write...");
+                try {{
+                    document.cookie = cookie;
+                    console.log("MHW Sync: Local write successful.");
+                }} catch(e) {{
+                    console.error("MHW Sync: Local write failed", e);
+                }}
+                
+                try {{
+                    if (window.parent && window.parent.document) {{
+                        window.parent.document.cookie = cookie;
+                        console.log("MHW Sync: Parent write successful.");
+                    }}
+                }} catch(e) {{
+                    console.warn("MHW Sync: Parent write blocked (CORS/Sandbox)", e);
+                }}
+            }})();
+        </script>
+        """
+        st.html(js, unsafe_allow_javascript=True)
+    except Exception as e:
+        st.error(f"Persistence error: {e}")
 
 # --- Debug ---
 
@@ -95,15 +116,10 @@ def get_debug_info() -> dict:
     return {
         "cookie_exists": bool(raw),
         "cookie_size_bytes": len(raw.encode()) if raw else 0,
-        "weapons_count": len(
-            st.session_state.get("mhw_data", {}).get("weapons", pd.DataFrame())
-        ),
-        "upgrades_count": len(
-            st.session_state.get("mhw_data", {}).get("upgrades", pd.DataFrame())
-        ),
-        "trackers_count": len(
-            st.session_state.get("mhw_data", {}).get("trackers", pd.DataFrame())
-        ),
+        "needs_persist": st.session_state.get("needs_persist", False),
+        "weapons_count": len(st.session_state.get("mhw_data", {}).get("weapons", pd.DataFrame())),
+        "upgrades_count": len(st.session_state.get("mhw_data", {}).get("upgrades", pd.DataFrame())),
+        "trackers_count": len(st.session_state.get("mhw_data", {}).get("trackers", pd.DataFrame())),
     }
 
 # --- Cloud Storage (Supabase) ---
@@ -113,12 +129,7 @@ def _load_from_cloud(table: str, required_columns: list) -> pd.DataFrame:
     if not client or not is_logged_in():
         return pd.DataFrame(columns=required_columns)
     try:
-        response = (
-            client.table(table)
-            .select("*")
-            .eq("user_id", st.session_state.user.id)
-            .execute()
-        )
+        response = client.table(table).select("*").eq("user_id", st.session_state.user.id).execute()
         df = pd.DataFrame(response.data)
         return df if not df.empty else pd.DataFrame(columns=required_columns)
     except Exception as e:
@@ -157,7 +168,10 @@ def save_data(key: str, df: pd.DataFrame) -> bool:
         return _save_to_cloud(key, df)
     init_memory_storage()
     st.session_state["mhw_data"][key] = df
+    
+    # V10-fix2: Trigger sync immediately so it's part of the current delta
     persist_to_browser()
+    st.session_state["needs_persist"] = False # Reset flag if called here
     return True
 
 def sync_local_to_cloud():

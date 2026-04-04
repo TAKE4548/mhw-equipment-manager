@@ -1,4 +1,11 @@
 import streamlit as st
+import sys
+import os
+
+# Ensure the root directory is in the path for src imports
+if os.getcwd() not in sys.path:
+    sys.path.append(os.getcwd())
+
 from src.utils.session import init_session_state
 
 # Always initialize session at the entry point
