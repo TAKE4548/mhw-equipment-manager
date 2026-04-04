@@ -7,22 +7,19 @@ from src.logic.equipment_box import (
     ATTRIBUTE_COLORS
 )
 
-def init_session_state():
-    if 'gsheet_url' not in st.session_state:
-        url_from_query = st.query_params.get("url", "")
-        url_from_secrets = st.secrets.get("spreadsheet_url", "")
-        st.session_state['gsheet_url'] = url_from_query or url_from_secrets
+from src.components.sidebar import render_shared_sidebar
 
-init_session_state()
+st.set_page_config(page_title="所有巨戟アーティア一覧", page_icon="📦", layout="wide")
 
-st.set_page_config(page_title="Equipment Box", page_icon="📦", layout="wide")
+# Render shared sidebar
+render_shared_sidebar()
+
+st.title("所有巨戟アーティア一覧 📦")
+st.markdown("巨戟アーティア武器のステータスやボーナス状況を詳細に管理します。")
 
 if not st.session_state.get('gsheet_url'):
-    st.info("👋 **Setup Required**: Please paste your Google Sheet URL in the Home page sidebar.")
+    st.info("👋 **URL 設定**: サイドバーの「スプレッドシート URL」を入力してください。")
     st.stop()
-
-st.title("Equipment Box 📦")
-st.markdown("巨戟アーティア武器のステータスやボーナス状況を詳細に管理します。")
 st.divider()
 
 st.subheader("新しい武器を登録")

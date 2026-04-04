@@ -21,12 +21,19 @@
 - `p_bonus_1` ~ `3` (TEXT): 生産ボーナス3枠
 - `rest_1_type` ~ `rest_5_level` (TEXT): 現在付与されている復元ボーナス5枠（種類とレベル）
 
-### `強化厳選登録` (強化厳選登録 / Sheet: `RestorationTracker`)
+### `強化厳選登録` (復元強化厳選 / Sheet: `RestorationTracker`)
 未来の復元テーブルの抽選結果を管理します。
 - `id` (STRING/UUID): ユニークID
 - `weapon_id` (STRING): `EquipmentBox.id` への参照 (Visual Selectionにて紐付け)
 - `remaining_count` (INTEGER): 到達までの残り回数
 - `target_rest_1_type` ~ `target_rest_5_level` (TEXT): 抽選結果の5枠構成
+
+## Application State (Session State)
+アプリ全体の安定稼働のため、`app.py` にて以下を一括管理します。
+- `gsheet_url`: スプレッドシートの接続先 URL
+- `undo_stack` / `redo_stack`: スキル抽選結果用の履歴
+- `history_undo` / `history_redo`: 復元強化厳選用の履歴
+- `tracker_reg_w_id`: 画面間をまたぐ武器選択状態
 
 ## Storage (ストレージ)
 - **Primary**: Google Spreadsheets (per-user dynamic URL).

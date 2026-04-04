@@ -11,25 +11,15 @@ from src.logic.restoration_tracker import (
     delete_tracker, execute_apply_and_advance, undo_action, redo_action
 )
 
-def init_session_state():
-    if 'gsheet_url' not in st.session_state:
-        url_from_query = st.query_params.get("url", "")
-        url_from_secrets = st.secrets.get("spreadsheet_url", "")
-        st.session_state['gsheet_url'] = url_from_query or url_from_secrets
-    if 'history_undo' not in st.session_state:
-        st.session_state.history_undo = []
-    if 'history_redo' not in st.session_state:
-        st.session_state.history_redo = []
-    # Persistent selection for registration
-    if 'tracker_reg_w_id' not in st.session_state:
-        st.session_state.tracker_reg_w_id = None
+from src.components.sidebar import render_shared_sidebar
 
-init_session_state()
+st.set_page_config(page_title="復元強化厳選", page_icon="✨", layout="wide")
 
-st.set_page_config(page_title="強化厳選登録", page_icon="✨", layout="wide")
+# Render shared sidebar
+render_shared_sidebar()
 
 if not st.session_state.get('gsheet_url'):
-    st.info("👋 **Setup Required**: Please paste your Google Sheet URL in the Home page sidebar.")
+    st.info("👋 **URL 設定**: サイドバーの「スプレッドシート URL」を入力してください。")
     st.stop()
 
 # Helper for badges
