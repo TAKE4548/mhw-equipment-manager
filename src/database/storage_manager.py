@@ -1,20 +1,18 @@
 import streamlit as st
 import pandas as pd
 import json
-import os
 from supabase import create_client, Client
+from streamlit_local_storage import LocalStorage
 
-# --- Configuration & Initialization ---
+# --- The ONE localStorage key ---
+MHW_STORAGE_KEY = "mhw_all_data"
 
-# Local data directory (relative to the app root)
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data")
+# Table names
+MANAGED_TABLES = ["weapons", "trackers", "upgrades"]
 
-def _ensure_data_dir():
-    """Create local data directory if it doesn't exist."""
-    os.makedirs(DATA_DIR, exist_ok=True)
+# --- Supabase ---
 
 def get_supabase_client() -> Client:
-    """Initializes and returns the Supabase client using secrets."""
     try:
         url = st.secrets["connections"]["supabase"]["url"]
         key = st.secrets["connections"]["supabase"]["key"]
@@ -23,80 +21,95 @@ def get_supabase_client() -> Client:
         return None
 
 def is_logged_in() -> bool:
-    """Checks if a user is currently logged in via Supabase."""
     return "user" in st.session_state and st.session_state.user is not None
 
-# --- Session Storage (Memory Cache) ---
+# --- Memory Cache ---
 
 def init_memory_storage():
-    """Initializes the memory storage dictionary in session state."""
-    if 'mhw_memory_storage' not in st.session_state:
-        st.session_state['mhw_memory_storage'] = {}
+    if 'mhw_data' not in st.session_state:
+        st.session_state['mhw_data'] = {t: pd.DataFrame() for t in MANAGED_TABLES}
+    if 'mhw_ready' not in st.session_state:
+        st.session_state['mhw_ready'] = False
+    if 'mhw_ls' not in st.session_state:
+        st.session_state['mhw_ls'] = LocalStorage()
 
-# --- Local File Storage ---
+def get_ls() -> LocalStorage:
+    """Returns the singleton LocalStorage instance."""
+    init_memory_storage()
+    return st.session_state['mhw_ls']
 
-def _get_file_path(key: str) -> str:
-    """Returns the file path for a given data key."""
-    _ensure_data_dir()
-    return os.path.join(DATA_DIR, f"{key}.json")
+# --- Boot Handshake: read ALL data from browser in one shot ---
 
-def _load_from_file(key: str) -> pd.DataFrame:
-    """Reads data from a local JSON file."""
-    filepath = _get_file_path(key)
-    if os.path.exists(filepath):
+def boot_from_browser():
+    """
+    Called once per session. Reads all data from localStorage into memory.
+    Returns True if successful, False if still waiting.
+    """
+    init_memory_storage()
+    
+    if st.session_state['mhw_ready']:
+        return True  # Already loaded
+    
+    ls = get_ls()
+    raw = ls.getItem(MHW_STORAGE_KEY)
+    
+    if raw is not None:
+        # Browser responded (raw may be a dict, list, or string)
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            if data:
-                return pd.DataFrame(data)
-        except Exception as e:
-            st.warning(f"ローカルファイル読み込みエラー ({key}): {e}")
-    return pd.DataFrame()
-
-def _save_to_file(key: str, df: pd.DataFrame) -> bool:
-    """Writes data to a local JSON file."""
-    filepath = _get_file_path(key)
-    try:
-        data = json.loads(df.to_json(orient="records"))
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+            if isinstance(raw, str):
+                data = json.loads(raw)
+            elif isinstance(raw, dict):
+                data = raw
+            else:
+                data = {}
+            
+            for t in MANAGED_TABLES:
+                records = data.get(t, [])
+                st.session_state['mhw_data'][t] = pd.DataFrame(records)
+        except Exception:
+            pass  # Parse error → use empty DataFrames
+        
+        st.session_state['mhw_ready'] = True
         return True
-    except Exception as e:
-        st.error(f"ローカルファイル保存エラー ({key}): {e}")
-        return False
+    
+    return False  # Still waiting for browser
+
+# --- Persist ALL data to browser in one shot ---
+
+def persist_to_browser():
+    """Writes all in-memory data to localStorage as a single JSON object."""
+    ls = get_ls()
+    data = {}
+    for t in MANAGED_TABLES:
+        df = st.session_state['mhw_data'].get(t, pd.DataFrame())
+        records = json.loads(df.to_json(orient="records")) if not df.empty else []
+        data[t] = records
+    ls.setItem(MHW_STORAGE_KEY, data)
 
 # --- Cloud Storage (Supabase) ---
 
 def _load_from_cloud(table: str, required_columns: list) -> pd.DataFrame:
-    """Reads data from Supabase for the current user."""
     client = get_supabase_client()
     if not client or not is_logged_in():
         return pd.DataFrame(columns=required_columns)
-    
     user_id = st.session_state.user.id
     try:
         response = client.table(table).select("*").eq("user_id", user_id).execute()
         df = pd.DataFrame(response.data)
-        if df.empty:
-            return pd.DataFrame(columns=required_columns)
-        return df
+        return df if not df.empty else pd.DataFrame(columns=required_columns)
     except Exception as e:
         st.error(f"Cloud load error: {e}")
         return pd.DataFrame(columns=required_columns)
 
 def _save_to_cloud(table: str, df: pd.DataFrame) -> bool:
-    """Upserts data to Supabase for the current user."""
     client = get_supabase_client()
     if not client or not is_logged_in():
         return False
-    
     user_id = st.session_state.user.id
-    df_to_save = df.copy()
-    df_to_save["user_id"] = user_id
-    data = df_to_save.to_dict(orient="records")
-    
+    df_save = df.copy()
+    df_save["user_id"] = user_id
     try:
-        client.table(table).upsert(data).execute()
+        client.table(table).upsert(df_save.to_dict(orient="records")).execute()
         return True
     except Exception as e:
         st.error(f"Cloud save error: {e}")
@@ -106,58 +119,39 @@ def _save_to_cloud(table: str, df: pd.DataFrame) -> bool:
 
 def load_data(key: str, required_columns: list) -> pd.DataFrame:
     """
-    Unified loader. Always returns a DataFrame (never None).
-    - Logged in: Supabase
-    - Anonymous: Local JSON file with memory cache
+    Always returns a DataFrame.
+    - Cloud mode: fetch from Supabase
+    - Local mode: read from memory (populated by boot_from_browser)
     """
     if is_logged_in():
         return _load_from_cloud(key, required_columns)
     
-    # --- Local Mode (File + Memory Cache) ---
     init_memory_storage()
-    cache = st.session_state['mhw_memory_storage']
-    
-    if key not in cache:
-        # First access this session: load from disk
-        cache[key] = _load_from_file(key)
-    
-    df = cache[key]
+    df = st.session_state['mhw_data'].get(key, pd.DataFrame())
     
     if df.empty:
         return pd.DataFrame(columns=required_columns)
     
-    # Column maintenance
     for col in required_columns:
         if col not in df.columns:
             df[col] = None
-    existing_cols = [c for c in required_columns if c in df.columns]
-    return df[existing_cols]
+    existing = [c for c in required_columns if c in df.columns]
+    return df[existing]
 
 def save_data(key: str, df: pd.DataFrame) -> bool:
-    """
-    Unified saver.
-    - Logged in: Supabase
-    - Anonymous: Local JSON file + memory cache update
-    """
+    """Saves data to memory + persists all data to browser localStorage."""
     if is_logged_in():
         return _save_to_cloud(key, df)
     
-    # --- Local Mode ---
     init_memory_storage()
-    
-    # Update memory cache
-    st.session_state['mhw_memory_storage'][key] = df
-    
-    # Persist to disk immediately
-    return _save_to_file(key, df)
+    st.session_state['mhw_data'][key] = df
+    persist_to_browser()
+    return True
 
 def sync_local_to_cloud():
-    """Pushes local file data to Supabase after login."""
     if not is_logged_in():
         return
-    
-    tables = ["weapons", "trackers", "upgrades"]
-    for table in tables:
-        df = _load_from_file(table)
+    for table in MANAGED_TABLES:
+        df = st.session_state.get('mhw_data', {}).get(table, pd.DataFrame())
         if not df.empty:
             _save_to_cloud(table, df)

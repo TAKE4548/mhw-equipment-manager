@@ -11,8 +11,13 @@ from src.components.sidebar import render_shared_sidebar
 
 st.set_page_config(page_title="所有巨戟アーティア一覧", page_icon="📦", layout="wide")
 
-# Render shared sidebar
+# Render shared sidebar (also performs browser boot handshake)
 render_shared_sidebar()
+
+# Wait for localStorage data to be available
+if not st.session_state.get('mhw_ready') and not st.session_state.get('user'):
+    st.info("⏳ データを読み込み中...")
+    st.stop()
 
 st.title("所有巨戟アーティア一覧 📦")
 st.markdown("巨戟アーティア武器のステータスやボーナス状況を詳細に管理します。")
