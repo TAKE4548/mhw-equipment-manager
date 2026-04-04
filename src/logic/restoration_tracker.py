@@ -1,10 +1,10 @@
 import pandas as pd
 import uuid
 import streamlit as st
-from src.database.gsheets_manager import load_data, save_data
+from src.database.storage_manager import load_data, save_data
 from src.logic.equipment_box import load_equipment, save_equipment
 
-TRACKER_WORKSHEET = "RestorationTracker"
+TRACKER_TABLE = "trackers" # Matches Supabase table name
 TRACKER_COLUMNS = [
     "id", "weapon_id", "remaining_count", 
     "target_rest_1_type", "target_rest_1_level",
@@ -62,8 +62,7 @@ def redo_action():
 # --- Tracker Logic ---
 
 def load_trackers() -> pd.DataFrame:
-    url = st.session_state.get("gsheet_url")
-    df = load_data(url, TRACKER_WORKSHEET, required_columns=TRACKER_COLUMNS)
+    df = load_data(TRACKER_TABLE, required_columns=TRACKER_COLUMNS)
     if "remaining_count" in df.columns:
         df["remaining_count"] = pd.to_numeric(df["remaining_count"], errors="coerce").fillna(0).astype(int)
     
@@ -79,8 +78,7 @@ def load_trackers() -> pd.DataFrame:
     return df
 
 def save_trackers(df: pd.DataFrame) -> bool:
-    url = st.session_state.get("gsheet_url")
-    return save_data(df, url, TRACKER_WORKSHEET)
+    return save_data(TRACKER_TABLE, df)
 
 def register_tracker(weapon_id: str, count: int, rest_bonuses: list[dict]) -> str:
     push_history()

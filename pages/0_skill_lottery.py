@@ -13,10 +13,6 @@ render_shared_sidebar()
 st.title("スキル抽選結果 🏹")
 st.markdown("巨戟強化の抽選順序を確認し、スキルを武器に割り当てます。")
 
-if not st.session_state.get('gsheet_url'):
-    st.info("👋 **URL 設定**: サイドバーの「スプレッドシート URL」を入力して開始してください。")
-    st.stop()
-
 # --- Registration Form (Merged from 1_register) ---
 master = get_master_data()
 with st.expander("🆕 未登録の強化抽選結果を追加する", expanded=False):

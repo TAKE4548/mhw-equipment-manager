@@ -17,9 +17,6 @@ render_shared_sidebar()
 st.title("所有巨戟アーティア一覧 📦")
 st.markdown("巨戟アーティア武器のステータスやボーナス状況を詳細に管理します。")
 
-if not st.session_state.get('gsheet_url'):
-    st.info("👋 **URL 設定**: サイドバーの「スプレッドシート URL」を入力してください。")
-    st.stop()
 st.divider()
 
 st.subheader("新しい武器を登録")

@@ -39,7 +39,20 @@ def _get_spreadsheet(url):
     try:
         return client.open_by_url(n_url)
     except gspread.exceptions.SpreadsheetNotFound:
-        st.error(f"❌ **スプレッドシートが見つかりません (404)**\n\nURLが正しいか、または Service Account に「編集者」権限で共有されているか確認してください。")
+        # Get email to show in error message
+        try:
+            client_email = st.secrets["connections"]["gsheets"].get("client_email", "サービスアカウント")
+        except:
+            client_email = "サービスアカウント"
+            
+        st.error(f"""
+        ❌ **スプレッドシートが見つかりません (404)**
+        
+        以下のいずれかが原因です：
+        1. **URLの間違い**: 正しいGoogleスプレッドシートのURLか確認してください。
+        2. **権限不足**: 自分のシートの「共有」ボタンから、以下のメールを「編集者」として追加してください：
+        `{client_email}`
+        """)
         return None
     except Exception as e:
         st.error(f"Error accessing spreadsheet: {e}")

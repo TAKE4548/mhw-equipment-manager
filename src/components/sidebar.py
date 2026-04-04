@@ -1,32 +1,19 @@
 import streamlit as st
+from src.components.auth import render_auth_component
 
 def render_shared_sidebar():
-    """Renders a shared sidebar with Google Sheet URL configuration."""
+    """Renders a shared sidebar with Hybrid Storage (Local/Cloud) management."""
     with st.sidebar:
-        st.header("⚙️ 設定 (Settings)")
+        st.header("⚙️ ストレージ設定")
         
-        # URL Logic
-        if 'gsheet_url' not in st.session_state:
-            url_from_query = st.query_params.get("url", "")
-            url_from_secrets = st.secrets.get("spreadsheet_url", "")
-            st.session_state['gsheet_url'] = url_from_query or url_from_secrets
-
-        url = st.text_input(
-            "スプレッドシート URL", 
-            value=st.session_state.get('gsheet_url', ''), 
-            help="Google スプレッドシートの URL を貼り付けてください。"
-        )
-        
-        if url != st.session_state.get('gsheet_url'):
-            st.session_state['gsheet_url'] = url
-            st.query_params["url"] = url
-            st.rerun()
-            
-        if not st.session_state.get('gsheet_url'):
-            st.warning("⚠️ スプレッドシートの URL を入力してください。")
+        # Mode display
+        if "user" in st.session_state and st.session_state.user:
+            st.info("🌐 **モード: クラウド同期**\n\nデータは Supabase に安全に保存され、端末間で同期されます。")
         else:
-            st.success("✅ 接続済み")
-            st.info("💡 ヒント: この画面をブックマークしておくと、次回から URL の再入力が不要になります。")
+            st.success("💻 **モード: ローカル保存**\n\nデータはこのブラウザにのみ保存されています。バックアップが必要な場合はログインしてください。")
+        
+        # Authentication & Sync Component
+        render_auth_component()
         
         st.divider()
-        st.caption("MHWs Equipment Manager v2.11")
+        st.caption("MHWs Equipment Manager v3.0 (Hybrid Storage)")

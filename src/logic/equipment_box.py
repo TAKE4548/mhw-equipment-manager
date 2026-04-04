@@ -2,9 +2,9 @@ import pandas as pd
 import uuid
 import streamlit as st
 from collections import Counter
-from src.database.gsheets_manager import load_data, save_data
+from src.database.storage_manager import load_data, save_data
 
-EQUIPMENT_WORKSHEET = "EquipmentBox"
+EQUIPMENT_TABLE = "weapons" # Matches Supabase table name
 EQUIPMENT_COLUMNS = [
     "id", "weapon_name", "weapon_type", "element", 
     "current_series_skill", "current_group_skill",
@@ -151,8 +151,7 @@ def validate_restoration_bonuses(bonuses: list[dict]) -> tuple[bool, str]:
     return True, ""
 
 def load_equipment() -> pd.DataFrame:
-    url = st.session_state.get("gsheet_url")
-    df = load_data(url, EQUIPMENT_WORKSHEET, required_columns=EQUIPMENT_COLUMNS)
+    df = load_data(EQUIPMENT_TABLE, required_columns=EQUIPMENT_COLUMNS)
     if not df.empty:
         for idx, row in df.iterrows():
             # Normalize Production
@@ -169,8 +168,7 @@ def load_equipment() -> pd.DataFrame:
     return df
 
 def save_equipment(df: pd.DataFrame) -> bool:
-    url = st.session_state.get("gsheet_url")
-    return save_data(df, url, EQUIPMENT_WORKSHEET)
+    return save_data(EQUIPMENT_TABLE, df)
 
 def register_equipment(weapon_name: str, weapon_type: str, element: str, 
                        current_series: str, current_group: str,

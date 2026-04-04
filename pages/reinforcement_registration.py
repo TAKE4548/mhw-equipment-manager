@@ -18,10 +18,6 @@ st.set_page_config(page_title="復元強化厳選", page_icon="✨", layout="wid
 # Render shared sidebar
 render_shared_sidebar()
 
-if not st.session_state.get('gsheet_url'):
-    st.info("👋 **URL 設定**: サイドバーの「スプレッドシート URL」を入力してください。")
-    st.stop()
-
 # Helper for badges
 def get_badge_html(text, bgcolor="#444", color="white"):
     return f'<span style="background-color: {bgcolor}; color: {color}; padding: 1px 10px; border-radius: 4px; font-size: 0.8em; font-weight: bold; display: inline-block; min-width: 45px; text-align: center;">{text}</span>'

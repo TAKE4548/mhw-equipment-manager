@@ -17,11 +17,9 @@ def init_session_state():
     if 'tracker_reg_w_id' not in st.session_state:
         st.session_state.tracker_reg_w_id = None
         
-    # URL Persistence
-    if 'gsheet_url' not in st.session_state:
-        url_from_query = st.query_params.get("url", "")
-        url_from_secrets = st.secrets.get("spreadsheet_url", "")
-        st.session_state['gsheet_url'] = url_from_query or url_from_secrets
+    # User session for Hybrid Storage
+    if 'user' not in st.session_state:
+        st.session_state.user = None
 
 init_session_state()
 
