@@ -72,7 +72,8 @@ def boot_from_browser(cookies: EncryptedCookieManager) -> bool:
 # --- Persist: Write to cookie ---
 
 def persist_to_browser(cookies: EncryptedCookieManager) -> bool:
-    """Writes memory data back to the browser cookie."""
+    """Writes memory data back to the browser cookie.
+    Calls st.rerun() after save so the component can commit the cookie."""
     if not cookies.ready():
         return False
 
@@ -85,10 +86,12 @@ def persist_to_browser(cookies: EncryptedCookieManager) -> bool:
         json_str = json.dumps(data, ensure_ascii=False)
         cookies[COOKIE_KEY] = json_str
         cookies.save()
+        # REQUIRED: rerun so the component re-renders and sends cookie to browser
+        st.rerun()
     except Exception as e:
         st.error(f"Cookie 保存に失敗しました: {e}")
         return False
-    return True
+    return True  # not reached (st.rerun aborts), but for type hints
 
 # --- Usage Monitoring ---
 
@@ -96,6 +99,18 @@ def get_cookie_usage_bytes(cookies: EncryptedCookieManager) -> int:
     """Returns the size of the current cookie data in bytes."""
     raw = cookies.get(COOKIE_KEY, "")
     return len(raw.encode("utf-8")) if raw else 0
+
+def get_debug_info(cookies: EncryptedCookieManager) -> dict:
+    """Returns debug information about the current cookie state."""
+    raw = cookies.get(COOKIE_KEY, "")
+    return {
+        "ready": cookies.ready(),
+        "cookie_exists": bool(raw),
+        "cookie_size_bytes": len(raw.encode("utf-8")) if raw else 0,
+        "weapons_count": len(st.session_state.get("mhw_data", {}).get("weapons", pd.DataFrame())),
+        "upgrades_count": len(st.session_state.get("mhw_data", {}).get("upgrades", pd.DataFrame())),
+        "trackers_count": len(st.session_state.get("mhw_data", {}).get("trackers", pd.DataFrame())),
+    }
 
 # --- Cloud Storage (Supabase) ---
 

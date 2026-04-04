@@ -5,6 +5,7 @@ from src.database.storage_manager import (
     make_cookie_manager,
     boot_from_browser,
     get_cookie_usage_bytes,
+    get_debug_info,
     is_logged_in,
 )
 
@@ -46,5 +47,16 @@ def render_shared_sidebar():
                 )
 
         render_auth_component()
+
+        # --- Debug Panel ---
+        with st.expander("🔍 デバッグ情報", expanded=True):
+            info = get_debug_info(cookies)
+            st.write(f"Ready: `{info['ready']}`")
+            st.write(f"Cookie 書き込み済み: `{info['cookie_exists']}`")
+            st.write(f"Cookie サイズ: `{info['cookie_size_bytes']} bytes`")
+            st.write(f"武器: `{info['weapons_count']}件`")
+            st.write(f"抽選: `{info['upgrades_count']}件`")
+            st.write(f"トラッカー: `{info['trackers_count']}件`")
+
         st.divider()
         st.caption("MHWs Equipment Manager v8.0 (Encrypted Cookie)")
