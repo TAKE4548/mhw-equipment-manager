@@ -83,24 +83,19 @@ def normalize_bonus(b_type, b_level=None, is_restoration=False):
     return nt, nl
 
 def get_abbr_item(item: str) -> str:
-    """Helper to apply abbreviation to a single item name + level string. Handles .0 floats too."""
+    """Helper to apply abbreviation to a single item name + level string."""
     if not item or item == "なし":
         return "なし"
     
-    # Normalize the string first (strip .0 if present anywhere)
     res = item.strip()
     if ".0" in res:
-        # e.g., "基礎攻撃力強化3.0" -> "基礎攻撃力強化3"
         res = res.replace(".0", "")
         
-    # Map trailing digits for safety
     for old, new in NORM_LV_MAP.items():
-        if res.endswith(old) and not old.endswith(".0"): # Avoid re-matching .0 here
-            # e.g., "基礎攻撃力強化3" -> "基礎攻撃力強化Ⅲ"
+        if res.endswith(old) and not old.endswith(".0"):
             res = res[:-len(old)] + new
             break
 
-    # Apply type abbreviations
     for full, short in ABBR_MAP.items():
         if res.startswith(full):
             return f"{short}{res[len(full):]}"
@@ -136,7 +131,6 @@ def get_weapon_label(weapon_id: str, df: pd.DataFrame) -> str:
 
 def validate_restoration_bonuses(bonuses: list[dict]):
     """Checks for illegal restoration bonus combinations (max 2 per type)."""
-    # Count occurrences of non-'なし' types
     types = [b['type'] for b in bonuses if b['type'] != "なし"]
     counts = Counter(types)
     for t, count in counts.items():
@@ -151,8 +145,7 @@ def validate_restoration_bonuses(bonuses: list[dict]):
 
 def load_equipment():
     df = load_data(EQUIPMENT_TABLE, required_columns=EQUIPMENT_COLUMNS)
-    if df is None:
-        return None
+    if df is None: return None
     
     if not df.empty:
         for idx, row in df.iterrows():
@@ -177,9 +170,8 @@ def register_equipment(weapon_name: str, weapon_type: str, element: str,
                        enhancement_type: str,
                        p_bonuses: list[str], rest_bonuses: list[dict]) -> str:
     df = load_equipment()
-    if df is None:
-        return None
-        
+    if df is None: return None
+    
     new_id = str(uuid.uuid4())
     new_row = {
         "id": new_id,
@@ -209,11 +201,7 @@ def register_equipment(weapon_name: str, weapon_type: str, element: str,
 
 def update_equipment_skills(eq_id: str, new_series: str, new_group: str) -> bool:
     df = load_equipment()
-    if df is None:
-        return False
-        
-    if df.empty:
-        return False
+    if df is None or df.empty: return False
     
     idx = df.index[df['id'] == eq_id].tolist()
     if not idx:
@@ -226,9 +214,6 @@ def update_equipment_skills(eq_id: str, new_series: str, new_group: str) -> bool
 
 def delete_equipment(eq_id: str) -> bool:
     df = load_equipment()
-    if df is None:
-        return False
-        
-    if df.empty: return False
+    if df is None or df.empty: return False
     df = df[df['id'] != eq_id]
     return save_equipment(df)
