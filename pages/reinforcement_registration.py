@@ -4,6 +4,7 @@ from src.logic.master import get_master_data
 from src.logic.equipment_box import (
     load_equipment, validate_restoration_bonuses, 
     get_weapon_label, format_bonus_summary, normalize_bonus,
+    format_bonus_list, filter_equipment,
     ATTRIBUTE_COLORS
 )
 from src.logic.restoration_tracker import (
@@ -62,9 +63,33 @@ with st.expander("➕ 抽選結果を登録する", expanded=exp_expanded):
     # Step 1: Weapon Selection List
     st.markdown("##### 1. 対象の武器を選択")
     
+    # --- Search & Filter UI ---
+    with st.expander("🔎 条件を指定して武器を探す", expanded=False):
+        f_c1, f_c2, f_c3 = st.columns(3)
+        with f_c1:
+            f_name = st.text_input("武器名で検索", placeholder="キーワード入力...")
+            f_types = st.multiselect("武器種", master.get("weapon_types", []))
+        with f_c2:
+            f_elements = st.multiselect("属性", master.get("elements", []))
+            f_enhancements = st.multiselect("巨戟強化", master.get("kyogeki_enhancements", []))
+        with f_c3:
+            f_sort = st.selectbox("並び替え", ["武器種順", "属性順", "新着順"], index=0)
+            
+    # Filtered List
+    eq_df_filtered = filter_equipment(
+        eq_df, 
+        search_name=f_name,
+        weapon_types=f_types,
+        elements=f_elements,
+        enhancements=f_enhancements,
+        sort_by=f_sort
+    )
+    
+    if eq_df_filtered.empty:
+        st.info("条件に一致する武器がありません。")
+    
     # Render mini-cards for selection
-    # Limit number shown or use scroll if many, but let's just render all for now
-    for idx, w_row in eq_df.iterrows():
+    for idx, w_row in eq_df_filtered.iterrows():
         is_selected = (st.session_state.tracker_reg_w_id == w_row['id'])
         row_bg = "rgba(255, 255, 255, 0.05)" if is_selected else "transparent"
         border_c = "#4d90fe" if is_selected else "#444"

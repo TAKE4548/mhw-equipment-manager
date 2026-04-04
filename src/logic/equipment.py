@@ -1,6 +1,7 @@
+import streamlit as st
 import pandas as pd
 import uuid
-import streamlit as st
+from src.logic.master import get_master_data
 from src.database.storage_manager import load_data, save_data
 
 UPGRADES_TABLE = "upgrades"
@@ -52,3 +53,41 @@ def execute_all_upgrades(decrement: int) -> bool:
 def delete_upgrade(record_id: str) -> bool:
     from src.database.storage_manager import delete_record
     return delete_record(UPGRADES_TABLE, record_id)
+
+def filter_upgrades(df: pd.DataFrame,
+                    weapon_types: list = None,
+                    elements: list = None,
+                    series_skills: list = None,
+                    group_skills: list = None,
+                    sort_by: str = "残り回数順") -> pd.DataFrame:
+    """Filters the upgrades dataframe."""
+    if df.empty: return df
+    
+    filtered_df = df.copy()
+    
+    if weapon_types:
+        filtered_df = filtered_df[filtered_df['weapon_type'].isin(weapon_types)]
+    if elements:
+        filtered_df = filtered_df[filtered_df['element'].isin(elements)]
+    if series_skills:
+        filtered_df = filtered_df[filtered_df['series_skill'].isin(series_skills)]
+    if group_skills:
+        filtered_df = filtered_df[filtered_df['group_skill'].isin(group_skills)]
+        
+    # --- MASTER DATA SORTING ---
+    master = get_master_data()
+    w_order = master.get("weapon_types", [])
+    e_order = master.get("elements", [])
+    
+    # Temporarily convert to Categorical for sorting
+    filtered_df['weapon_type'] = pd.Categorical(filtered_df['weapon_type'], categories=w_order, ordered=True)
+    filtered_df['element'] = pd.Categorical(filtered_df['element'], categories=e_order, ordered=True)
+
+    if sort_by == "武器種順":
+        filtered_df = filtered_df.sort_values(by=["weapon_type", "element", "remaining_count"])
+    elif sort_by == "属性順":
+        filtered_df = filtered_df.sort_values(by=["element", "weapon_type", "remaining_count"])
+    else: # 残り回数順 (Default)
+        filtered_df = filtered_df.sort_values(by="remaining_count", ascending=True)
+        
+    return filtered_df

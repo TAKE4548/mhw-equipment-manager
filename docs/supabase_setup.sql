@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS trackers (
 ALTER TABLE weapons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE upgrades ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trackers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
 
 -- Create Policies (Only owner can read/write)
 
@@ -92,6 +93,11 @@ CREATE POLICY "Users can view their own trackers" ON trackers FOR SELECT USING (
 CREATE POLICY "Users can update their own trackers" ON trackers FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete their own trackers" ON trackers FOR DELETE USING (auth.uid() = user_id);
 
+-- Favorites Policies
+CREATE POLICY "Users can insert their own favorites" ON favorites FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view their own favorites" ON favorites FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own favorites" ON favorites FOR DELETE USING (auth.uid() = user_id);
+
 -- --- Trigger for updated_at ---
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -104,3 +110,12 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_weapons_updated_at BEFORE UPDATE ON weapons FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_upgrades_updated_at BEFORE UPDATE ON upgrades FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_trackers_updated_at BEFORE UPDATE ON trackers FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+-- 4. favorites (Skill Favorites)
+CREATE TABLE IF NOT EXISTS favorites (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    favorite_type TEXT NOT NULL, -- 'series' or 'group'
+    skill_value TEXT NOT NULL, -- e.g. 'Rathalos' or 'APEX_PRIDE'
+    created_at TIMESTAMPTZ DEFAULT now()
+);

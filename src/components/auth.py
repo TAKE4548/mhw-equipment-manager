@@ -31,6 +31,12 @@ def render_auth_component():
                                 # Supabase auth handles login
                                 res = client.auth.sign_in_with_password({"email": email, "password": password})
                                 st.session_state.user = res.user
+                                
+                                # Persistence: Save session to cookie
+                                if res.session:
+                                    from src.database.storage_manager import set_auth_cookie
+                                    set_auth_cookie(res.session.access_token, res.session.refresh_token)
+                                
                                 # After login, trigger sync from local to cloud
                                 sync_local_to_cloud()
                                 st.toast("✅ ログイン成功", icon="🎉")
@@ -60,6 +66,9 @@ def render_auth_component():
                 
             if col2.button("ログアウト", use_container_width=True):
                 st.session_state.user = None
+                # Clear auth cookie
+                from src.database.storage_manager import set_auth_cookie
+                set_auth_cookie("", "")
                 st.rerun()
 
 def get_current_user_id():

@@ -4,8 +4,10 @@ from src.logic.master import get_master_data
 from src.logic.equipment_box import (
     load_equipment, register_equipment, delete_equipment, 
     validate_restoration_bonuses, get_weapon_label, format_bonus_summary, normalize_bonus,
+    format_bonus_list, filter_equipment,
     ATTRIBUTE_COLORS
 )
+from src.logic.favorites import get_favorite_list, prepare_skill_choices
 
 from src.components.sidebar import render_shared_sidebar
 
@@ -27,10 +29,12 @@ st.divider()
 st.subheader("新しい武器を登録")
 
 master = get_master_data()
-series_skills_master = master.get("series_skills", [])
-series_skill_labels = [f"{s['skill_parts']} ({s['skill_name']})" if s['skill_parts'] != "なし" else "なし" for s in series_skills_master]
-group_skills_master = master.get("group_skills", [])
-group_skill_labels = [f"{g['group_name']} ({g['skill_name']})" if g['group_name'] != "なし" else "なし" for g in group_skills_master]
+# Favorites for sorting
+fav_series = get_favorite_list("series")
+fav_groups = get_favorite_list("group")
+
+sorted_series, series_skill_labels = prepare_skill_choices(master.get("series_skills", []), fav_series, "skill_parts")
+sorted_groups, group_skill_labels = prepare_skill_choices(master.get("group_skills", []), fav_groups, "group_name")
 
 p_bonus_opts = master.get("production_bonuses", [])
 enhancement_opts = master.get("kyogeki_enhancements", [])
@@ -51,10 +55,10 @@ with st.expander("➕ 武器を新規登録する", expanded=False):
     sc1, sc2 = st.columns(2)
     with sc1:
         sel_s = st.selectbox("シリーズスキル", range(len(series_skill_labels)), format_func=lambda i: series_skill_labels[i])
-        current_series = series_skills_master[sel_s]["skill_parts"]
+        current_series = sorted_series[sel_s]["skill_parts"]
     with sc2:
         sel_g = st.selectbox("グループスキル", range(len(group_skill_labels)), format_func=lambda i: group_skill_labels[i])
-        current_group = group_skills_master[sel_g]["group_name"]
+        current_group = sorted_groups[sel_g]["group_name"]
         
     st.markdown("##### 生産ボーナス (必ず3枠設定)")
     pc1, pc2, pc3 = st.columns(3)
@@ -122,62 +126,183 @@ with st.expander("➕ 武器を新規登録する", expanded=False):
                 st.error("登録に失敗しました。")
 
 st.divider()
+
+# --- Search & Filter UI ---
+st.subheader("検索とフィルタ 🔍")
+
+with st.expander("🔎 条件を指定して絞り込む", expanded=False):
+    f_c1, f_c2, f_c3 = st.columns(3)
+    with f_c1:
+        f_name = st.text_input("武器名で検索", placeholder="キーワード入力...")
+        f_types = st.multiselect("武器種", master.get("weapon_types", []))
+    with f_c2:
+        f_elements = st.multiselect("属性", master.get("elements", []))
+        f_enhancements = st.multiselect("巨戟強化", enhancement_opts)
+    with f_c3:
+        f_sort = st.selectbox("並び替え", ["武器種順", "属性順", "新着順"], index=0)
+
+    sf_c1, sf_c2 = st.columns(2)
+    with sf_c1:
+        f_series = st.multiselect("シリーズスキル", [s['skill_parts'] for s in master.get("series_skills", []) if s['skill_parts'] != "なし"])
+    with sf_c2:
+        f_groups = st.multiselect("グループスキル", [g['group_name'] for g in master.get("group_skills", []) if g['group_name'] != "なし"])
+
+    st.markdown("##### ボーナスによる絞り込み (順番不問 / 全て含むものにヒット)")
+    b_c1, b_c2 = st.columns(2)
+    with b_c1:
+        # Get unique production bonuses from master
+        f_pbs = st.multiselect("生産ボーナス", p_bonus_opts)
+    with b_c2:
+        # Build dynamic list of restoration bonuses for filtering
+        f_rbs_opts = []
+        for rt, lvs in master.get("restoration_bonuses", {}).items():
+            if rt == "なし": continue
+            for lv in lvs:
+                f_rbs_opts.append(rt if lv == "無印" else f"{rt} [{lv}]")
+        f_rbs = st.multiselect("復元ボーナス", f_rbs_opts)
+
 st.subheader("所持武器一覧")
 
-df = load_equipment()
+# Load and Filter
+df_raw = load_equipment()
+df = filter_equipment(
+    df_raw, 
+    search_name=f_name,
+    weapon_types=f_types,
+    elements=f_elements,
+    series_skills=f_series,
+    group_skills=f_groups,
+    enhancements=f_enhancements,
+    p_bonuses=f_pbs,
+    r_bonuses=f_rbs,
+    sort_by=f_sort
+)
 
-# Badge CSS helper
+# Badge CSS helper (Upgraded for slim design)
 def get_badge_html(text, bgcolor="#444", color="white"):
-    return f'<span style="background-color: {bgcolor}; color: {color}; padding: 1px 10px; border-radius: 4px; font-size: 0.8em; font-weight: bold; display: inline-block; min-width: 45px; text-align: center;">{text}</span>'
+    return f'<span style="background-color: {bgcolor}; color: {color}; padding: 1px 6px; border-radius: 3px; font-size: 0.75em; font-weight: bold; display: inline-block; min-width: 35px; text-align: center; margin-right: 8px;">{text}</span>'
 
 if df.empty:
-    st.info("登録されている武器がありません。")
+    st.info("条件に一致する武器がありません。")
 else:
+    # Use custom HTML for slim design
+    st.markdown("""
+        <style>
+        .slim-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            gap: 12px;
+        }
+        .slim-main {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            min-width: 0;
+        }
+        .slim-info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex-grow: 1;
+        }
+        .slim-title {
+            font-weight: bold;
+            font-size: 0.95em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .slim-sub {
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 2px;
+        }
+        .slim-bonus {
+            font-size: 0.75em;
+            background: #2a2a2a;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #ccc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 350px;
+        }
+        .slim-actions {
+            display: flex;
+            gap: 4px;
+        }
+        @media (max-width: 600px) {
+            .slim-card {
+                flex-wrap: wrap;
+                padding: 10px;
+            }
+            .slim-bonus {
+                max-width: 100%;
+                margin-top: 4px;
+                width: 100%;
+            }
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     for index, row in df.iterrows():
-        with st.container(border=True):
-            # 6 columns for a clean table-like row
-            cols = st.columns([0.6, 1.8, 1.2, 2.0, 2.5, 0.4], vertical_alignment="center")
+        # Get details
+        elem = row['element']
+        bg = ATTRIBUTE_COLORS.get(elem, "#444")
+        txt_c = "black" if elem in ["氷", "雷", "無", "睡眠"] else "white"
+        badge_html = get_badge_html(elem, bgcolor=bg, color=txt_c)
+        
+        display_name = row['weapon_name']
+        is_named = display_name and not display_name.startswith("無銘の")
+        title_text = display_name if is_named else row['weapon_type']
+        
+        enh = row['enhancement_type']
+        series = row['current_series_skill']
+        group = row['current_group_skill']
+        
+        # Summary of bonuses
+        pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
+        rbs_with_lv = []
+        for i in range(1, 6):
+            rt = row.get(f'rest_{i}_type', 'なし')
+            rl = row.get(f'rest_{i}_level', 'なし')
+            if rt != 'なし':
+                suffix = rl if rl and rl != "無印" else ""
+                rbs_with_lv.append(f"{rt}{suffix}")
+        
+        bonus_html = f"🛠️ {format_bonus_summary(pbs)} / ✨ {format_bonus_summary(rbs_with_lv)}"
+        
+        # Action columns
+        c_left, c_right = st.columns([9, 1], vertical_alignment="center")
+        
+        with c_left:
+            card_html = f"""
+            <div class="slim-card">
+                <div class="slim-main">
+                    {badge_html}
+                    <div class="slim-info">
+                        <div class="slim-title">{title_text} <span style="font-weight: normal; color: #666; font-size: 0.8em;">({row['weapon_type']})</span></div>
+                        <div class="slim-sub">📋 {enh} | 🛡️ {series} | 👥 {group}</div>
+                    </div>
+                </div>
+                <div class="slim-bonus" title="{bonus_html}">{bonus_html}</div>
+            </div>
+            """
+            st.markdown(card_html, unsafe_allow_html=True)
             
-            # 1. Attribute Badge (Element Only)
-            elem = row['element']
-            bg = ATTRIBUTE_COLORS.get(elem, "#444")
-            txt_c = "black" if elem in ["氷", "雷", "無", "睡眠"] else "white"
-            badge_html = get_badge_html(elem, bgcolor=bg, color=txt_c)
-            cols[0].markdown(badge_html, unsafe_allow_html=True)
-            
-            # 2. Name / Type
-            display_name = row['weapon_name']
-            is_named = display_name and not display_name.startswith("無銘の")
-            cols[1].markdown(f"**{display_name if is_named else row['weapon_type']}**")
-            
-            # 3. Enhancement
-            cols[2].markdown(f"<small>📋 {row['enhancement_type']}</small>", unsafe_allow_html=True)
-            
-            # 4. Skills (Stacked)
-            cols[3].markdown(f"<small>🛡️ {row['current_series_skill']}<br>👥 {row['current_group_skill']}</small>", unsafe_allow_html=True)
-            
-            # 5. Bonuses (Stacked)
-            pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
-            
-            rbs_with_lv = []
-            for i in range(1, 6):
-                rt = row.get(f'rest_{i}_type', 'なし')
-                rl = row.get(f'rest_{i}_level', 'なし')
-                if rt != 'なし':
-                    suffix = rl if rl and rl != "無印" else ""
-                    rbs_with_lv.append(f"{rt}{suffix}")
-                else:
-                    rbs_with_lv.append("なし")
-            
-            from src.logic.equipment_box import format_bonus_list
-            cols[4].markdown(f"<small>🛠️ {format_bonus_list(pbs)}<br>✨ {format_bonus_list(rbs_with_lv)}</small>", unsafe_allow_html=True)
-            
-            # 6. Actions
-            ac1, ac2 = cols[5].columns(2)
-            if ac1.button("🎯", key=f"tr_{row['id']}", use_container_width=True, help="この武器の強化厳選登録へ"):
+        with c_right:
+            # We still need dedicated Streamlit buttons for actions (rerun/switch)
+            btn_col1, btn_col2 = st.columns(2)
+            if btn_col1.button("🎯", key=f"tr_{row['id']}", help="この武器の強化登録へ"):
                 st.session_state.tracker_reg_w_id = row['id']
-                st.switch_page("pages/3_reinforcement_registration.py")
-                
-            if ac2.button("🗑️", key=f"del_{row['id']}", use_container_width=True):
+                st.switch_page("pages/reinforcement_registration.py")
+            if btn_col2.button("🗑️", key=f"del_{row['id']}"):
                 if delete_equipment(row['id']):
                     st.rerun()

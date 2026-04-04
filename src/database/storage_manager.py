@@ -7,7 +7,7 @@ from supabase import create_client, Client
 
 # --- Configuration ---
 COOKIE_KEY = "mhw_data"
-MANAGED_TABLES = ["weapons", "trackers", "upgrades"]
+MANAGED_TABLES = ["weapons", "trackers", "upgrades", "favorites"]
 
 # --- Compression ---
 
@@ -78,10 +78,8 @@ def persist_to_browser():
         compressed = _compress(data)
         cookie_str = f"{COOKIE_KEY}={compressed}; path=/; max-age=2592000; SameSite=Lax"
 
-        # V10: Use more robust script that logs to console for debugging
         # Using unsafe_allow_javascript=True to escape sandbox iframe
-            # V10-fix: Try to write to both local and parent document just in case.
-        # This is the most aggressive way to set a cookie from within a Streamlit component.
+        # Try to write to both local and parent document just in case.
         js = f"""
         <script>
             (function() {{
@@ -129,17 +127,15 @@ def _load_from_cloud(table: str, required_columns: list) -> pd.DataFrame:
     if not client or not is_logged_in():
         return pd.DataFrame(columns=required_columns)
     try:
-        # Select specifically the columns we need (+ user_id for management)
         response = client.table(table).select("*").eq("user_id", st.session_state.user.id).execute()
         df = pd.DataFrame(response.data)
         if df.empty:
             return pd.DataFrame(columns=required_columns)
             
-        # Ensure all required columns are present
         for col in required_columns:
             if col not in df.columns:
                 df[col] = None
-        return df[required_columns] # Strict column ordering
+        return df[required_columns]
     except Exception as e:
         st.error(f"Cloud load error (table: {table}): {e}")
         return pd.DataFrame(columns=required_columns)
@@ -150,16 +146,12 @@ def _save_to_cloud(table: str, df: pd.DataFrame) -> bool:
         return False
     
     if df.empty:
-        # If we want to support deleting all data in cloud, we might call a delete.
-        # For now, let's just return True.
         return True
         
     df_save = df.copy()
     df_save["user_id"] = st.session_state.user.id
     
     try:
-        # Perform upsert based on 'id' if present, otherwise insert
-        # We assume the tables have 'id' as primary key as defined in supabase_setup.sql
         data_to_save = df_save.to_dict(orient="records")
         client.table(table).upsert(data_to_save).execute()
         return True
@@ -186,15 +178,11 @@ def save_data(key: str, df: pd.DataFrame) -> bool:
         return _save_to_cloud(key, df)
     init_memory_storage()
     st.session_state["mhw_data"][key] = df
-    
-    # V10-fix2: Trigger sync immediately so it's part of the current delta
     persist_to_browser()
-    st.session_state["needs_persist"] = False # Reset flag if called here
+    st.session_state["needs_persist"] = False
     return True
 
 def delete_record(key: str, record_id: str) -> bool:
-    """Permanently deletes a record by ID from both cloud and local storage."""
-    # 1. Cloud deletion
     if is_logged_in():
         client = get_supabase_client()
         if client:
@@ -204,19 +192,15 @@ def delete_record(key: str, record_id: str) -> bool:
                 st.error(f"Cloud delete error: {e}")
                 return False
 
-    # 2. Local memory deletion
     init_memory_storage()
     df = st.session_state["mhw_data"].get(key, pd.DataFrame())
     if not df.empty:
         st.session_state["mhw_data"][key] = df[df["id"].astype(str) != str(record_id)]
     
-    # 3. Browser sync
     persist_to_browser()
     return True
 
 def sync_local_to_cloud():
-    """Migrates local session data to cloud after login.
-    Currently overwrites cloud data with local data for managed tables."""
     if not is_logged_in():
         return
         
@@ -234,3 +218,45 @@ def sync_local_to_cloud():
         progress_text.success(f"✅ {success_count} 個のテーブルをクラウドに同期しました。")
     else:
         progress_text.empty()
+
+# --- Persistent Auth ---
+
+AUTH_COOKIE_KEY = "mhw_auth"
+
+def set_auth_cookie(access_token: str, refresh_token: str):
+    """Writes the Supabase session tokens to a browser cookie."""
+    cookie_val = f"{access_token}|{refresh_token}" if access_token else ""
+    cookie_str = f"{AUTH_COOKIE_KEY}={cookie_val}; path=/; max-age=2592000; SameSite=Lax"
+    
+    js = f"""
+    <script>
+        (function() {{
+            const cookie = {json.dumps(cookie_str)};
+            try {{ document.cookie = cookie; }} catch(e) {{}}
+            try {{ if (window.parent && window.parent.document) window.parent.document.cookie = cookie; }} catch(e) {{}}
+        }})();
+    </script>
+    """
+    st.html(js, unsafe_allow_javascript=True)
+
+def try_restore_session():
+    """Attempts to restore a Supabase session from the browser cookie."""
+    if st.session_state.get("user"):
+        return True # Already logged in
+        
+    client = get_supabase_client()
+    if not client:
+        return False
+        
+    try:
+        raw_auth = st.context.cookies.get(AUTH_COOKIE_KEY)
+        if raw_auth and "|" in raw_auth:
+            access, refresh = raw_auth.split("|", 1)
+            # Restore session
+            res = client.auth.set_session(access, refresh)
+            if res.user:
+                st.session_state.user = res.user
+                return True
+    except Exception:
+        pass
+    return False

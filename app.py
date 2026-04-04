@@ -12,9 +12,11 @@ from src.utils.session import init_session_state
 init_session_state()
 
 # Navigation setup (v1.55+)
-skill_page = st.Page("pages/0_skill_lottery.py", title="スキル抽選結果", icon="⚔️", default=True)
+# Navigation setup (v1.55+)
+home_page = st.Page("pages/4_analytics_dashboard.py", title="Home", icon="🏠", default=True)
 box_page = st.Page("pages/equipment_box.py", title="所有巨戟アーティア一覧", icon="📦")
+skill_page = st.Page("pages/0_skill_lottery.py", title="スキル抽選結果", icon="⚔️")
 rein_page = st.Page("pages/reinforcement_registration.py", title="復元強化厳選", icon="✨")
 
-pg = st.navigation([skill_page, box_page, rein_page])
+pg = st.navigation([home_page, box_page, skill_page, rein_page])
 pg.run()

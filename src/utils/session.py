@@ -1,4 +1,5 @@
 import streamlit as st
+from src.database.storage_manager import try_restore_session
 
 def init_session_state():
     """Initializes all session state variables to prevent AttributeErrors."""
@@ -21,3 +22,6 @@ def init_session_state():
     # User session for Hybrid Storage
     if 'user' not in st.session_state:
         st.session_state.user = None
+        
+    # Attempt to restore session from cookie if not already logged in
+    try_restore_session()

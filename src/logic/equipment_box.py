@@ -3,6 +3,7 @@ import uuid
 import streamlit as st
 from collections import Counter
 from src.database.storage_manager import load_data, save_data
+from src.logic.master import get_master_data
 
 EQUIPMENT_TABLE = "weapons" # Matches Supabase table name
 EQUIPMENT_COLUMNS = [
@@ -208,3 +209,82 @@ def update_equipment_skills(eq_id: str, new_series: str, new_group: str) -> bool
 def delete_equipment(eq_id: str) -> bool:
     from src.database.storage_manager import delete_record
     return delete_record(EQUIPMENT_TABLE, eq_id)
+
+def filter_equipment(df: pd.DataFrame, 
+                     search_name: str = "",
+                     weapon_types: list = None, 
+                     elements: list = None,
+                     series_skills: list = None,
+                     group_skills: list = None,
+                     enhancements: list = None,
+                     p_bonuses: list = None,
+                     r_bonuses: list = None,
+                     sort_by: str = "新着順") -> pd.DataFrame:
+    """Filters the equipment dataframe based on multiple criteria."""
+    if df.empty:
+        return df
+
+    filtered_df = df.copy()
+
+    # 1. Weapon Name Search (Partial Match)
+    if search_name:
+        filtered_df = filtered_df[filtered_df['weapon_name'].str.contains(search_name, case=False, na=False)]
+
+    # 2. Multi-select Filters (Weapon Type, Element, Enhancement, Skills)
+    if weapon_types:
+        filtered_df = filtered_df[filtered_df['weapon_type'].isin(weapon_types)]
+    if elements:
+        filtered_df = filtered_df[filtered_df['element'].isin(elements)]
+    if enhancements:
+        filtered_df = filtered_df[filtered_df['enhancement_type'].isin(enhancements)]
+    if series_skills:
+        filtered_df = filtered_df[filtered_df['current_series_skill'].isin(series_skills)]
+    if group_skills:
+        filtered_df = filtered_df[filtered_df['current_group_skill'].isin(group_skills)]
+
+    # 3. Production Bonuses (Order Independent, AND match for selected set)
+    if p_bonuses:
+        # Create a combined set or list of bonuses in each row
+        def match_p_bonuses(row):
+            row_pbs = {row.get(f'p_bonus_{i}', 'なし') for i in range(1, 4)}
+            return all(pb in row_pbs for pb in p_bonuses)
+        filtered_df = filtered_df[filtered_df.apply(match_p_bonuses, axis=1)]
+
+    # 4. Restoration Bonuses (Order Independent, AND match for selected set)
+    if r_bonuses:
+        def match_r_bonuses(row):
+            row_rbs = set()
+            for i in range(1, 6):
+                rt = row.get(f'rest_{i}_type', 'なし')
+                rl = row.get(f'rest_{i}_level', 'なし')
+                if rt != 'なし':
+                    label = rt if rl == "無印" else f"{rt} [{rl}]"
+                    row_rbs.add(label)
+                else:
+                    row_rbs.add("なし")
+            return all(rb in row_rbs for rb in r_bonuses)
+        filtered_df = filtered_df[filtered_df.apply(match_r_bonuses, axis=1)]
+
+    # 5. Sorting
+    master = get_master_data()
+    # Define categorical order based on master data
+    w_order = master.get("weapon_types", [])
+    e_order = master.get("elements", [])
+    en_order = master.get("kyogeki_enhancements", [])
+    
+    # Use copy for categorical conversion to avoid modifying original if needed
+    # but here we are already working on filtered_df copy
+    filtered_df['weapon_type'] = pd.Categorical(filtered_df['weapon_type'], categories=w_order, ordered=True)
+    filtered_df['element'] = pd.Categorical(filtered_df['element'], categories=e_order, ordered=True)
+    filtered_df['enhancement_type'] = pd.Categorical(filtered_df['enhancement_type'], categories=en_order, ordered=True)
+
+    if sort_by == "武器種順":
+        filtered_df = filtered_df.sort_values(by=["weapon_type", "element", "enhancement_type", "weapon_name"])
+    elif sort_by == "属性順":
+        filtered_df = filtered_df.sort_values(by=["element", "weapon_type", "enhancement_type", "weapon_name"])
+    else: # 新着順 (Newest First)
+        # Convert back values if needed for further use, but actually categorical 
+        # is fine for display. For 'Newest', we just use the index.
+        filtered_df = filtered_df.sort_index(ascending=False)
+
+    return filtered_df
