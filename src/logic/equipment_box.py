@@ -129,17 +129,21 @@ def get_weapon_label(weapon_id: str, df: pd.DataFrame) -> str:
     return f"{name} ({row['element']})"
 
 def validate_restoration_bonuses(bonuses: list[dict]):
-    """Checks for illegal restoration bonus combinations (max 2 per type)."""
-    types = [b['type'] for b in bonuses if b['type'] != "なし"]
-    counts = Counter(types)
-    for t, count in counts.items():
+    """Checks for illegal restoration bonus combinations (max 2 per specific item+level)."""
+    # Count specific (type, level) pairs instead of just types
+    combos = [(b.get('type', 'なし'), b.get('level', 'なし')) for b in bonuses if b.get('type', 'なし') != "なし"]
+    counts = Counter(combos)
+    
+    for (t, lv), count in counts.items():
         if count > 2:
             tl_key = t
             for old, new in ABBR_MAP.items():
                 if t.startswith(old):
                     tl_key = new
                     break
-            return False, f"強化済みのボーナス「{tl_key}」が3枠以上重複することはあり得ません（最大2枠まで）。"
+            # Add level to the error message for clarity
+            label = f"{tl_key}[{lv}]" if lv != "無印" else tl_key
+            return False, f"強化済みのボーナス「{label}」が3枠以上重複することはあり得ません（最大2枠まで）。"
     return True, ""
 
 def load_equipment():
