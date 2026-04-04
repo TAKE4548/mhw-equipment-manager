@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import json
 from supabase import create_client, Client
-from st_javascript import st_javascript
+from streamlit_javascript import st_javascript
 
 # --- Configuration & Initialization ---
 

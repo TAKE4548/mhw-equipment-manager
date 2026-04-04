@@ -1,8 +1,12 @@
 import streamlit as st
 from src.components.auth import render_auth_component
+from src.utils.session import init_session_state
 
 def render_shared_sidebar():
     """Renders a shared sidebar with Hybrid Storage (Local/Cloud) management."""
+    # Ensure session state is always initialized on every page rerun
+    init_session_state()
+    
     with st.sidebar:
         st.header("⚙️ ストレージ設定")
         
