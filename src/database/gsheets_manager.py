@@ -1,11 +1,23 @@
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
-import os
-import json
-
 import gspread
 from google.oauth2.service_account import Credentials
+
+def normalize_gsheet_url(url: str) -> str:
+    """Removes common suffixes like /edit, /view, etc. from Google Sheet URLs to avoid 400 errors."""
+    if not url:
+        return ""
+    
+    # Standardize the base URL: https://docs.google.com/spreadsheets/d/ID
+    parts = url.split('/')
+    if 'spreadsheets' in parts and 'd' in parts:
+        d_idx = parts.index('d')
+        if len(parts) > d_idx + 1:
+            # Reconstruct up to /d/SPREADSHEET_ID
+            return '/'.join(parts[:d_idx+2])
+            
+    return url # Return as-is if pattern doesn't match
 
 def get_gsheets_connection():
     """Returns a GSheets connection if a URL is provided in session state."""
@@ -21,6 +33,7 @@ def ensure_worksheet_exists(url, worksheet_name):
     if isinstance(worksheet_name, int) or not worksheet_name:
         return
         
+    n_url = normalize_gsheet_url(url)
     try:
         # Use gspread directly for advanced operations like creating worksheets
         creds_dict = st.secrets["connections"]["gsheets"]
@@ -30,7 +43,9 @@ def ensure_worksheet_exists(url, worksheet_name):
         ]
         credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
         client = gspread.authorize(credentials)
-        spreadsheet = client.open_by_url(url)
+        
+        # open_by_url is sensitive to extra parameters
+        spreadsheet = client.open_by_url(n_url)
         
         # Check if exists
         worksheet_list = [w.title for w in spreadsheet.worksheets()]
@@ -39,7 +54,7 @@ def ensure_worksheet_exists(url, worksheet_name):
             print(f"Created new worksheet: {worksheet_name}")
     except Exception as e:
         # Print the error to console instead of using st.error to avoid Streamlit cache replay issues
-        print(f"Failed to auto-create worksheet '{worksheet_name}': {type(e).__name__} - {e}")
+        print(f"Failed to auto-create worksheet '{worksheet_name}' at {n_url}: {type(e).__name__} - {e}")
 
 def load_data(worksheet=0, required_columns=None):
     """Loads data from a specific worksheet in the configured Google Sheet."""
@@ -47,8 +62,10 @@ def load_data(worksheet=0, required_columns=None):
     if not url:
         return pd.DataFrame()
     
+    n_url = normalize_gsheet_url(url)
+    
     # Auto-create worksheet if name is provided and doesn't exist
-    ensure_worksheet_exists(url, worksheet)
+    ensure_worksheet_exists(n_url, worksheet)
     
     if required_columns is None:
         required_columns = ["id", "weapon_type", "element", "series_skill", "group_skill", "remaining_count"]
@@ -57,7 +74,8 @@ def load_data(worksheet=0, required_columns=None):
     if conn:
         try:
             # Set ttl to 60 seconds to prevent Rate Limit 429 on every dropdown rerendering
-            df = conn.read(spreadsheet=url, worksheet=worksheet, ttl=60)
+            # Using normalized URL here is critical to avoid 400 Bad Request
+            df = conn.read(spreadsheet=n_url, worksheet=worksheet, ttl=60)
             if df.empty:
                 return pd.DataFrame(columns=required_columns)
             
@@ -66,9 +84,15 @@ def load_data(worksheet=0, required_columns=None):
                     df[col] = None
             return df[required_columns]
         except Exception as e:
-            if "No columns to parse" in str(e) or "WorksheetNotFound" in str(e):
+            err_msg = str(e)
+            if "No columns to parse" in err_msg or "WorksheetNotFound" in err_msg:
                 return pd.DataFrame(columns=required_columns)
-            st.error(f"Error reading from Google Sheets (worksheet: {worksheet}): {repr(e)}")
+            
+            # Diagnose 400 Bad Request
+            if "400" in err_msg:
+                st.error(f"❌ **Google Sheets API エラー (400 Bad Request)**\n\nURL または ワークシート名「{worksheet}」が正しく解釈されていません。\n\n- **解決策**: スプレッドシート名に特殊文字が含まれていないか確認し、かつ Service Account が「編集者（Editor）」として共有されているか確認してください。")
+            else:
+                st.error(f"Error reading from Google Sheets (worksheet: {worksheet}): {repr(e)}")
             return pd.DataFrame(columns=required_columns)
     return pd.DataFrame(columns=required_columns)
 
@@ -78,12 +102,13 @@ def save_data(df: pd.DataFrame, worksheet=0):
     if not url:
         return False
         
-    ensure_worksheet_exists(url, worksheet)
+    n_url = normalize_gsheet_url(url)
+    ensure_worksheet_exists(n_url, worksheet)
     
     conn = get_gsheets_connection()
     if conn:
         try:
-            conn.update(spreadsheet=url, worksheet=worksheet, data=df)
+            conn.update(spreadsheet=n_url, worksheet=worksheet, data=df)
             st.cache_data.clear() # Clear cache to instantly reflect changes
             return True
         except Exception as e:
