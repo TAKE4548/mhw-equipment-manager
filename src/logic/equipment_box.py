@@ -206,7 +206,5 @@ def update_equipment_skills(eq_id: str, new_series: str, new_group: str) -> bool
     return save_equipment(df)
 
 def delete_equipment(eq_id: str) -> bool:
-    df = load_equipment()
-    if df.empty: return False
-    df = df[df['id'].astype(str) != str(eq_id)]
-    return save_equipment(df)
+    from src.database.storage_manager import delete_record
+    return delete_record(EQUIPMENT_TABLE, eq_id)

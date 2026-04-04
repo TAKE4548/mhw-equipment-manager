@@ -50,11 +50,5 @@ def execute_all_upgrades(decrement: int) -> bool:
     return True
 
 def delete_upgrade(record_id: str) -> bool:
-    df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
-    if df.empty: return False
-    idx = df[df["id"].astype(str) == str(record_id)].index
-    if not idx.empty:
-        df = df.drop(idx)
-        save_data(UPGRADES_TABLE, df)
-        return True
-    return False
+    from src.database.storage_manager import delete_record
+    return delete_record(UPGRADES_TABLE, record_id)

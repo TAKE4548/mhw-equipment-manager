@@ -192,6 +192,28 @@ def save_data(key: str, df: pd.DataFrame) -> bool:
     st.session_state["needs_persist"] = False # Reset flag if called here
     return True
 
+def delete_record(key: str, record_id: str) -> bool:
+    """Permanently deletes a record by ID from both cloud and local storage."""
+    # 1. Cloud deletion
+    if is_logged_in():
+        client = get_supabase_client()
+        if client:
+            try:
+                client.table(key).delete().eq("id", record_id).eq("user_id", st.session_state.user.id).execute()
+            except Exception as e:
+                st.error(f"Cloud delete error: {e}")
+                return False
+
+    # 2. Local memory deletion
+    init_memory_storage()
+    df = st.session_state["mhw_data"].get(key, pd.DataFrame())
+    if not df.empty:
+        st.session_state["mhw_data"][key] = df[df["id"].astype(str) != str(record_id)]
+    
+    # 3. Browser sync
+    persist_to_browser()
+    return True
+
 def sync_local_to_cloud():
     """Migrates local session data to cloud after login.
     Currently overwrites cloud data with local data for managed tables."""

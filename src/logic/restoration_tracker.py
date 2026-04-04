@@ -73,14 +73,8 @@ def advance_all_trackers(decrement: int = 1) -> bool:
     return False
 
 def delete_tracker(tracker_id: str) -> bool:
-    df = load_trackers()
-    if df.empty: return False
-    prev_df = df.copy()
-    df = df[df["id"].astype(str) != str(tracker_id)]
-    if save_data(TRACKER_TABLE, df):
-        record_history("DELETE", prev_df, df)
-        return True
-    return False
+    from src.database.storage_manager import delete_record
+    return delete_record(TRACKER_TABLE, tracker_id)
 
 def execute_apply_and_advance(tracker_id: str) -> bool:
     from src.logic.equipment_box import load_equipment, save_equipment
