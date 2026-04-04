@@ -38,11 +38,13 @@ with h_col1:
     if st.button("Undo ↩️", disabled=undo_disabled, use_container_width=True):
         if undo_action():
             st.toast("元に戻しました")
+            st.rerun()
 with h_col2:
     redo_disabled = not st.session_state.history_redo
     if st.button("Redo ↪️", disabled=redo_disabled, use_container_width=True):
         if redo_action():
             st.toast("やり直しました")
+            st.rerun()
 
 st.divider()
 
@@ -139,7 +141,8 @@ with st.expander("➕ 抽選結果を登録する", expanded=exp_expanded):
             else:
                 if register_tracker(st.session_state.tracker_reg_w_id, count_val, parsed_rbs):
                     st.session_state.tracker_reg_w_id = None # Clear after success
-                    st.success("追加しました")
+                    st.toast("追加しました", icon="📋")
+                    st.rerun()
 
 st.divider()
 st.subheader("トラッキング中の抽選結果 (残り回数順)")
@@ -208,6 +211,8 @@ else:
             # Actions
             ac1, ac2 = cols[6].columns([3, 1])
             if ac1.button("🔨 強化実施", key=f"ap_{row['id']}", use_container_width=True):
-                execute_apply_and_advance(row['id'])
+                if execute_apply_and_advance(row['id']):
+                    st.rerun()
             if ac2.button("🗑️", key=f"dl_{row['id']}", use_container_width=True):
-                delete_tracker(row['id'])
+                if delete_tracker(row['id']):
+                    st.rerun()

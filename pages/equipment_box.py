@@ -111,7 +111,8 @@ with st.expander("➕ 武器を新規登録する", expanded=False):
                 [pb1, pb2, pb3], parsed_rbs
             )
             if record_id:
-                st.success(f"{final_weapon_name} を登録しました！")
+                st.toast(f"{final_weapon_name} を登録しました！", icon="✅")
+                st.rerun()
             else:
                 st.error("登録に失敗しました。")
 
@@ -173,5 +174,5 @@ else:
                 st.switch_page("pages/3_reinforcement_registration.py")
                 
             if ac2.button("🗑️", key=f"del_{row['id']}", use_container_width=True):
-                delete_equipment(row['id'])
-                # No rerun needed, will refresh on next interaction or navigation
+                if delete_equipment(row['id']):
+                    st.rerun()

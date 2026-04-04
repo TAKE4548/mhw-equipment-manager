@@ -49,6 +49,7 @@ with st.expander("🆕 未登録の強化抽選結果を追加する", expanded=
                     st.session_state['undo_stack'].append({'action_type': 'REGISTER', 'target_id': record_id})
                     st.session_state['redo_stack'].clear()
                     st.toast("抽選結果を登録しました！", icon="✅")
+                    st.rerun()
 
 st.divider()
 
