@@ -1,10 +1,12 @@
 import streamlit as st
 from src.components.auth import render_auth_component
 from src.utils.session import init_session_state
-from src.database.storage_manager import boot_from_browser, get_debug_info
+from src.database.storage_manager import boot_from_browser, get_debug_info, setup_cookie_controller
 
 def render_shared_sidebar():
     init_session_state()
+    # CRITICAL: render CookieController on EVERY script run so ctrl.set() works
+    setup_cookie_controller()
     boot_from_browser()
 
     with st.sidebar:

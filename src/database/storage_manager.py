@@ -40,9 +40,15 @@ def _decompress(s: str) -> dict:
 # --- Cookie controller singleton ---
 
 def _get_controller() -> CookieController:
-    if "mhw_cookie_ctrl" not in st.session_state:
-        st.session_state["mhw_cookie_ctrl"] = CookieController()
-    return st.session_state["mhw_cookie_ctrl"]
+    """Retrieves the CookieController rendered by the sidebar this run."""
+    return st.session_state.get("mhw_cookie_ctrl")
+
+def setup_cookie_controller():
+    """Call this on EVERY script run from the sidebar to keep the
+    CookieController component rendered and able to receive set() calls."""
+    ctrl = CookieController()  # renders the hidden component in the UI
+    st.session_state["mhw_cookie_ctrl"] = ctrl
+    return ctrl
 
 # --- Memory cache ---
 
@@ -57,16 +63,12 @@ def init_memory_storage():
 def boot_from_browser():
     """
     Reads persisted data from browser cookies into memory.
-    Uses st.context.cookies which is available immediately on every page load —
-    no component render or extra reruns required.
+    Must be called AFTER setup_cookie_controller() in the sidebar.
     """
     init_memory_storage()
 
     if st.session_state["mhw_ready"]:
         return True
-
-    # CookieController must be instantiated (renders hidden component for writes)
-    _get_controller()
 
     # Read immediately from HTTP request cookies — zero latency, no rerun needed
     try:
