@@ -1,6 +1,6 @@
 import pandas as pd
 import streamlit as st
-import time
+import uuid
 from src.database.storage_manager import load_data, save_data
 
 TRACKER_TABLE = "trackers"
@@ -46,7 +46,7 @@ def load_trackers() -> pd.DataFrame:
 def register_tracker(weapon_id: str, remaining_count: int, target_bonuses: list[dict]) -> bool:
     df = load_trackers()
     prev_df = df.copy()
-    new_id = int(time.time() * 1000)
+    new_id = str(uuid.uuid4())
     new_row = {"id": new_id, "weapon_id": weapon_id, "remaining_count": remaining_count}
     for i in range(5):
         rt, rl = f"target_rest_{i+1}_type", f"target_rest_{i+1}_level"
@@ -72,7 +72,7 @@ def advance_all_trackers(decrement: int = 1) -> bool:
         return True
     return False
 
-def delete_tracker(tracker_id: int) -> bool:
+def delete_tracker(tracker_id: str) -> bool:
     df = load_trackers()
     if df.empty: return False
     prev_df = df.copy()
@@ -82,7 +82,7 @@ def delete_tracker(tracker_id: int) -> bool:
         return True
     return False
 
-def execute_apply_and_advance(tracker_id: int) -> bool:
+def execute_apply_and_advance(tracker_id: str) -> bool:
     from src.logic.equipment_box import load_equipment, save_equipment
     trackers_df = load_trackers()
     eq_df = load_equipment()
