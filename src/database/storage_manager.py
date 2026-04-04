@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import json
+import base64
 from supabase import create_client, Client
 from streamlit_javascript import st_javascript
 
@@ -26,19 +27,18 @@ def init_memory_storage():
     if 'mhw_memory_storage' not in st.session_state:
         st.session_state['mhw_memory_storage'] = {}
 
-# --- Local Storage (Direct JS Persistence) ---
+# --- Local Storage (Base64 Safe Persistence) ---
 
 def _save_to_local_background(key: str, df: pd.DataFrame):
-    """Directly pushes data to browser localStorage via JS."""
+    """Directly pushes data to browser localStorage via JS, using Base64 for safety."""
     full_key = f"mhw_{key}"
     json_data = df.to_json(orient="records")
     
-    # Robust escaping for JS string literal
-    safe_data = json_data.replace('\\', '\\\\')
-    safe_data = safe_data.replace("'", "\\'")
-    safe_data = safe_data.replace('\n', ' ')
+    # 1. Base64 Encode to avoid all character escaping issues in JS
+    b64_data = base64.b64encode(json_data.encode('utf-8')).decode('utf-8')
+    prefix_data = f"b64:{b64_data}"
     
-    js_code = f"localStorage.setItem('{full_key}', '{safe_data}')"
+    js_code = f"localStorage.setItem('{full_key}', '{prefix_data}')"
     # Execute JS. 
     st_javascript(js_code)
 
@@ -83,8 +83,7 @@ def _save_to_cloud(table: str, df: pd.DataFrame):
 
 def load_data(key: str, required_columns: list):
     """
-    Unified loader for Ultimate JS Handshake.
-    Always returns a DataFrame once boot is complete (forced or successful).
+    Unified loader for Ultimate Persistence (Phase 11).
     """
     if is_logged_in():
         return _load_from_cloud(key, required_columns)
@@ -98,11 +97,9 @@ def load_data(key: str, required_columns: list):
     if key in cache:
         df = cache[key]
     elif boot_complete:
-        # Boot was complete but key is missing? Return empty but cache it.
         df = pd.DataFrame(columns=required_columns)
         st.session_state['mhw_memory_storage'][key] = df
     else:
-        # Strictly return None ONLY while waiting for handshake
         return None
         
     # Column maintenance
@@ -114,7 +111,7 @@ def load_data(key: str, required_columns: list):
     return df[required_columns]
 
 def save_data(key: str, df: pd.DataFrame) -> bool:
-    """Unified saver using direct JS setItem."""
+    """Unified saver using Base64-safe JS setItem."""
     if is_logged_in():
         return _save_to_cloud(key, df)
     
@@ -124,7 +121,7 @@ def save_data(key: str, df: pd.DataFrame) -> bool:
     # 1. Update memory FIRST (Instant feedback)
     st.session_state['mhw_memory_storage'][key] = df
     
-    # 2. Push to browser background via raw JS
+    # 2. Push to browser background via Base64 raw JS
     _save_to_local_background(key, df)
     return True
 
