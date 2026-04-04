@@ -100,7 +100,6 @@ with st.expander("➕ 武器を新規登録する", expanded=False):
                 parts = rb.split(" [")
                 parsed_rbs.append({"type": parts[0], "level": parts[1][:-1]})
             else:
-                # "無印" case
                 parsed_rbs.append({"type": rb, "level": "無印"})
         
         is_valid, err_msg = validate_restoration_bonuses(parsed_rbs)
@@ -125,14 +124,14 @@ df = load_equipment()
 
 # Badge CSS helper
 def get_badge_html(text, bgcolor="#444", color="white"):
-    return f'<span style="background-color: {bgcolor}; color: {color}; padding: 2px 10px; border-radius: 12px; font-size: 0.85em; font-weight: bold; margin-right: 8px; display: inline-block;">{text}</span>'
+    return f'<span style="background-color: {bgcolor}; color: {color}; padding: 1px 8px; border-radius: 10px; font-size: 0.8em; font-weight: bold; margin-right: 8px; display: inline-block;">{text}</span>'
 
 if df.empty:
     st.info("登録されている武器がありません。")
 else:
     for index, row in df.iterrows():
         with st.container(border=True):
-            # Header Row: [Badge] Weapon Name [Delete]
+            # Row 1: Header + Enhancement
             h_col1, h_col2 = st.columns([7, 1])
             with h_col1:
                 elem = row['element']
@@ -142,32 +141,21 @@ else:
                 
                 display_name = row['weapon_name']
                 is_named = display_name and not display_name.startswith("無銘の")
-                title_html = f"<span style='font-size: 1.15em; font-weight: bold;'>{display_name if is_named else row['weapon_type']}</span>"
                 
-                st.markdown(f"{badge_html} {title_html}", unsafe_allow_html=True)
+                enh_html = f"<span style='color: #aaa; font-size: 0.9em; margin-left: 10px;'>📋 <b>{row['enhancement_type']}</b></span>"
+                st.markdown(f"{badge_html} **{display_name if is_named else row['weapon_type']}** {enh_html}", unsafe_allow_html=True)
             with h_col2:
                 if st.button("削除🗑️", key=f"del_{row['id']}", use_container_width=True):
                     delete_equipment(row['id'])
                     st.rerun()
             
-            # Info Row: Enhancement & Skills
-            st.markdown(f"""
-            <div style='margin: 8px 0; font-size: 0.9em; opacity: 0.9;'>
-                <span title='巨戟強化'>📋 <b>{row['enhancement_type']}</b></span> &nbsp;&nbsp; | &nbsp;&nbsp; 
-                <span title='シリーズスキル'>🛡️ {row['current_series_skill']}</span> &nbsp;&nbsp; | &nbsp;&nbsp; 
-                <span title='グループスキル'>👥 {row['current_group_skill']}</span>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Bonus Box
-            st.markdown("<div style='background-color: rgba(255,255,255,0.04); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);'>", unsafe_allow_html=True)
-            b_col1, b_col2 = st.columns(2)
-            with b_col1:
-                # Production
+            # Row 2 (Slim): Skills and Bonuses on one line
+            s_col1, s_col2 = st.columns([1, 1])
+            with s_col1:
+                st.markdown(f"<small>🛡️ {row['current_series_skill']} &nbsp; | &nbsp; 👥 {row['current_group_skill']}</small>", unsafe_allow_html=True)
+            with s_col2:
+                # Summary of Bonuses
                 pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
-                st.markdown(f"<small>🛠️ <b>生産</b>: {format_bonus_summary(pbs)}</small>", unsafe_allow_html=True)
-            with b_col2:
-                # Restoration
                 rbs_list = []
                 for i in range(1, 6):
                     rt = row.get(f'rest_{i}_type', 'なし')
@@ -175,5 +163,6 @@ else:
                     if rt != 'なし':
                         suffix = rl if rl and rl != "無印" else ""
                         rbs_list.append(f"{rt}{suffix}")
-                st.markdown(f"<small>✨ <b>復元</b>: {format_bonus_summary(rbs_list)}</small>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+                
+                bonus_str = f"🛠️ {format_bonus_summary(pbs)} | ✨ {format_bonus_summary(rbs_list)}"
+                st.markdown(f"<p style='text-align: right; margin:0;'><small>{bonus_str}</small></p>", unsafe_allow_html=True)
