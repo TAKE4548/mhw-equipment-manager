@@ -22,7 +22,7 @@ def render_shared_sidebar():
             st.session_state['mhw_boot_attempts'] = 0
         st.session_state['mhw_boot_attempts'] += 1
         
-        js_code = "JSON.stringify(Object.assign({}, window.localStorage))"
+        js_code = "JSON.stringify(Object.assign({}, parent.localStorage))"
         all_data_json = st_javascript(js_code)
         
         # We wait for a valid JSON string result from JavaScript

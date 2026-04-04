@@ -44,6 +44,9 @@ with h_col2:
 st.divider()
 
 eq_df = load_equipment()
+if eq_df is None:
+    st.spinner("ブラウザからデータを読み込み中...")
+    st.stop()
 if eq_df.empty:
     st.warning("まず Equipment Box に武器を登録してください。")
     st.stop()

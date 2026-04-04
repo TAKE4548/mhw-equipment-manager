@@ -38,8 +38,8 @@ def _save_to_local_background(key: str, df: pd.DataFrame):
     b64_data = base64.b64encode(json_data.encode('utf-8')).decode('utf-8')
     prefix_data = f"b64:{b64_data}"
     
-    js_code = f"localStorage.setItem('{full_key}', '{prefix_data}')"
-    # Execute JS. 
+    js_code = f"parent.localStorage.setItem('{full_key}', '{prefix_data}')"
+    # Execute JS in parent window context for true persistence
     st_javascript(js_code)
 
 # --- Cloud Storage (Supabase) ---

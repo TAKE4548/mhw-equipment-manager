@@ -1,5 +1,6 @@
 import pandas as pd
 import time
+import streamlit as st
 from src.database.storage_manager import load_data, save_data
 
 UPGRADES_TABLE = "upgrades"
