@@ -8,8 +8,9 @@ def render_shared_sidebar():
     # Ensure session state is always initialized
     init_session_state()
     
-    # Initialize LocalStorage component (must be rendered in the UI)
-    ls = LocalStorage()
+    # Initialize LocalStorage component ONCE and store in session state
+    if 'ls_handler' not in st.session_state:
+        st.session_state['ls_handler'] = LocalStorage()
     
     with st.sidebar:
         st.header("⚙️ ストレージ設定")
@@ -24,4 +25,4 @@ def render_shared_sidebar():
         render_auth_component()
         
         st.divider()
-        st.caption("MHWs Equipment Manager v3.1 (Sync Stable)")
+        st.caption("MHWs Equipment Manager v3.2 (Stable Handshake)")

@@ -17,6 +17,19 @@ EQUIPMENT_COLUMNS = [
     "rest_5_type", "rest_5_level"
 ]
 
+ATTRIBUTE_COLORS = {
+    "火": "#e74c3c", # Darker red
+    "水": "#3498db", # Blue
+    "雷": "#f1c40f", # yellow
+    "氷": "#ecf0f1", # almost white
+    "龍": "#9b59b6", # purple
+    "毒": "#8e44ad", # dark purple
+    "麻痺": "#f39c12", # orange
+    "睡眠": "#bdc3c7", # silver
+    "爆破": "#e67e22", # orange-red
+    "無": "#95a5a6" # grey
+}
+
 # --- Normalization & Labeling Helpers ---
 
 ABBR_MAP = {

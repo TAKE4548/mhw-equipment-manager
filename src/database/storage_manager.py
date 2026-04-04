@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import json
 from supabase import create_client, Client
-from streamlit_local_storage import LocalStorage
+
+# Note: LocalStorage component is initialized once in the sidebar and stored in session state.
 
 # --- Configuration & Initialization ---
 
@@ -22,34 +23,34 @@ def is_logged_in() -> bool:
 # --- Local Storage (Browser) Consistency ---
 
 def _get_ls_handler():
-    """Initializes the LocalStorage handler."""
-    return LocalStorage()
+    """Returns the central LocalStorage handler from session state."""
+    if 'ls_handler' not in st.session_state:
+        # Fallback if accessed before sidebar (rare)
+        from streamlit_local_storage import LocalStorage
+        st.session_state['ls_handler'] = LocalStorage()
+    return st.session_state['ls_handler']
 
 def is_storage_ready(key: str) -> bool:
     """Checks if the local storage has successfully communicated with the browser."""
-    # If logged in, we use Supabase (always ready through st.connection or simple API)
     if is_logged_in():
         return True
         
     full_key = f"mhw_{key}"
     ready_key = f"ready_{full_key}"
     
-    # Initialize session state for this key
     if ready_key not in st.session_state:
         st.session_state[ready_key] = False
     
-    # Try to fetch from browser
+    # Try to fetch from browser using the central handler
     ls = _get_ls_handler()
     result = ls.getItem(full_key)
     
-    # If we get anything (even 'null' string or empty list), browser has responded
     if result is not None:
         st.session_state[ready_key] = True
         st.session_state[f"cache_{full_key}"] = result
         return True
     
-    # If result is None, check if we were already ready from a previous run in this session
-    return st.session_state[ready_key]
+    return st.session_state.get(ready_key, False)
 
 # --- Local Storage (Browser) Operations ---
 
@@ -58,10 +59,8 @@ def _load_from_local(key: str) -> pd.DataFrame:
     full_key = f"mhw_{key}"
     
     if not is_storage_ready(key):
-        # We return a special signal to indicate 'Waiting for browser'
         return None 
         
-    # At this point, we know storage is ready and cache is populated
     final_val = st.session_state.get(f"cache_{full_key}")
     
     if final_val and final_val != "null":
@@ -79,8 +78,6 @@ def _load_from_local(key: str) -> pd.DataFrame:
 def _save_to_local(key: str, df: pd.DataFrame):
     """Writes data to browser localStorage only if we have successfully loaded it once."""
     if not is_storage_ready(key):
-        # PROTECT: Do not save if we haven't confirmed current browser state yet.
-        # This prevents overwriting existing data with an empty set on first load.
         return False
 
     full_key = f"mhw_{key}"
@@ -135,22 +132,18 @@ def _save_to_cloud(table: str, df: pd.DataFrame):
 # --- Unified Interface ---
 
 def load_data(key: str, required_columns: list):
-    """
-    Unified loader. 
-    RETURNS: pd.DataFrame if ready, or None if still loading from browser.
-    """
+    """Unified loader."""
     if is_logged_in():
         df = _load_from_cloud(key, required_columns)
     else:
         df = _load_from_local(key)
     
     if df is None:
-        return None # Signal 'Still loading'
+        return None
         
     if df.empty:
         return pd.DataFrame(columns=required_columns)
     
-    # Filter to required columns and fill missing
     existing_cols = [c for c in required_columns if c in df.columns]
     df = df[existing_cols]
     for col in required_columns:
@@ -173,8 +166,6 @@ def sync_local_to_cloud():
     
     tables = ["weapons", "trackers", "upgrades"] 
     for table in tables:
-        # Note: We skip the ready check here because we are logged in, 
-        # but we need to ensure local storage was AT LEAST once read.
         local_df = _load_from_local(table)
         if local_df is not None and not local_df.empty:
             if _save_to_cloud(table, local_df):
