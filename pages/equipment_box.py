@@ -116,11 +116,6 @@ st.subheader("所持武器一覧")
 
 df = load_equipment()
 
-# --- Loading Guard ---
-if df is None:
-    st.spinner("ブラウザからデータを読み込み中...")
-    st.stop()
-
 # Badge CSS helper
 def get_badge_html(text, bgcolor="#444", color="white"):
     return f'<span style="background-color: {bgcolor}; color: {color}; padding: 1px 10px; border-radius: 4px; font-size: 0.8em; font-weight: bold; display: inline-block; min-width: 45px; text-align: center;">{text}</span>'

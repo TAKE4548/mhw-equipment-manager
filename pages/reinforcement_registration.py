@@ -44,9 +44,6 @@ with h_col2:
 st.divider()
 
 eq_df = load_equipment()
-if eq_df is None:
-    st.spinner("ブラウザからデータを読み込み中...")
-    st.stop()
 if eq_df.empty:
     st.warning("まず Equipment Box に武器を登録してください。")
     st.stop()
@@ -146,11 +143,6 @@ with st.expander("➕ 抽選結果を登録する", expanded=exp_expanded):
 st.divider()
 st.subheader("トラッキング中の抽選結果 (残り回数順)")
 tracker_df = load_trackers()
-
-# --- Loading Guard ---
-if tracker_df is None or eq_df is None:
-    st.spinner("ブラウザからデータを読み込み中...")
-    st.stop()
 
 if tracker_df.empty:
     st.info("トラッキング中の強化抽選結果はありません。")

@@ -1,11 +1,17 @@
 import streamlit as st
 import pandas as pd
 import json
-import base64
+import os
 from supabase import create_client, Client
-from streamlit_javascript import st_javascript
 
 # --- Configuration & Initialization ---
+
+# Local data directory (relative to the app root)
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data")
+
+def _ensure_data_dir():
+    """Create local data directory if it doesn't exist."""
+    os.makedirs(DATA_DIR, exist_ok=True)
 
 def get_supabase_client() -> Client:
     """Initializes and returns the Supabase client using secrets."""
@@ -13,34 +19,51 @@ def get_supabase_client() -> Client:
         url = st.secrets["connections"]["supabase"]["url"]
         key = st.secrets["connections"]["supabase"]["key"]
         return create_client(url, key)
-    except Exception as e:
+    except Exception:
         return None
 
 def is_logged_in() -> bool:
     """Checks if a user is currently logged in via Supabase."""
     return "user" in st.session_state and st.session_state.user is not None
 
-# --- Session Storage (The Primary Truth) ---
+# --- Session Storage (Memory Cache) ---
 
 def init_memory_storage():
     """Initializes the memory storage dictionary in session state."""
     if 'mhw_memory_storage' not in st.session_state:
         st.session_state['mhw_memory_storage'] = {}
 
-# --- Local Storage (Base64 Safe Persistence) ---
+# --- Local File Storage ---
 
-def _save_to_local_background(key: str, df: pd.DataFrame):
-    """Directly pushes data to browser localStorage via JS, using Base64 for safety."""
-    full_key = f"mhw_{key}"
-    json_data = df.to_json(orient="records")
-    
-    # 1. Base64 Encode to avoid all character escaping issues in JS
-    b64_data = base64.b64encode(json_data.encode('utf-8')).decode('utf-8')
-    prefix_data = f"b64:{b64_data}"
-    
-    js_code = f"parent.localStorage.setItem('{full_key}', '{prefix_data}')"
-    # Execute JS in parent window context for true persistence
-    st_javascript(js_code)
+def _get_file_path(key: str) -> str:
+    """Returns the file path for a given data key."""
+    _ensure_data_dir()
+    return os.path.join(DATA_DIR, f"{key}.json")
+
+def _load_from_file(key: str) -> pd.DataFrame:
+    """Reads data from a local JSON file."""
+    filepath = _get_file_path(key)
+    if os.path.exists(filepath):
+        try:
+            with open(filepath, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            if data:
+                return pd.DataFrame(data)
+        except Exception as e:
+            st.warning(f"ローカルファイル読み込みエラー ({key}): {e}")
+    return pd.DataFrame()
+
+def _save_to_file(key: str, df: pd.DataFrame) -> bool:
+    """Writes data to a local JSON file."""
+    filepath = _get_file_path(key)
+    try:
+        data = json.loads(df.to_json(orient="records"))
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        st.error(f"ローカルファイル保存エラー ({key}): {e}")
+        return False
 
 # --- Cloud Storage (Supabase) ---
 
@@ -61,7 +84,7 @@ def _load_from_cloud(table: str, required_columns: list) -> pd.DataFrame:
         st.error(f"Cloud load error: {e}")
         return pd.DataFrame(columns=required_columns)
 
-def _save_to_cloud(table: str, df: pd.DataFrame):
+def _save_to_cloud(table: str, df: pd.DataFrame) -> bool:
     """Upserts data to Supabase for the current user."""
     client = get_supabase_client()
     if not client or not is_logged_in():
@@ -81,57 +104,60 @@ def _save_to_cloud(table: str, df: pd.DataFrame):
 
 # --- Unified Interface ---
 
-def load_data(key: str, required_columns: list):
+def load_data(key: str, required_columns: list) -> pd.DataFrame:
     """
-    Unified loader for Ultimate Persistence (Phase 11).
+    Unified loader. Always returns a DataFrame (never None).
+    - Logged in: Supabase
+    - Anonymous: Local JSON file with memory cache
     """
     if is_logged_in():
         return _load_from_cloud(key, required_columns)
     
-    # --- Local (Memory-First) Mode ---
+    # --- Local Mode (File + Memory Cache) ---
     init_memory_storage()
-    
-    boot_complete = st.session_state.get('mhw_boot_complete', False)
     cache = st.session_state['mhw_memory_storage']
     
-    if key in cache:
-        df = cache[key]
-    elif boot_complete:
-        df = pd.DataFrame(columns=required_columns)
-        st.session_state['mhw_memory_storage'][key] = df
-    else:
-        return None
-        
+    if key not in cache:
+        # First access this session: load from disk
+        cache[key] = _load_from_file(key)
+    
+    df = cache[key]
+    
+    if df.empty:
+        return pd.DataFrame(columns=required_columns)
+    
     # Column maintenance
-    existing_cols = [c for c in required_columns if c in df.columns]
-    df = df[existing_cols]
     for col in required_columns:
         if col not in df.columns:
             df[col] = None
-    return df[required_columns]
+    existing_cols = [c for c in required_columns if c in df.columns]
+    return df[existing_cols]
 
 def save_data(key: str, df: pd.DataFrame) -> bool:
-    """Unified saver using Base64-safe JS setItem."""
+    """
+    Unified saver.
+    - Logged in: Supabase
+    - Anonymous: Local JSON file + memory cache update
+    """
     if is_logged_in():
         return _save_to_cloud(key, df)
     
     # --- Local Mode ---
     init_memory_storage()
     
-    # 1. Update memory FIRST (Instant feedback)
+    # Update memory cache
     st.session_state['mhw_memory_storage'][key] = df
     
-    # 2. Push to browser background via Base64 raw JS
-    _save_to_local_background(key, df)
-    return True
+    # Persist to disk immediately
+    return _save_to_file(key, df)
 
 def sync_local_to_cloud():
-    """Pushes memory data to Supabase after login."""
+    """Pushes local file data to Supabase after login."""
     if not is_logged_in():
         return
     
-    tables = ["weapons", "trackers", "upgrades"] 
+    tables = ["weapons", "trackers", "upgrades"]
     for table in tables:
-        df = st.session_state.get('mhw_memory_storage', {}).get(table)
-        if df is not None and not df.empty:
+        df = _load_from_file(table)
+        if not df.empty:
             _save_to_cloud(table, df)

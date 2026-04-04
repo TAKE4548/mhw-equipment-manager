@@ -147,21 +147,14 @@ def load_equipment():
     df = load_data(EQUIPMENT_TABLE, required_columns=EQUIPMENT_COLUMNS)
     
     # FORCED PERSISTENCE: If we are midway through a session, don't return None even if handshake is flickering
-    if df is None:
-        if st.session_state.get('mhw_boot_complete'):
-            # Revert to memory cache if possible
-            df = st.session_state.get('mhw_memory_storage', {}).get('weapons', pd.DataFrame())
-        else:
-            return None
-    
+def load_equipment() -> pd.DataFrame:
+    df = load_data(EQUIPMENT_TABLE, required_columns=EQUIPMENT_COLUMNS)
     if not df.empty:
         for idx, row in df.iterrows():
-            # Normalize Production
             for i in range(1, 4):
                 col = f"p_bonus_{i}"
                 t, _ = normalize_bonus(row[col])
                 df.at[idx, col] = t
-            # Normalize Restoration
             for i in range(1, 6):
                 tc, lc = f"rest_{i}_type", f"rest_{i}_level"
                 nt, nl = normalize_bonus(row[tc], row[lc], is_restoration=True)
@@ -177,10 +170,6 @@ def register_equipment(weapon_name: str, weapon_type: str, element: str,
                        enhancement_type: str,
                        p_bonuses: list[str], rest_bonuses: list[dict]) -> str:
     df = load_equipment()
-    # In register, we MUST have a DataFrame. If still None, something is wrong, but we force an empty one to succeed.
-    if df is None:
-        df = pd.DataFrame(columns=EQUIPMENT_COLUMNS)
-    
     new_id = str(uuid.uuid4())
     new_row = {
         "id": new_id,
@@ -210,18 +199,15 @@ def register_equipment(weapon_name: str, weapon_type: str, element: str,
 
 def update_equipment_skills(eq_id: str, new_series: str, new_group: str) -> bool:
     df = load_equipment()
-    if df is None: return False
-    
+    if df.empty: return False
     idx = df.index[df['id'] == eq_id].tolist()
     if not idx: return False
-    
     df.at[idx[0], 'current_series_skill'] = new_series
     df.at[idx[0], 'current_group_skill'] = new_group
-    
     return save_equipment(df)
 
 def delete_equipment(eq_id: str) -> bool:
     df = load_equipment()
-    if df is None: return False
+    if df.empty: return False
     df = df[df['id'] != eq_id]
     return save_equipment(df)
