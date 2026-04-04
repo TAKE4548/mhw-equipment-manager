@@ -19,6 +19,19 @@ EQUIPMENT_COLUMNS = [
 
 # --- Normalization & Labeling Helpers ---
 
+ABBR_MAP = {
+    "基礎攻撃力増強": "攻撃",
+    "基礎攻撃力強化": "攻撃",
+    "会心率増強": "会心",
+    "会心率強化": "会心",
+    "属性強化": "属性",
+    "切れ味強化": "切れ味",
+    "装填強化": "装填"
+}
+
+def get_abbr(full_name):
+    return ABBR_MAP.get(full_name, full_name)
+
 NORM_TYPE_MAP = {
     # Production
     "基礎攻撃": "基礎攻撃力増強",
@@ -29,19 +42,14 @@ NORM_TYPE_MAP = {
     "装填数(遠隔)": "装填強化"
 }
 # Special case for restoration types that shared the same old name as production
-# We'll detect if it's a restoration field by its column name or context.
 REST_TYPE_MAP = {
     "基礎攻撃": "基礎攻撃力強化",
     "会心": "会心率強化"
 }
 
 NORM_LV_MAP = {
-    "1": "Ⅰ",
-    "2": "Ⅱ",
-    "3": "Ⅲ",
-    "無印": "無印",
-    "EX": "EX",
-    "なし": "なし"
+    "1": "Ⅰ", "2": "Ⅱ", "3": "Ⅲ",
+    "無印": "無印", "EX": "EX", "なし": "なし"
 }
 
 def normalize_bonus(b_type, b_level=None, is_restoration=False):
@@ -59,51 +67,66 @@ def normalize_bonus(b_type, b_level=None, is_restoration=False):
     return nt, nl
 
 def format_bonus_summary(items: list[str]) -> str:
-    """Converts a list of bonus strings like ['攻撃Ⅰ', '攻撃Ⅰ'] to '攻撃Ⅰx2'."""
+    """Converts a list of bonus strings like ['基礎攻撃力強化Ⅰ', '基礎攻撃力強化Ⅰ'] to '攻撃Ⅰx2'."""
     items = [i for i in items if i and i != "なし"]
     if not items:
         return "なし"
-    counts = Counter(items)
-    # Maintain some order? Sort by standard priority if needed, but alphabetical is fine
+    
+    # Apply abbreviations to items first
+    abbr_items = []
+    for item in items:
+        # If it has a level suffix (e.g., Ⅰ, Ⅱ, Ⅲ, EX), protect it
+        found_abbr = False
+        for full, short in ABBR_MAP.items():
+            if item.startswith(full):
+                suffix = item[len(full):]
+                abbr_items.append(f"{short}{suffix}")
+                found_abbr = True
+                break
+        if not found_abbr:
+            abbr_items.append(item)
+
+    counts = Counter(abbr_items)
     parts = []
     for item in sorted(counts.keys()):
         parts.append(f"{item}x{counts[item]}")
     return "、".join(parts)
 
 def get_weapon_label(row) -> str:
-    """Generates a detailed summary label for the weapon."""
-    w_type = row.get("weapon_type", "")
-    element = row.get("element", "")
+    """Generates a detailed summary label for the weapon in the specified format."""
+    w_type = row.get("weapon_type", "なし")
+    element = row.get("element", "なし")
     enhancement = row.get("enhancement_type", "なし")
-    if enhancement == "なし": enhancement = ""
     
-    # Process Production Bonuses
+    # Process Production Bonuses (Slots)
     pbs = []
     for i in range(1, 4):
         val = row.get(f"p_bonus_{i}", "なし")
         if val != "なし":
-            norm_t, _ = normalize_bonus(val)
-            pbs.append(norm_t)
-    pb_str = format_bonus_summary(pbs)
+            nt, _ = normalize_bonus(val)
+            pbs.append(get_abbr(nt))
+        else:
+            pbs.append("なし")
+    pb_str = " | ".join(pbs)
     
-    # Process Restoration Bonuses
+    # Process Restoration Bonuses (Slots)
     rbs = []
     for i in range(1, 6):
         rt = row.get(f"rest_{i}_type", "なし")
         rl = row.get(f"rest_{i}_level", "なし")
         if rt != "なし":
             nt, nl = normalize_bonus(rt, rl, is_restoration=True)
-            # Level "無印" is not displayed as suffix
             suffix = nl if nl and nl != "無印" else ""
-            rbs.append(f"{nt}{suffix}")
-    rb_str = format_bonus_summary(rbs)
+            rbs.append(f"{get_abbr(nt)}{suffix}")
+        else:
+            rbs.append("なし")
+    rb_str = " | ".join(rbs)
     
     series = row.get("current_series_skill", "なし")
     group = row.get("current_group_skill", "なし")
     
-    # Combine
-    parts = [w_type, element, enhancement, pb_str, rb_str, series, group]
-    return " ".join([p for p in parts if p and p != "なし"])
+    # Format: 武器種 | 属性 / 激化タイプ / 生産1|2|3 / 復元1|2|3|4|5 / シリーズ | グループ
+    return f"{w_type} | {element} / {enhancement} / {pb_str} / {rb_str} / {series} | {group}"
 
 # --- Core Logic ---
 

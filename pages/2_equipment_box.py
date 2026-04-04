@@ -145,16 +145,16 @@ else:
             # Summarized bonus displays in smaller text
             r2c1, r2c2 = st.columns(2)
             with r2c1:
-                pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4) if row.get(f'p_bonus_{i}', 'なし') != 'なし']
+                # Production
+                pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
                 st.markdown(f"<small>生産: {format_bonus_summary(pbs)}</small>", unsafe_allow_html=True)
             with r2c2:
+                # Restoration
                 rbs_list = []
                 for i in range(1, 6):
                     rt = row.get(f'rest_{i}_type', 'なし')
                     rl = row.get(f'rest_{i}_level', 'なし')
                     if rt != 'なし':
-                        # Use normalized strings for summary even if stored as old
-                        nt, nl = normalize_bonus(rt, rl, is_restoration=True)
-                        suffix = nl if nl and nl != "無印" else ""
-                        rbs_list.append(f"{nt}{suffix}")
+                        suffix = rl if rl and rl != "無印" else ""
+                        rbs_list.append(f"{rt}{suffix}")
                 st.markdown(f"<small>復元: {format_bonus_summary(rbs_list)}</small>", unsafe_allow_html=True)
