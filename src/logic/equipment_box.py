@@ -98,56 +98,42 @@ def format_bonus_summary(items: list[str]) -> str:
     items = [i for i in items if i and i != "なし"]
     if not items:
         return "なし"
-    
-    abbr_items = [get_abbr_item(i) for i in items]
-    counts = Counter(abbr_items)
+    counts = Counter(items)
     parts = []
-    for item in sorted(counts.keys()):
-        parts.append(f"{item}x{counts[item]}")
-    return "、".join(parts)
+    for item, count in counts.items():
+        abbr = get_abbr_item(item)
+        if count > 1:
+            parts.append(f"{abbr}×{count}")
+        else:
+            parts.append(abbr)
+    return " / ".join(parts)
 
-def format_bonus_list(items: list[str], separator=" | ") -> str:
-    """Converts a list of bonus strings to a flat list (e.g., '攻撃 | 攻撃 | なし')."""
-    if not items:
-        return "なし"
-    abbr_items = [get_abbr_item(i) for i in items]
-    return separator.join(abbr_items)
+def format_bonus_list(items: list[str]) -> str:
+    """Simple joined list with abbreviations."""
+    return " / ".join([get_abbr_item(i) for i in items if i and i != "なし"])
 
-# --- UI & Styling Helpers ---
+def get_weapon_label(weapon_id: str, df: pd.DataFrame) -> str:
+    """Returns a readable label for a weapon from the equipment dataframe."""
+    row = df[df['id'] == weapon_id]
+    if row.empty:
+        return "Unknown Weapon"
+    row = row.iloc[0]
+    name = row['weapon_name'] if row['weapon_name'] and not row['weapon_name'].startswith("無銘の") else row['weapon_type']
+    return f"{name} ({row['element']})"
 
-ATTRIBUTE_COLORS = {
-    "火": "#e74c3c", "水": "#3498db", "雷": "#f1c40f", "氷": "#ecf0f1", "龍": "#8e44ad",
-    "毒": "#9b59b6", "麻痺": "#f39c12", "睡眠": "#95a5a6", "爆破": "#d35400", "無": "#7f8c8d"
-}
-
-def get_weapon_label(row) -> str:
-    """Generates a compact summary label for use in selectboxes."""
-    w_type = row.get("weapon_type", "なし")
-    element = row.get("element", "なし")
-    enhancement = row.get("enhancement_type", "なし")
-    name = row.get("weapon_name", "")
-    
-    label = f"{w_type} | {element}"
-    if enhancement != "なし":
-        label += f" | {enhancement}"
-    if name and not name.startswith("無銘の"):
-        label = f"【{name}】 {label}"
-    return label
-
-# --- Core Logic ---
-
-def validate_restoration_bonuses(bonuses: list[dict]) -> tuple[bool, str]:
-    """Validates duplicates for restoration bonuses."""
-    type_level_counts = {}
-    for b in bonuses:
-        b_type = b.get("type", "なし")
-        b_type, b_level = normalize_bonus(b_type, b.get("level", "なし"), is_restoration=True)
-        
-        if b_type != "なし":
-            tl_key = f"{b_type} [{b_level}]"
-            type_level_counts[tl_key] = type_level_counts.get(tl_key, 0) + 1
-            if b_level not in ["Ⅰ", "1", "無印"] and type_level_counts[tl_key] > 2:
-                return False, f"強化済みのボーナス「{tl_key}」が3枠以上重複することはあり得ません（最大2枠まで）。"
+def validate_restoration_bonuses(bonuses: list[dict]):
+    """Checks for illegal restoration bonus combinations (max 2 per type)."""
+    # Count occurrences of non-'なし' types
+    types = [b['type'] for b in bonuses if b['type'] != "なし"]
+    counts = Counter(types)
+    for t, count in counts.items():
+        if count > 2:
+            tl_key = t
+            for old, new in ABBR_MAP.items():
+                if t.startswith(old):
+                    tl_key = new
+                    break
+            return False, f"強化済みのボーナス「{tl_key}」が3枠以上重複することはあり得ません（最大2枠まで）。"
     return True, ""
 
 def load_equipment():
@@ -178,6 +164,9 @@ def register_equipment(weapon_name: str, weapon_type: str, element: str,
                        enhancement_type: str,
                        p_bonuses: list[str], rest_bonuses: list[dict]) -> str:
     df = load_equipment()
+    if df is None:
+        return None
+        
     new_id = str(uuid.uuid4())
     new_row = {
         "id": new_id,
@@ -207,6 +196,9 @@ def register_equipment(weapon_name: str, weapon_type: str, element: str,
 
 def update_equipment_skills(eq_id: str, new_series: str, new_group: str) -> bool:
     df = load_equipment()
+    if df is None:
+        return False
+        
     if df.empty:
         return False
     
@@ -221,6 +213,9 @@ def update_equipment_skills(eq_id: str, new_series: str, new_group: str) -> bool
 
 def delete_equipment(eq_id: str) -> bool:
     df = load_equipment()
+    if df is None:
+        return False
+        
     if df.empty: return False
     df = df[df['id'] != eq_id]
     return save_equipment(df)

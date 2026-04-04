@@ -9,6 +9,10 @@ def register_upgrade(weapon_type: str, element: str, series_skill: str, group_sk
     """Registers a new skill upgrade in storage and returns its ID."""
     df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
     
+    # GUARD: Do not proceed if storage is still loading
+    if df is None:
+        return None
+        
     # Generate unique ID
     new_id = int(time.time() * 1000)
     
@@ -42,6 +46,9 @@ def get_active_upgrades():
 def execute_upgrade(record_id: int, decrement: int = 1) -> bool:
     """Decrements remaining_count by decrement in storage."""
     df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
+    if df is None:
+        return False
+        
     if df.empty:
         return False
     
@@ -56,6 +63,9 @@ def execute_upgrade(record_id: int, decrement: int = 1) -> bool:
 def execute_all_upgrades(decrement: int) -> bool:
     """Decrements remaining_count by decrement for all active records in storage."""
     df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
+    if df is None:
+        return False
+        
     if df.empty:
         return False
     
@@ -69,6 +79,9 @@ def execute_all_upgrades(decrement: int) -> bool:
 def delete_upgrade(record_id: int) -> bool:
     """Removes a specific upgrade record from storage."""
     df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
+    if df is None:
+        return False
+        
     if df.empty:
         return False
     
