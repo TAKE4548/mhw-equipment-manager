@@ -92,41 +92,26 @@ def format_bonus_summary(items: list[str]) -> str:
         parts.append(f"{item}x{counts[item]}")
     return "、".join(parts)
 
+# --- UI & Styling Helpers ---
+
+ATTRIBUTE_COLORS = {
+    "火": "#e74c3c", "水": "#3498db", "雷": "#f1c40f", "氷": "#ecf0f1", "龍": "#8e44ad",
+    "毒": "#9b59b6", "麻痺": "#f39c12", "睡眠": "#95a5a6", "爆破": "#d35400", "無": "#7f8c8d"
+}
+
 def get_weapon_label(row) -> str:
-    """Generates a detailed summary label for the weapon in the specified format."""
+    """Generates a compact summary label for use in selectboxes."""
     w_type = row.get("weapon_type", "なし")
     element = row.get("element", "なし")
     enhancement = row.get("enhancement_type", "なし")
+    name = row.get("weapon_name", "")
     
-    # Process Production Bonuses (Slots)
-    pbs = []
-    for i in range(1, 4):
-        val = row.get(f"p_bonus_{i}", "なし")
-        if val != "なし":
-            nt, _ = normalize_bonus(val)
-            pbs.append(get_abbr(nt))
-        else:
-            pbs.append("なし")
-    pb_str = " | ".join(pbs)
-    
-    # Process Restoration Bonuses (Slots)
-    rbs = []
-    for i in range(1, 6):
-        rt = row.get(f"rest_{i}_type", "なし")
-        rl = row.get(f"rest_{i}_level", "なし")
-        if rt != "なし":
-            nt, nl = normalize_bonus(rt, rl, is_restoration=True)
-            suffix = nl if nl and nl != "無印" else ""
-            rbs.append(f"{get_abbr(nt)}{suffix}")
-        else:
-            rbs.append("なし")
-    rb_str = " | ".join(rbs)
-    
-    series = row.get("current_series_skill", "なし")
-    group = row.get("current_group_skill", "なし")
-    
-    # Format: 武器種 | 属性 / 激化タイプ / 生産1|2|3 / 復元1|2|3|4|5 / シリーズ | グループ
-    return f"{w_type} | {element} / {enhancement} / {pb_str} / {rb_str} / {series} | {group}"
+    label = f"{w_type} | {element}"
+    if enhancement != "なし":
+        label += f" | {enhancement}"
+    if name and not name.startswith("無銘の"):
+        label = f"【{name}】 {label}"
+    return label
 
 # --- Core Logic ---
 

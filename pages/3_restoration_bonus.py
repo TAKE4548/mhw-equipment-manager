@@ -3,7 +3,8 @@ import pandas as pd
 from src.logic.master import get_master_data
 from src.logic.equipment_box import (
     load_equipment, validate_restoration_bonuses, 
-    get_weapon_label, format_bonus_summary, normalize_bonus
+    get_weapon_label, format_bonus_summary, normalize_bonus,
+    ATTRIBUTE_COLORS
 )
 from src.logic.restoration_tracker import (
     load_trackers, register_tracker, advance_all_trackers, 
@@ -27,6 +28,10 @@ st.set_page_config(page_title="Restoration Bonus Tracker", page_icon="✨", layo
 if not st.session_state.get('gsheet_url'):
     st.info("👋 **Setup Required**: Please paste your Google Sheet URL in the Home page sidebar.")
     st.stop()
+
+# Badge CSS helper
+def get_badge_html(text, bgcolor="#444", color="white"):
+    return f'<span style="background-color: {bgcolor}; color: {color}; padding: 2px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; margin-right: 8px; display: inline-block;">{text}</span>'
 
 # --- Header ---
 st.title("Restoration Bonus Tracker ✨")
@@ -54,7 +59,7 @@ if eq_df.empty:
     st.warning("まず Equipment Box に武器を登録してください。")
     st.stop()
 
-# Build dropdown with detailed labels
+# Build dropdown with simplified labels
 weapon_options = {}
 for _, row in eq_df.iterrows():
     weapon_options[row['id']] = get_weapon_label(row)
@@ -124,43 +129,64 @@ if tracker_df.empty:
 else:
     st.caption("※適用により他武器のチャンスが追い越された場合、それらの目標はリストから自動削除されます。")
     
-    # Sort trackers
-    tracker_df['weapon_label'] = tracker_df['weapon_id'].map(lambda wid: weapon_options.get(wid, "不明な武器"))
-    tracker_df = tracker_df.sort_values(by=["weapon_label", "remaining_count"])
+    # Pre-map weapon info for the cards
+    tracker_df = tracker_df.sort_values(by=["remaining_count"])
     
-    current_weapon = None
     for index, row in tracker_df.iterrows():
-        if row['weapon_label'] != current_weapon:
-            current_weapon = row['weapon_label']
-            st.markdown(f"#### 🗡️ {current_weapon}")
-            
+        w_id = row['weapon_id']
+        w_info = eq_df[eq_df['id'] == w_id]
+        if w_info.empty: continue
+        w_row = w_info.iloc[0]
+        
         with st.container(border=True):
-            tc1, tc2, tc3 = st.columns([1.5, 4, 2], vertical_alignment="center")
-            with tc1:
+            # Layout: [Remaining Count Box] | [Weapon Detail Card] | [Apply Button]
+            c1, c2, c3 = st.columns([1.5, 5, 2], vertical_alignment="center")
+            
+            with c1:
                 rem = row['remaining_count']
-                col_c = "red" if rem <= 1 else ("orange" if rem < 5 else "green")
-                st.markdown(f"<h3 style='color:{col_c}; text-align:center; margin:0;'>あと <b>{rem}</b></h3>", unsafe_allow_html=True)
-                if rem <= 1:
-                    st.markdown("<p style='color:red; font-size:0.8em; text-align:center;'>⚠️ 次回スキップ対象</p>", unsafe_allow_html=True)
-            with tc2:
-                # Summarize Target Bonuses
+                col_c = "#ff4b4b" if rem <= 1 else ("#f39c12" if rem < 5 else "#27ae60")
+                st.markdown(f"""
+                    <div style='text-align:center;'>
+                        <p style='margin:0; font-size:0.8em; opacity:0.8;'>残り</p>
+                        <h2 style='color:{col_c}; margin:0; font-weight:bold;'>{rem} <span style='font-size:0.5em;'>回</span></h2>
+                        {"<p style='color:#ff4b4b; font-size:0.7em; margin-top:5px; font-weight:bold;'>⚠️ NEXT SKIP</p>" if rem <= 1 else ""}
+                    </div>
+                """, unsafe_allow_html=True)
+                
+            with c2:
+                # Weapon Badge and Target
+                elem = w_row['element']
+                bg = ATTRIBUTE_COLORS.get(elem, "#444")
+                txt_c = "black" if elem in ["氷", "雷", "無", "睡眠"] else "white"
+                badge_html = get_badge_html(f"{w_row['weapon_type']} | {elem}", bgcolor=bg, color=txt_c)
+                
+                # Format Target Bonuses as a row of small chips
                 target_rbs_list = []
                 for i in range(1, 6):
                     rt = row.get(f'target_rest_{i}_type', 'なし')
                     rl = row.get(f'target_rest_{i}_level', 'なし')
                     if rt != 'なし':
-                        # Normalize just in case
                         nt, nl = normalize_bonus(rt, rl, is_restoration=True)
                         suffix = nl if nl and nl != "無印" else ""
                         target_rbs_list.append(f"{nt}{suffix}")
-                st.markdown(f"✨ {format_bonus_summary(target_rbs_list)}")
                 
-            with tc3:
-                # 適用ボタン
-                btn_label = f"適用して完了🎁 (-{row['remaining_count']})"
+                target_str = format_bonus_summary(target_rbs_list)
+                
+                display_name = w_row['weapon_name']
+                is_named = display_name and not display_name.startswith("無銘の")
+                
+                st.markdown(f"""
+                    {badge_html} **{display_name if is_named else w_row['weapon_type']}**
+                    <div style='margin-top:8px; background-color:rgba(255,255,255,0.05); padding:8px; border-radius:6px; font-size:0.9em;'>
+                        ✨ <b>目標</b>: <code style='background:none;'>{target_str}</code>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+            with c3:
+                btn_label = f"適用 🎁 (-{row['remaining_count']})"
                 if st.button(btn_label, key=f"apply_{row['id']}", use_container_width=True, type="primary"):
                     if execute_apply_and_advance(row['id']):
-                        st.success("武器に適用し、テーブルを進行させました！")
+                        st.success("適用完了")
                         st.rerun()
                 
                 if st.button("削除 🗑️", key=f"del_track_{row['id']}", use_container_width=True):
