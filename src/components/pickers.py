@@ -31,7 +31,11 @@ def render_skill_picker(label, choices, fav_type, key_prefix, current_val=None):
             val_attr = "skill_parts" if fav_type == "series" else "group_name"
             
             import src.logic.favorites as fav_logic
-            fav_choices, _ = prepare_skill_choices(choices, fav_logic.get_favorite_list(fav_type), val_attr)
+            fav_ids = fav_logic.get_favorite_list(fav_type)
+            # Performance Fix: Convert to set for O(1) lookup inside the loop
+            fav_set = set(fav_ids)
+            
+            fav_choices, _ = prepare_skill_choices(choices, fav_ids, val_attr)
             
             if search_query:
                 filtered = [c for c in fav_choices if search_query.lower() in c.get(val_attr, "").lower() or search_query.lower() in c.get("skill_name", "").lower()]
@@ -59,14 +63,14 @@ def render_skill_picker(label, choices, fav_type, key_prefix, current_val=None):
                         type="primary" if is_this_selected else "secondary"
                     ):
                         st.session_state[state_key] = val
-                        # st.rerun() inside a dialog closes it while updating the app state
                         st.rerun() 
                     
                     # 2. Favorite Toggle -> Stays in Dialog
-                    is_fav = is_favorite(fav_type, val)
+                    # Performance Fix: Use fav_set (Memory) instead of is_favorite (I/O)
+                    is_fav = val in fav_set
                     if c_fav.button("⭐" if is_fav else "☆", key=f"df_{key_prefix}_{val}"):
-                        if is_fav: remove_favorite(fav_type, val)
-                        else: add_favorite(fav_type, val)
+                        if is_fav: fav_logic.remove_favorite(fav_type, val)
+                        else: fav_logic.add_favorite(fav_type, val)
                         st.rerun(scope="fragment")
         
         dialog_content()

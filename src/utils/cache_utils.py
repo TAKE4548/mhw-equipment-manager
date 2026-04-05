@@ -17,7 +17,11 @@ def clear_logic_cache(table: str):
             load_upgrades.clear()
         elif table == "talismans":
             from src.logic.talismans import load_talismans
+            # Correcting typo: load_trackers -> load_talismans
             load_talismans.clear()
+        elif table == "favorites":
+            from src.logic.favorites import get_favorites
+            get_favorites.clear()
     except (ImportError, AttributeError):
         pass
 
@@ -26,7 +30,7 @@ def clear_all_logic_caches():
     Clears all logic-level caches. 
     Call this on major state changes like Login, Logout, or Cloud Sync.
     """
-    for table in ["trackers", "weapons", "upgrades", "talismans"]:
+    for table in ["trackers", "weapons", "upgrades", "talismans", "favorites"]:
         clear_logic_cache(table)
     
     # Also clear master data to ensure any synced favorites are reflected

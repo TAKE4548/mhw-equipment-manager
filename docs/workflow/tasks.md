@@ -95,3 +95,8 @@
 - [x] T063 [Engineer] Implement proactive `pull_cloud_to_local()` on login to prevent sync-on-login data loss.
 - [x] T064 [Engineer] Correct cookie expiration policy (max-age=0) for reliable logout.
 
+## Phase 16: UI Responsiveness & Skill Picker Optimization [Completed]
+- [x] T065 [Engineer] Optimize skill picker render loop by batching favorite lookups in O(1) set.
+- [x] T066 [Engineer] Implement user-scoped caching for favorites logic with proactive invalidation.
+- [x] T067 [Engineer] Resolve TypeError in favorites query logic for multi-user environments.
+

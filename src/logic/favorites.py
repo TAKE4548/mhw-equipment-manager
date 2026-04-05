@@ -6,13 +6,16 @@ from src.database.storage_manager import load_data, save_data
 FAVORITES_TABLE = "favorites"
 FAVORITES_COLUMNS = ["id", "favorite_type", "skill_value"]
 
-def get_favorites() -> pd.DataFrame:
-    """Returns the favorites dataframe from storage."""
+@st.cache_data
+def get_favorites(user_id: str) -> pd.DataFrame:
+    """Returns the favorites dataframe from storage. Cached by user_id."""
     return load_data(FAVORITES_TABLE, required_columns=FAVORITES_COLUMNS)
 
 def add_favorite(fav_type: str, skill_val: str) -> bool:
     """Adds a skill to favorites if not already present."""
-    df = get_favorites()
+    from src.components.auth import get_current_user_id
+    user_id = get_current_user_id()
+    df = get_favorites(user_id)
     # Check if already exists
     if not df.empty and not df[(df['favorite_type'] == fav_type) & (df['skill_value'] == skill_val)].empty:
         return True
@@ -23,26 +26,38 @@ def add_favorite(fav_type: str, skill_val: str) -> bool:
         "skill_value": skill_val
     }
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-    return save_data(FAVORITES_TABLE, df)
+    success = save_data(FAVORITES_TABLE, df)
+    if success:
+        get_favorites.clear()
+    return success
 
 def remove_favorite(fav_type: str, skill_val: str) -> bool:
     """Removes a skill from favorites."""
-    df = get_favorites()
+    from src.components.auth import get_current_user_id
+    user_id = get_current_user_id()
+    df = get_favorites(user_id)
     if df.empty: return True
     
     # Filtering out the record
     df = df[~((df['favorite_type'] == fav_type) & (df['skill_value'] == skill_val))]
-    return save_data(FAVORITES_TABLE, df)
+    success = save_data(FAVORITES_TABLE, df)
+    if success:
+        get_favorites.clear()
+    return success
 
 def is_favorite(fav_type: str, skill_val: str) -> bool:
     """Checks if a skill is in favorites."""
-    df = get_favorites()
+    from src.components.auth import get_current_user_id
+    user_id = get_current_user_id()
+    df = get_favorites(user_id)
     if df.empty: return False
     return not df[(df['favorite_type'] == fav_type) & (df['skill_value'] == skill_val)].empty
 
 def get_favorite_list(fav_type: str) -> list:
     """Returns a simple list of favorite values for a specific type."""
-    df = get_favorites()
+    from src.components.auth import get_current_user_id
+    user_id = get_current_user_id()
+    df = get_favorites(user_id)
     if df.empty: return []
     return df[df['favorite_type'] == fav_type]['skill_value'].tolist()
 
