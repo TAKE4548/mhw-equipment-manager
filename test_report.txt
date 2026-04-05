@@ -1,0 +1,203 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.4, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\audih\ws\hogehoge\mhw-equipment-manager
+plugins: anyio-4.13.0, mock-3.15.1
+collected 24 items
+
+tests\unit\test_equipment.py ....                                        [ 16%]
+tests\unit\test_equipment_box.py ...                                     [ 29%]
+tests\unit\test_history.py ..                                            [ 37%]
+tests\unit\test_restoration_tracker.py FFFFF                             [ 58%]
+tests\unit\test_talismans.py ..........                                  [100%]
+
+================================== FAILURES ===================================
+____________________________ test_register_tracker ____________________________
+
+    def test_register_tracker():
+        target_bonuses = [{"type": "äÓëbçUåÇ", "level": "áU"}]
+>       assert register_tracker("w1", 10, target_bonuses) is True
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\unit\test_restoration_tracker.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\logic\restoration_tracker.py:44: in register_tracker
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:382: in concat
+    op = _Concatenator(
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:448: in __init__
+    ndims = self._get_ndims(objs)
+            ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pandas.core.reshape.concat._Concatenator object at 0x00000257A105CBD0>
+objs = [<MagicMock name='mock.cache_data()()' id='2575386872080'>,                                      id  ... target_rest_5_level
+0  4c6b97d2-485c-4b5e-b4c3-9196fc472e18  ...                  Ç»Çµ
+
+[1 rows x 13 columns]]
+
+    def _get_ndims(self, objs: list[Series | DataFrame]) -> set[int]:
+        # figure out what our result ndim is going to be
+        ndims = set()
+        for obj in objs:
+            if not isinstance(obj, (ABCSeries, ABCDataFrame)):
+                msg = (
+                    f"cannot concatenate object of type '{type(obj)}'; "
+                    "only Series and DataFrame objs are valid"
+                )
+>               raise TypeError(msg)
+E               TypeError: cannot concatenate object of type '<class 'unittest.mock.MagicMock'>'; only Series and DataFrame objs are valid
+
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:489: TypeError
+__________________________ test_advance_all_trackers __________________________
+
+    def test_advance_all_trackers():
+>       register_tracker("w1", 10, [])
+
+tests\unit\test_restoration_tracker.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\logic\restoration_tracker.py:44: in register_tracker
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:382: in concat
+    op = _Concatenator(
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:448: in __init__
+    ndims = self._get_ndims(objs)
+            ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pandas.core.reshape.concat._Concatenator object at 0x00000257A103DF10>
+objs = [<MagicMock name='mock.cache_data()()' id='2575386872080'>,                                      id  ... target_rest_5_level
+0  6e0076b5-fb27-435d-9ded-b16398f7b06a  ...                  Ç»Çµ
+
+[1 rows x 13 columns]]
+
+    def _get_ndims(self, objs: list[Series | DataFrame]) -> set[int]:
+        # figure out what our result ndim is going to be
+        ndims = set()
+        for obj in objs:
+            if not isinstance(obj, (ABCSeries, ABCDataFrame)):
+                msg = (
+                    f"cannot concatenate object of type '{type(obj)}'; "
+                    "only Series and DataFrame objs are valid"
+                )
+>               raise TypeError(msg)
+E               TypeError: cannot concatenate object of type '<class 'unittest.mock.MagicMock'>'; only Series and DataFrame objs are valid
+
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:489: TypeError
+_______________________ test_execute_apply_and_advance ________________________
+
+    def test_execute_apply_and_advance():
+        # Use normalized type or it will be normalized upon loading equipment
+>       register_tracker("w1", 5, [{"type": "âÔêSó¶ã≠âª", "level": "áT"}])
+
+tests\unit\test_restoration_tracker.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\logic\restoration_tracker.py:44: in register_tracker
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:382: in concat
+    op = _Concatenator(
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:448: in __init__
+    ndims = self._get_ndims(objs)
+            ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pandas.core.reshape.concat._Concatenator object at 0x00000257A1066650>
+objs = [<MagicMock name='mock.cache_data()()' id='2575386872080'>,                                      id  ... target_rest_5_level
+0  ce0ddde1-0adf-4f57-bff4-03ed498e73a5  ...                  Ç»Çµ
+
+[1 rows x 13 columns]]
+
+    def _get_ndims(self, objs: list[Series | DataFrame]) -> set[int]:
+        # figure out what our result ndim is going to be
+        ndims = set()
+        for obj in objs:
+            if not isinstance(obj, (ABCSeries, ABCDataFrame)):
+                msg = (
+                    f"cannot concatenate object of type '{type(obj)}'; "
+                    "only Series and DataFrame objs are valid"
+                )
+>               raise TypeError(msg)
+E               TypeError: cannot concatenate object of type '<class 'unittest.mock.MagicMock'>'; only Series and DataFrame objs are valid
+
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:489: TypeError
+_____________________________ test_delete_tracker _____________________________
+
+    def test_delete_tracker():
+>       register_tracker("w1", 5, [])
+
+tests\unit\test_restoration_tracker.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\logic\restoration_tracker.py:44: in register_tracker
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:382: in concat
+    op = _Concatenator(
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:448: in __init__
+    ndims = self._get_ndims(objs)
+            ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pandas.core.reshape.concat._Concatenator object at 0x00000257A1029C50>
+objs = [<MagicMock name='mock.cache_data()()' id='2575386872080'>,                                      id  ... target_rest_5_level
+0  a1ee1669-f3fb-477e-9fe8-f2286ec426a3  ...                  Ç»Çµ
+
+[1 rows x 13 columns]]
+
+    def _get_ndims(self, objs: list[Series | DataFrame]) -> set[int]:
+        # figure out what our result ndim is going to be
+        ndims = set()
+        for obj in objs:
+            if not isinstance(obj, (ABCSeries, ABCDataFrame)):
+                msg = (
+                    f"cannot concatenate object of type '{type(obj)}'; "
+                    "only Series and DataFrame objs are valid"
+                )
+>               raise TypeError(msg)
+E               TypeError: cannot concatenate object of type '<class 'unittest.mock.MagicMock'>'; only Series and DataFrame objs are valid
+
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:489: TypeError
+_____________________________ test_update_tracker _____________________________
+
+    def test_update_tracker():
+>       register_tracker("w1", 5, [{"type": "çUåÇ", "level": "áT"}])
+
+tests\unit\test_restoration_tracker.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\logic\restoration_tracker.py:44: in register_tracker
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:382: in concat
+    op = _Concatenator(
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:448: in __init__
+    ndims = self._get_ndims(objs)
+            ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pandas.core.reshape.concat._Concatenator object at 0x00000257A1187D50>
+objs = [<MagicMock name='mock.cache_data()()' id='2575386872080'>,                                      id  ... target_rest_5_level
+0  df24fd91-f5dd-4497-97d0-79c8b80190c3  ...                  Ç»Çµ
+
+[1 rows x 13 columns]]
+
+    def _get_ndims(self, objs: list[Series | DataFrame]) -> set[int]:
+        # figure out what our result ndim is going to be
+        ndims = set()
+        for obj in objs:
+            if not isinstance(obj, (ABCSeries, ABCDataFrame)):
+                msg = (
+                    f"cannot concatenate object of type '{type(obj)}'; "
+                    "only Series and DataFrame objs are valid"
+                )
+>               raise TypeError(msg)
+E               TypeError: cannot concatenate object of type '<class 'unittest.mock.MagicMock'>'; only Series and DataFrame objs are valid
+
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\reshape\concat.py:489: TypeError
+=========================== short test summary info ===========================
+FAILED tests/unit/test_restoration_tracker.py::test_register_tracker - TypeEr...
+FAILED tests/unit/test_restoration_tracker.py::test_advance_all_trackers - Ty...
+FAILED tests/unit/test_restoration_tracker.py::test_execute_apply_and_advance
+FAILED tests/unit/test_restoration_tracker.py::test_delete_tracker - TypeErro...
+FAILED tests/unit/test_restoration_tracker.py::test_update_tracker - TypeErro...
+======================== 5 failed, 19 passed in 1.52s =========================
