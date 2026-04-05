@@ -288,3 +288,30 @@ def filter_equipment(df: pd.DataFrame,
         filtered_df = filtered_df.sort_index(ascending=False)
 
     return filtered_df
+def update_equipment(record_id: str, weapon_name: str, weapon_type: str, element: str, 
+                     series_skill: str, group_skill: str, enhancement_type: str,
+                     p_bonuses: list, r_bonuses: list) -> bool:
+    """Updates an existing equipment record."""
+    from src.database.storage_manager import load_data, save_data
+    df = load_data(EQUIPMENT_TABLE, required_columns=EQUIPMENT_COLUMNS)
+    idx = df[df["id"].astype(str) == str(record_id)].index
+    if idx.empty:
+        return False
+    
+    df.at[idx[0], "weapon_name"] = weapon_name
+    df.at[idx[0], "weapon_type"] = weapon_type
+    df.at[idx[0], "element"] = element
+    df.at[idx[0], "current_series_skill"] = series_skill
+    df.at[idx[0], "current_group_skill"] = group_skill
+    df.at[idx[0], "enhancement_type"] = enhancement_type
+    
+    # Update p_bonuses
+    for i, pb in enumerate(p_bonuses):
+        df.at[idx[0], f"p_bonus_{i+1}"] = pb
+    
+    # Update r_bonuses
+    for i, rb in enumerate(r_bonuses):
+        df.at[idx[0], f"rest_{i+1}_type"] = rb.get("type", "なし")
+        df.at[idx[0], f"rest_{i+1}_level"] = rb.get("level", "なし")
+    
+    return save_data(EQUIPMENT_TABLE, df)

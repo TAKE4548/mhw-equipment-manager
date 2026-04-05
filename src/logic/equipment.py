@@ -91,3 +91,18 @@ def filter_upgrades(df: pd.DataFrame,
         filtered_df = filtered_df.sort_values(by="remaining_count", ascending=True)
         
     return filtered_df
+def update_upgrade(record_id: str, weapon_type: str, element: str, 
+                   series_skill: str, group_skill: str, count: int) -> bool:
+    """Updates an existing skill upgrade record."""
+    df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
+    if df.empty: return False
+    idx = df[df["id"].astype(str) == str(record_id)].index
+    if not idx.empty:
+        df.at[idx[0], "weapon_type"] = weapon_type
+        df.at[idx[0], "element"] = element
+        df.at[idx[0], "series_skill"] = series_skill
+        df.at[idx[0], "group_skill"] = group_skill
+        df.at[idx[0], "remaining_count"] = count
+        save_data(UPGRADES_TABLE, df)
+        return True
+    return False

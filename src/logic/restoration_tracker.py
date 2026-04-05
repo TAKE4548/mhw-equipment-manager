@@ -92,3 +92,25 @@ def execute_apply_and_advance(tracker_id: str) -> bool:
             eq_df.at[idx[0], f"rest_{i}_level"] = tracker_row[f"target_rest_{i}_level"]
         save_equipment(eq_df)
     return advance_all_trackers(1)
+def update_tracker(tracker_id: str, remaining_count: int, target_bonuses: list[dict]) -> bool:
+    """Updates an existing tracker record."""
+    df = load_trackers()
+    prev_df = df.copy()
+    idx = df[df["id"].astype(str) == str(tracker_id)].index
+    if idx.empty:
+        return False
+    
+    df.at[idx[0], "remaining_count"] = remaining_count
+    for i in range(5):
+        rt, rl = f"target_rest_{i+1}_type", f"target_rest_{i+1}_level"
+        if i < len(target_bonuses):
+            df.at[idx[0], rt] = target_bonuses[i].get("type", "なし")
+            df.at[idx[0], rl] = target_bonuses[i].get("level", "なし")
+        else:
+            df.at[idx[0], rt] = "なし"
+            df.at[idx[0], rl] = "なし"
+    
+    if save_data(TRACKER_TABLE, df):
+        record_history("UPDATE", prev_df, df)
+        return True
+    return False
