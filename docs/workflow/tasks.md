@@ -55,10 +55,10 @@
 - [x] T035 [Architect] Sync all documentation with current implementation (zlib-Cookie, Supabase)
 - [x] T036 **[完了]** 不要ファイルの削除（`gsheets_manager_old.py` 等のクリーンアップ）
 - [x] T037 [Engineer] `docs/workflow/test_scenarios.md` に基づく単体テストの実装
-- [ ] T038 [Engineer] 仕様変更に伴う再実装：スキル抽選実施時の武器データ更新ロジック
-- [ ] T039 [Engineer] 仕様変更に伴う再実装：復元厳選の自動削除ロジック追加
-- [ ] T040 [Engineer] 全画面（所持武器・抽選・復元）への一貫したUndo/Redoの実装
-- [ ] T041 Final consistency check: Variable naming vs Documentation terminology
+- [x] T038 [Engineer] 仕様変更に伴う再実装：スキル抽選実施時の武器データ更新ロジック
+- [x] T039 [Engineer] 仕様変更に伴う再実装：復元厳選の自動削除ロジック追加
+- [x] T040 [Engineer] 全画面（所持武器・抽選・復元）への一貫したUndo/Redoの実装
+- [x] T041 Final consistency check: Variable naming vs Documentation terminology
 
 ## Phase 10: Appraised Talismans (鑑定護石管理) [Completed]
 - [x] T042 [Architect/Engineer] Create `src/data/talisman_master.json` holding Skill Groups (A-J) and Rarity Patterns (5-8).
@@ -73,3 +73,10 @@
 - [x] T049 [Engineer] Update weapon selection cards in `pages/reinforcement_registration.py` to show Group Skill and Production Bonuses.
 - [x] T050 [Engineer] Implement filtering and sorting UI (toolbar) for the active tracker list in `pages/reinforcement_registration.py`.
 - [x] T051 [Engineer] Ensure all visual changes adhere to `docs/design_system.md` standards.
+
+## Phase 12: Performance Optimization (パフォーマンス最適化) [Planned]
+- [x] T052 [Engineer] Apply `@st.cache_data` to `get_master_data()`, `load_equipment()`, and `load_trackers()`.
+- [x] T053 [Engineer] Apply `functools.lru_cache` to `get_abbr_item()` and other core utility logic.
+- [x] T054 [Engineer] Refactor `pages/` (especially `reinforcement_registration.py` and `0_skill_lottery.py`) to isolate list rendering in `st.fragment`.
+- [x] T055 [Engineer] Move DataFrame merges and normalization outside of rendering loops to ensure O(1) or O(N) instead of O(N^2) complexity.
+

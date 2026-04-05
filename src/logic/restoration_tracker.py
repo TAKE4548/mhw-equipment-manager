@@ -15,6 +15,7 @@ TRACKER_COLUMNS = [
     "target_rest_5_type", "target_rest_5_level"
 ]
 
+@st.cache_data
 def load_trackers() -> pd.DataFrame:
     """Loads all restoration trackers from the database."""
     df = load_data(TRACKER_TABLE, required_columns=TRACKER_COLUMNS)
@@ -42,6 +43,7 @@ def register_tracker(weapon_id: str, remaining_count: int, target_bonuses: list[
             new_row[rl] = "なし"
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
     if save_trackers(df):
+        load_trackers.clear()
         push_action("REGISTER_TRACKER", TRACKER_TABLE, prev_df, df)
         return True
     return False
@@ -57,6 +59,7 @@ def advance_all_trackers(decrement: int) -> bool:
     df = df[df["remaining_count"] > 0]
     
     if save_trackers(df):
+        load_trackers.clear()
         push_action("ADVANCE_ALL", TRACKER_TABLE, prev_df, df)
         return True
     return False
@@ -77,6 +80,7 @@ def execute_apply_and_advance(tracker_id: str) -> bool:
             eq_df.at[w_idx[0], f"rest_{i}_type"] = row[f"target_rest_{i}_type"]
             eq_df.at[w_idx[0], f"rest_{i}_level"] = row[f"target_rest_{i}_level"]
         if save_equipment(eq_df):
+            load_equipment.clear()
             push_action("APPLY_UPGRADE", "equipment", prev_eq_df, eq_df)
         
     return advance_all_trackers(int(row["remaining_count"]))
@@ -89,6 +93,7 @@ def delete_tracker(tracker_id: str) -> bool:
         prev_df = df.copy()
         df = df.drop(idx)
         if save_trackers(df):
+            load_trackers.clear()
             push_action("DELETE_TRACKER", TRACKER_TABLE, prev_df, df)
             return True
     return False
@@ -111,6 +116,7 @@ def update_tracker(tracker_id: str, remaining_count: int, target_bonuses: list[d
             df.at[idx[0], rl] = "なし"
     
     if save_trackers(df):
+        load_trackers.clear()
         push_action("UPDATE_TRACKER", TRACKER_TABLE, prev_df, df)
         return True
     return False

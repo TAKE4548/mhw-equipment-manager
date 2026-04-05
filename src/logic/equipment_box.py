@@ -1,6 +1,7 @@
 import pandas as pd
 import uuid
 import streamlit as st
+import functools
 from collections import Counter
 from src.database.storage_manager import load_data, save_data, delete_record
 from src.logic.history import push_action
@@ -49,6 +50,7 @@ def normalize_bonus(b_type, b_level=None, is_restoration=False):
     nl = NORM_LV_MAP.get(nl_raw, nl_raw)
     return nt, nl
 
+@functools.lru_cache(maxsize=128)
 def get_abbr_item(item: str) -> str:
     """Helper to apply abbreviation to a single item name."""
     if not item or item == "なし": return "なし"
@@ -93,6 +95,7 @@ def validate_restoration_bonuses(bonuses: list[dict]):
             return False, f"Validation Error: Bonus {label} repeated 3+ times."
     return True, ""
 
+@st.cache_data
 def load_equipment() -> pd.DataFrame:
     """Loads equipment and applies auto-normalization."""
     df = load_data(EQUIPMENT_TABLE, required_columns=EQUIPMENT_COLUMNS)
@@ -130,6 +133,7 @@ def add_equipment(weapon_name: str, weapon_type: str, element: str,
             new_row[f"rest_{i+1}_level"] = bonus.get("level", "なし")
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
     if save_equipment(df):
+        load_equipment.clear()
         push_action("ADD_EQUIPMENT", EQUIPMENT_TABLE, prev_df, df)
         return new_id
     return None
@@ -141,6 +145,7 @@ def delete_equipment(equipment_id: str) -> bool:
     if not idx.empty:
         prev_df = df.copy(); df = df.drop(idx)
         if save_equipment(df):
+            load_equipment.clear()
             push_action("DELETE_EQUIPMENT", EQUIPMENT_TABLE, prev_df, df)
             return True
     return False
@@ -153,6 +158,7 @@ def update_equipment_skills(equipment_id: str, series_skill: str, group_skill: s
         df.at[idx[0], 'current_series_skill'] = series_skill
         df.at[idx[0], 'current_group_skill'] = group_skill
         if save_equipment(df):
+            load_equipment.clear()
             push_action("UPDATE_SKILLS", EQUIPMENT_TABLE, prev_df, df)
             return True
     return False
@@ -184,6 +190,7 @@ def update_equipment(record_id: str, weapon_name: str, weapon_type: str, element
             df.at[idx[0], f"rest_{i+1}_level"] = rb.get("level", "なし")
     
     if save_equipment(df):
+        load_equipment.clear()
         push_action("UPDATE_EQUIPMENT", EQUIPMENT_TABLE, prev_df, df)
         return True
     return False

@@ -9,9 +9,14 @@ from src.logic.equipment_box import update_equipment_skills
 UPGRADES_TABLE = "upgrades"
 UPGRADES_COLUMNS = ["id", "weapon_type", "element", "series_skill", "group_skill", "remaining_count"]
 
+@st.cache_data
+def load_upgrades() -> pd.DataFrame:
+    """Loads all upgrades from storage."""
+    return load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
+
 def register_upgrade(weapon_type: str, element: str, series_skill: str, group_skill: str, count: int) -> str:
     """Registers a new skill upgrade in storage and returns its ID."""
-    df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
+    df = load_upgrades()
     new_id = str(uuid.uuid4())
     new_row = {
         "id": new_id,
@@ -23,13 +28,14 @@ def register_upgrade(weapon_type: str, element: str, series_skill: str, group_sk
     }
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
     if save_data(UPGRADES_TABLE, df):
+        load_upgrades.clear()
         push_action("REGISTER_UPGRADE", UPGRADES_TABLE, pd.DataFrame(columns=UPGRADES_COLUMNS), df)
         return new_id
     return None
 
 def get_active_upgrades() -> pd.DataFrame:
     """Returns active upgrades from storage as a DataFrame."""
-    df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
+    df = load_upgrades()
     if df.empty:
         return pd.DataFrame(columns=UPGRADES_COLUMNS)
     active_df = df[df["remaining_count"] > 0].copy()
@@ -38,7 +44,7 @@ def get_active_upgrades() -> pd.DataFrame:
 
 def execute_upgrade(record_id: str, decrement: int = 1, weapon_id: str = None) -> bool:
     """Decrements count and optionally updates weapon skills."""
-    df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
+    df = load_upgrades()
     if df.empty: return False
     
     idx = df[df["id"].astype(str) == str(record_id)].index
@@ -54,25 +60,29 @@ def execute_upgrade(record_id: str, decrement: int = 1, weapon_id: str = None) -
 
 def execute_all_upgrades(decrement: int = 1) -> bool:
     """Decrements remaining_count for all entries and records history."""
-    df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
+    df = load_upgrades()
     if df.empty: return True
     
     prev_df = df.copy()
     df["remaining_count"] = df["remaining_count"].apply(lambda x: max(0, int(x) - decrement))
+    # Auto-remove completed upgrades
+    df = df[df["remaining_count"] > 0]
     
     if save_data(UPGRADES_TABLE, df):
+        load_upgrades.clear()
         push_action("EXECUTE_ALL", UPGRADES_TABLE, prev_df, df)
         return True
     return False
 
 def delete_upgrade(record_id: str) -> bool:
     """Deletes an upgrade record and records history."""
-    df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
+    df = load_upgrades()
     idx = df[df["id"].astype(str) == str(record_id)].index
     if not idx.empty:
         prev_df = df.copy()
         df = df.drop(idx)
         if save_data(UPGRADES_TABLE, df):
+            load_upgrades.clear()
             push_action("DELETE_UPGRADE", UPGRADES_TABLE, prev_df, df)
             return True
     return False
@@ -109,7 +119,7 @@ def filter_upgrades(df: pd.DataFrame,
 def update_upgrade(record_id: str, weapon_type: str, element: str, 
                    series_skill: str, group_skill: str, count: int) -> bool:
     """Updates an existing skill upgrade record."""
-    df = load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
+    df = load_upgrades()
     if df.empty: return False
     idx = df[df["id"].astype(str) == str(record_id)].index
     if not idx.empty:
@@ -120,6 +130,7 @@ def update_upgrade(record_id: str, weapon_type: str, element: str,
         df.at[idx[0], "group_skill"] = group_skill
         df.at[idx[0], "remaining_count"] = count
         if save_data(UPGRADES_TABLE, df):
+            load_upgrades.clear()
             push_action("UPDATE_UPGRADE", UPGRADES_TABLE, prev_df, df)
             return True
     return False

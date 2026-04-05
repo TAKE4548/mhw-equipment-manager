@@ -3,6 +3,8 @@ import pandas as pd
 import json
 import zlib
 import base64
+import uuid
+import re
 from supabase import create_client, Client
 
 # --- Configuration ---
@@ -41,6 +43,77 @@ def init_memory_storage():
     if "needs_persist" not in st.session_state:
         st.session_state["needs_persist"] = False
 
+def _is_valid_uuid(val):
+    if not isinstance(val, str): return False
+    # Simple UUID v4 regex
+    return bool(re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$', val.lower()))
+
+def _migrate_local_ids():
+    """Scans session state for legacy IDs and converts them to UUIDs, maintaining references."""
+    if "mhw_data" not in st.session_state: return
+    
+    data = st.session_state["mhw_data"]
+    id_map = {} # old_id -> new_id
+    any_migration = False
+    
+    # 1. Collect and migrate IDs for primary tables
+    for table in ["weapons", "upgrades", "talismans", "favorites"]:
+        df = data.get(table, pd.DataFrame())
+        if df.empty or "id" not in df.columns: continue
+        
+        # Explicitly cast to object to avoid FutureWarning when assigning UUID strings to numeric columns
+        if df["id"].dtype != "object":
+            df["id"] = df["id"].astype(object)
+            
+        changed = False
+        for idx, row in df.iterrows():
+            old_id = str(row["id"])
+            if not _is_valid_uuid(old_id):
+                new_id = str(uuid.uuid4())
+                id_map[old_id] = new_id
+                df.at[idx, "id"] = new_id
+                changed = True
+                any_migration = True
+        if changed: data[table] = df
+
+    # 2. Migrate Trackers
+    df_t = data.get("trackers", pd.DataFrame())
+    if not df_t.empty:
+        # Cast columns to object
+        for col in ["id", "weapon_id"]:
+            if col in df_t.columns and df_t[col].dtype != "object":
+                df_t[col] = df_t[col].astype(object)
+                
+        changed_t = False
+        for idx, row in df_t.iterrows():
+            old_tid = str(row["id"])
+            if not _is_valid_uuid(old_tid):
+                new_tid = str(uuid.uuid4())
+                df_t.at[idx, "id"] = new_tid
+                changed_t = True
+                any_migration = True
+            
+            old_wid = str(row.get("weapon_id", ""))
+            if old_wid in id_map:
+                df_t.at[idx, "weapon_id"] = id_map[old_wid]
+                changed_t = True
+                any_migration = True
+            elif old_wid and not _is_valid_uuid(old_wid):
+                df_t.at[idx, "weapon_id"] = str(uuid.uuid4())
+                changed_t = True
+                any_migration = True
+                
+        if changed_t: data["trackers"] = df_t
+
+    if any_migration:
+        st.session_state["needs_persist"] = True
+        # If logged in, sync to cloud to clear the UUID constraint error
+        if is_logged_in():
+            for table in MANAGED_TABLES:
+                df = data.get(table, pd.DataFrame())
+                if not df.empty:
+                    _save_to_cloud(table, df)
+
 # --- Boot: Read from HTTP cookie headers ---
 
 def boot_from_browser():
@@ -57,6 +130,7 @@ def boot_from_browser():
                 st.session_state["mhw_data"][t] = (
                     pd.DataFrame(records) if records else pd.DataFrame()
                 )
+            _migrate_local_ids()
     except Exception:
         pass
 

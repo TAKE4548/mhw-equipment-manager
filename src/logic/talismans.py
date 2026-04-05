@@ -2,6 +2,7 @@ import pandas as pd
 import uuid
 import json
 import os
+import streamlit as st
 from src.database.storage_manager import load_data, save_data
 from src.logic.history import push_action
 
@@ -16,6 +17,7 @@ TALISMANS_COLUMNS = [
     "is_favorite"
 ]
 
+@st.cache_data
 def load_talisman_master() -> dict:
     path = os.path.join(os.path.dirname(__file__), "..", "data", "talisman_master.json")
     try:
@@ -24,6 +26,7 @@ def load_talisman_master() -> dict:
     except Exception:
         return {"groups": {}, "rarity_patterns": {}}
 
+@st.cache_data
 def load_talismans() -> pd.DataFrame:
     df = load_data(TALISMANS_TABLE, required_columns=TALISMANS_COLUMNS)
     # Ensure types
@@ -321,6 +324,7 @@ def add_talisman(rarity: int, skills: list, slots: list) -> str:
             
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
     if save_talismans(df):
+        load_talismans.clear()
         push_action("ADD_TALISMAN", TALISMANS_TABLE, prev_df, df)
         return new_id
     return None
@@ -332,8 +336,36 @@ def delete_talisman(talisman_id: str) -> bool:
         prev_df = df.copy()
         df = df.drop(idx)
         if save_talismans(df):
+            load_talismans.clear()
             push_action("DELETE_TALISMAN", TALISMANS_TABLE, prev_df, df)
             return True
+    return False
+
+def update_talisman(talisman_id: str, rarity: int, skills: list, slots: list) -> bool:
+    """Updates an existing talisman and records history."""
+    df = load_talismans()
+    idx = df[df["id"].astype(str) == str(talisman_id)].index
+    if idx.empty: return False
+    
+    prev_df = df.copy()
+    df.at[idx[0], "rarity"] = rarity
+    df.at[idx[0], "weapon_slot_level"] = int(slots[0])
+    df.at[idx[0], "armor_slot_1_level"] = int(slots[1])
+    df.at[idx[0], "armor_slot_2_level"] = int(slots[2])
+    df.at[idx[0], "armor_slot_3_level"] = int(slots[3])
+    
+    for i in range(3):
+        if i < len(skills):
+            df.at[idx[0], f"skill_{i+1}_name"] = skills[i].get("name", "")
+            df.at[idx[0], f"skill_{i+1}_level"] = int(skills[i].get("level", 0))
+        else:
+            df.at[idx[0], f"skill_{i+1}_name"] = ""
+            df.at[idx[0], f"skill_{i+1}_level"] = 0
+            
+    if save_talismans(df):
+        load_talismans.clear()
+        push_action("UPDATE_TALISMAN", TALISMANS_TABLE, prev_df, df)
+        return True
     return False
 
 def toggle_favorite(talisman_id: str) -> bool:
@@ -344,7 +376,9 @@ def toggle_favorite(talisman_id: str) -> bool:
         if pd.isna(curr): curr = False
         df.at[idx[0], "is_favorite"] = not bool(curr)
         # We don't record undo history just for toggling favorite flag.
-        return save_talismans(df)
+        if save_talismans(df):
+            load_talismans.clear()
+            return True
     return False
 
 def get_all_skills_flat() -> list:

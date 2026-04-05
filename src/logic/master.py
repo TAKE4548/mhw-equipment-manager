@@ -1,6 +1,8 @@
 import json
 import os
+import streamlit as st
 
+@st.cache_data
 def get_master_data():
     """Loads master data from JSON file."""
     # Build path relative to this file

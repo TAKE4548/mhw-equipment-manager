@@ -43,6 +43,7 @@ def render_active_upgrades(df):
     master = get_master_data()
     series_map = {s['skill_parts']: s['skill_name'] for s in master.get("series_skills", [])}
     group_map = {g['group_name']: g['skill_name'] for g in master.get("group_skills", [])}
+    eq_df_all = load_equipment()
 
     for _, row in df.iterrows():
         rem = row['remaining_count']
@@ -77,8 +78,7 @@ def render_active_upgrades(df):
                 # 1. Execute Action
                 with st.popover("🔨 武器へ付与", use_container_width=True):
                     st.markdown("##### 武器を選択")
-                    eq_df = load_equipment()
-                    matching_df = eq_df[ (eq_df['weapon_type'] == row['weapon_type']) & (eq_df['element'] == row['element']) ]
+                    matching_df = eq_df_all[ (eq_df_all['weapon_type'] == row['weapon_type']) & (eq_df_all['element'] == row['element']) ]
                     
                     if matching_df.empty:
                         st.info("対象の武器が装備BOXにありません。")
