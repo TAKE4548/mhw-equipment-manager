@@ -1,0 +1,181 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.4, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\audih\.pyenv\pyenv-win\versions\3.11.4\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\audih\ws\hogehoge\mhw-equipment-manager
+plugins: anyio-4.13.0, mock-3.15.1
+collecting ... collected 13 items
+
+tests/unit/test_equipment.py::test_register_upgrade PASSED               [  7%]
+tests/unit/test_equipment.py::test_execute_upgrade_decrement PASSED      [ 15%]
+tests/unit/test_equipment.py::test_execute_all_upgrades PASSED           [ 23%]
+tests/unit/test_equipment.py::test_execute_upgrade_sync_to_weapon FAILED [ 30%]
+tests/unit/test_equipment_box.py::test_validate_restoration_bonuses_valid PASSED [ 38%]
+tests/unit/test_equipment_box.py::test_validate_restoration_bonuses_invalid_triple PASSED [ 46%]
+tests/unit/test_equipment_box.py::test_normalize_bonus_production PASSED [ 53%]
+tests/unit/test_equipment_box.py::test_normalize_bonus_restoration PASSED [ 61%]
+tests/unit/test_equipment_box.py::test_normalize_bonus_special_cases PASSED [ 69%]
+tests/unit/test_history.py::test_push_undo_redo_flow PASSED              [ 76%]
+tests/unit/test_history.py::test_stack_limit PASSED                      [ 84%]
+tests/unit/test_restoration_tracker.py::test_advance_all_trackers_auto_delete ERROR [ 92%]
+tests/unit/test_restoration_tracker.py::test_execute_apply_sync_to_equipment ERROR [100%]
+
+=================================== ERRORS ====================================
+___________ ERROR at setup of test_advance_all_trackers_auto_delete ___________
+
+obj = <module 'src.logic.restoration_tracker' from 'C:\\Users\\audih\\ws\\hogehoge\\mhw-equipment-manager\\src\\logic\\restoration_tracker.py'>
+name = 'save_trackers', ann = 'src.logic.restoration_tracker'
+
+    def annotated_getattr(obj: object, name: str, ann: str) -> object:
+        try:
+>           obj = getattr(obj, name)
+                  ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'src.logic.restoration_tracker' has no attribute 'save_trackers'
+
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\_pytest\monkeypatch.py:92: AttributeError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001C5F1B40650>
+
+    @pytest.fixture
+    def mock_storage(monkeypatch):
+        storage = {
+            "restoration_trackers": pd.DataFrame(columns=["id", "weapon_id", "remaining_count", "target_rest_1_type", "target_rest_1_level", "target_rest_2_type", "target_rest_2_level"]),
+            "equipment": pd.DataFrame(columns=["id", "weapon_type", "element", "weapon_name", "rest_1_type", "rest_1_level", "rest_2_type", "rest_2_level"])
+        }
+    
+        def mock_load(key, required_columns=None):
+            return storage.get(key, pd.DataFrame(columns=required_columns))
+    
+        def mock_save(key, df):
+            storage[key] = df
+            return True
+    
+        monkeypatch.setattr("src.logic.restoration_tracker.load_trackers", lambda: storage["restoration_trackers"])
+>       monkeypatch.setattr("src.logic.restoration_tracker.save_trackers", lambda df: mock_save("restoration_trackers", df))
+
+tests\unit\test_restoration_tracker.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\_pytest\monkeypatch.py:106: in derive_importpath
+    annotated_getattr(target, attr, ann=module)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+obj = <module 'src.logic.restoration_tracker' from 'C:\\Users\\audih\\ws\\hogehoge\\mhw-equipment-manager\\src\\logic\\restoration_tracker.py'>
+name = 'save_trackers', ann = 'src.logic.restoration_tracker'
+
+    def annotated_getattr(obj: object, name: str, ann: str) -> object:
+        try:
+            obj = getattr(obj, name)
+        except AttributeError as e:
+>           raise AttributeError(
+                f"{type(obj).__name__!r} object at {ann} has no attribute {name!r}"
+            ) from e
+E           AttributeError: 'module' object at src.logic.restoration_tracker has no attribute 'save_trackers'
+
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\_pytest\monkeypatch.py:94: AttributeError
+___________ ERROR at setup of test_execute_apply_sync_to_equipment ____________
+
+obj = <module 'src.logic.restoration_tracker' from 'C:\\Users\\audih\\ws\\hogehoge\\mhw-equipment-manager\\src\\logic\\restoration_tracker.py'>
+name = 'save_trackers', ann = 'src.logic.restoration_tracker'
+
+    def annotated_getattr(obj: object, name: str, ann: str) -> object:
+        try:
+>           obj = getattr(obj, name)
+                  ^^^^^^^^^^^^^^^^^^
+E           AttributeError: module 'src.logic.restoration_tracker' has no attribute 'save_trackers'
+
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\_pytest\monkeypatch.py:92: AttributeError
+
+The above exception was the direct cause of the following exception:
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001C5F1A3DBD0>
+
+    @pytest.fixture
+    def mock_storage(monkeypatch):
+        storage = {
+            "restoration_trackers": pd.DataFrame(columns=["id", "weapon_id", "remaining_count", "target_rest_1_type", "target_rest_1_level", "target_rest_2_type", "target_rest_2_level"]),
+            "equipment": pd.DataFrame(columns=["id", "weapon_type", "element", "weapon_name", "rest_1_type", "rest_1_level", "rest_2_type", "rest_2_level"])
+        }
+    
+        def mock_load(key, required_columns=None):
+            return storage.get(key, pd.DataFrame(columns=required_columns))
+    
+        def mock_save(key, df):
+            storage[key] = df
+            return True
+    
+        monkeypatch.setattr("src.logic.restoration_tracker.load_trackers", lambda: storage["restoration_trackers"])
+>       monkeypatch.setattr("src.logic.restoration_tracker.save_trackers", lambda df: mock_save("restoration_trackers", df))
+
+tests\unit\test_restoration_tracker.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\_pytest\monkeypatch.py:106: in derive_importpath
+    annotated_getattr(target, attr, ann=module)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+obj = <module 'src.logic.restoration_tracker' from 'C:\\Users\\audih\\ws\\hogehoge\\mhw-equipment-manager\\src\\logic\\restoration_tracker.py'>
+name = 'save_trackers', ann = 'src.logic.restoration_tracker'
+
+    def annotated_getattr(obj: object, name: str, ann: str) -> object:
+        try:
+            obj = getattr(obj, name)
+        except AttributeError as e:
+>           raise AttributeError(
+                f"{type(obj).__name__!r} object at {ann} has no attribute {name!r}"
+            ) from e
+E           AttributeError: 'module' object at src.logic.restoration_tracker has no attribute 'save_trackers'
+
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\_pytest\monkeypatch.py:94: AttributeError
+================================== FAILURES ===================================
+_____________________ test_execute_upgrade_sync_to_weapon _____________________
+
+mock_storage = {'equipment':    id weapon_type element weapon_name current_series_skill current_group_skill
+0  W1          大剣       火... element series_skill group_skill  remaining_count
+0  U1          大剣       火        炎属性強化         匠の業                5}
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001C5F1A3AF90>
+
+    def test_execute_upgrade_sync_to_weapon(mock_storage, monkeypatch):
+        """強化実施時に、対象武器のスキルが更新されるか検証"""
+        mock_storage["upgrades"] = pd.DataFrame([
+            {"id": "U1", "weapon_type": "大剣", "element": "火",
+             "series_skill": "炎属性強化", "group_skill": "匠の業", "remaining_count": 5}
+        ])
+        mock_storage["equipment"] = pd.DataFrame([
+            {"id": "W1", "weapon_type": "大剣", "element": "火", "weapon_name": "テスタ",
+             "current_series_skill": "なし", "current_group_skill": "なし"}
+        ])
+    
+        # Mock equipment_box functions
+        monkeypatch.setattr("src.logic.equipment_box.load_equipment", lambda: mock_storage["equipment"])
+        monkeypatch.setattr("src.logic.equipment_box.save_equipment", lambda df: mock_storage.update({"equipment": df}) or True)
+    
+        with patch("src.logic.equipment.push_action") as mock_push:
+>           execute_upgrade("U1", decrement=1, weapon_id="W1")
+
+tests\unit\test_equipment.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\logic\equipment.py:47: in execute_upgrade
+    update_equipment_skills(weapon_id, row['series_skill'], row['group_skill'])
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+equipment_id = 'W1', series_skill = '炎属性強化', group_skill = '匠の業'
+
+    def update_equipment_skills(equipment_id: str, series_skill: str, group_skill: str) -> bool:
+        """Updates only the skills of an existing equipment record."""
+        df = load_equipment()
+        idx = df[df["id"].astype(str) == str(equipment_id)].index
+        if not idx.empty:
+            prev_df = df.copy()
+            df.at[idx[0], 'current_series_skill'] = series_skill
+            df.at[idx[0], 'current_group_skill'] = group_skill
+            if save_equipment(df):
+>               push_action("UPDATE_SKILLS", "equipment", prev_df, df)
+                ^^^^^^^^^^^
+E               NameError: name 'push_action' is not defined
+
+src\logic\equipment_box.py:215: NameError
+=========================== short test summary info ===========================
+FAILED tests/unit/test_equipment.py::test_execute_upgrade_sync_to_weapon - Na...
+ERROR tests/unit/test_restoration_tracker.py::test_advance_all_trackers_auto_delete
+ERROR tests/unit/test_restoration_tracker.py::test_execute_apply_sync_to_equipment
+=================== 1 failed, 10 passed, 2 errors in 1.50s ====================

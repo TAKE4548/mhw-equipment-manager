@@ -9,7 +9,7 @@ from src.logic.equipment_box import (
 )
 from src.logic.restoration_tracker import (
     load_trackers, register_tracker, advance_all_trackers, 
-    delete_tracker, execute_apply_and_advance, undo_action, redo_action,
+    delete_tracker, execute_apply_and_advance,
     update_tracker
 )
 
@@ -79,16 +79,18 @@ def edit_tracker_dialog(row, w_row):
 st.title("強化厳選登録 ✨")
 st.markdown("武器ごとに、未来の抽選結果（複数）をトラッキングします。")
 
+from src.logic.history import undo_last_action, redo_last_action, get_history
+
+# ... (header area)
 # History Controls
 h_col1, h_col2, h_col3 = st.columns([1, 1, 6])
+undo_stack, redo_stack = get_history()
 with h_col1:
-    undo_disabled = not st.session_state.history_undo
-    if st.button("Undo ↩️", disabled=undo_disabled, use_container_width=True):
-        if undo_action(): st.rerun()
+    if st.button("Undo ↩️", disabled=not undo_stack, use_container_width=True):
+        if undo_last_action(): st.rerun()
 with h_col2:
-    redo_disabled = not st.session_state.history_redo
-    if st.button("Redo ↪️", disabled=redo_disabled, use_container_width=True):
-        if redo_action(): st.rerun()
+    if st.button("Redo ↪️", disabled=not redo_stack, use_container_width=True):
+        if redo_last_action(): st.rerun()
 
 st.divider()
 

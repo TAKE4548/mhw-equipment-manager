@@ -1,0 +1,21 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.4, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\audih\.pyenv\pyenv-win\versions\3.11.4\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\audih\ws\hogehoge\mhw-equipment-manager
+plugins: anyio-4.13.0, mock-3.15.1
+collecting ... collected 12 items
+
+tests/unit/test_equipment.py::test_register_upgrade PASSED               [  8%]
+tests/unit/test_equipment.py::test_execute_upgrade_decrement PASSED      [ 16%]
+tests/unit/test_equipment.py::test_execute_all_upgrades PASSED           [ 25%]
+tests/unit/test_equipment.py::test_auto_remove_logic_behavior PASSED     [ 33%]
+tests/unit/test_equipment_box.py::test_validate_restoration_bonuses_valid PASSED [ 41%]
+tests/unit/test_equipment_box.py::test_validate_restoration_bonuses_invalid_triple PASSED [ 50%]
+tests/unit/test_equipment_box.py::test_normalize_bonus_production PASSED [ 58%]
+tests/unit/test_equipment_box.py::test_normalize_bonus_restoration PASSED [ 66%]
+tests/unit/test_equipment_box.py::test_normalize_bonus_special_cases PASSED [ 75%]
+tests/unit/test_restoration_tracker.py::test_record_history PASSED       [ 83%]
+tests/unit/test_restoration_tracker.py::test_undo_redo_flow PASSED       [ 91%]
+tests/unit/test_restoration_tracker.py::test_undo_empty PASSED           [100%]
+
+============================= 12 passed in 1.25s ==============================

@@ -2,6 +2,8 @@ import pandas as pd
 import streamlit as st
 import uuid
 from src.database.storage_manager import load_data, save_data
+from src.logic.history import push_action
+from src.logic.equipment_box import load_equipment, save_equipment
 
 TRACKER_TABLE = "trackers"
 TRACKER_COLUMNS = [
@@ -13,37 +15,19 @@ TRACKER_COLUMNS = [
     "target_rest_5_type", "target_rest_5_level"
 ]
 
-def record_history(action_type: str, prev_data: pd.DataFrame, next_data: pd.DataFrame):
-    st.session_state.history_undo.append({
-        'action_type': action_type,
-        'prev': prev_data.copy(),
-        'next': next_data.copy()
-    })
-    st.session_state.history_redo = []
-
-def undo_action() -> bool:
-    if not st.session_state.history_undo:
-        return False
-    action = st.session_state.history_undo.pop()
-    st.session_state.history_redo.append(action)
-    save_data(TRACKER_TABLE, action['prev'])
-    return True
-
-def redo_action() -> bool:
-    if not st.session_state.history_redo:
-        return False
-    action = st.session_state.history_redo.pop()
-    st.session_state.history_undo.append(action)
-    save_data(TRACKER_TABLE, action['next'])
-    return True
-
 def load_trackers() -> pd.DataFrame:
+    """Loads all restoration trackers from the database."""
     df = load_data(TRACKER_TABLE, required_columns=TRACKER_COLUMNS)
-    if "remaining_count" in df.columns:
+    if not df.empty and "remaining_count" in df.columns:
         df["remaining_count"] = pd.to_numeric(df["remaining_count"], errors="coerce").fillna(0).astype(int)
     return df
 
+def save_trackers(df: pd.DataFrame) -> bool:
+    """Saves restoration trackers to the database."""
+    return save_data(TRACKER_TABLE, df)
+
 def register_tracker(weapon_id: str, remaining_count: int, target_bonuses: list[dict]) -> bool:
+    """Registers a new restoration tracker and records history."""
     df = load_trackers()
     prev_df = df.copy()
     new_id = str(uuid.uuid4())
@@ -57,49 +41,65 @@ def register_tracker(weapon_id: str, remaining_count: int, target_bonuses: list[
             new_row[rt] = "なし"
             new_row[rl] = "なし"
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-    if save_data(TRACKER_TABLE, df):
-        record_history("REGISTER", prev_df, df)
+    if save_trackers(df):
+        push_action("REGISTER_TRACKER", TRACKER_TABLE, prev_df, df)
         return True
     return False
 
-def advance_all_trackers(decrement: int = 1) -> bool:
+def advance_all_trackers(decrement: int) -> bool:
+    """Decrements all trackers and removes those that reach 0."""
     df = load_trackers()
-    if df.empty: return False
+    if df.empty: return True
+    
     prev_df = df.copy()
-    df["remaining_count"] = df["remaining_count"].apply(lambda x: max(0, x - decrement))
-    if save_data(TRACKER_TABLE, df):
-        record_history("ADVANCE_ALL", prev_df, df)
+    df["remaining_count"] = df["remaining_count"].apply(lambda x: max(0, int(x) - decrement))
+    # Auto-remove completed trackers
+    df = df[df["remaining_count"] > 0]
+    
+    if save_trackers(df):
+        push_action("ADVANCE_ALL", TRACKER_TABLE, prev_df, df)
         return True
     return False
-
-def delete_tracker(tracker_id: str) -> bool:
-    from src.database.storage_manager import delete_record
-    return delete_record(TRACKER_TABLE, tracker_id)
 
 def execute_apply_and_advance(tracker_id: str) -> bool:
-    from src.logic.equipment_box import load_equipment, save_equipment
-    trackers_df = load_trackers()
-    eq_df = load_equipment()
-    if trackers_df.empty or eq_df.empty: return False
-    target_tracker = trackers_df[trackers_df["id"].astype(str) == str(tracker_id)]
-    if target_tracker.empty: return False
-    tracker_row = target_tracker.iloc[0]
-    w_id = tracker_row["weapon_id"]
-    idx = eq_df.index[eq_df['id'].astype(str) == str(w_id)].tolist()
-    if idx:
-        for i in range(1, 6):
-            eq_df.at[idx[0], f"rest_{i}_type"] = tracker_row[f"target_rest_{i}_type"]
-            eq_df.at[idx[0], f"rest_{i}_level"] = tracker_row[f"target_rest_{i}_level"]
-        save_equipment(eq_df)
-    return advance_all_trackers(1)
-def update_tracker(tracker_id: str, remaining_count: int, target_bonuses: list[dict]) -> bool:
-    """Updates an existing tracker record."""
+    """Applies target bonuses to weapon and advances all trackers."""
     df = load_trackers()
-    prev_df = df.copy()
     idx = df[df["id"].astype(str) == str(tracker_id)].index
-    if idx.empty:
-        return False
+    if idx.empty: return False
     
+    row = df.loc[idx[0]]
+    eq_df = load_equipment()
+    
+    w_idx = eq_df[eq_df["id"].astype(str) == str(row["weapon_id"])].index
+    if not w_idx.empty:
+        prev_eq_df = eq_df.copy()
+        for i in range(1, 6):
+            eq_df.at[w_idx[0], f"rest_{i}_type"] = row[f"target_rest_{i}_type"]
+            eq_df.at[w_idx[0], f"rest_{i}_level"] = row[f"target_rest_{i}_level"]
+        if save_equipment(eq_df):
+            push_action("APPLY_UPGRADE", "equipment", prev_eq_df, eq_df)
+        
+    return advance_all_trackers(int(row["remaining_count"]))
+
+def delete_tracker(tracker_id: str) -> bool:
+    """Deletes a tracker record and records history."""
+    df = load_trackers()
+    idx = df[df["id"].astype(str) == str(tracker_id)].index
+    if not idx.empty:
+        prev_df = df.copy()
+        df = df.drop(idx)
+        if save_trackers(df):
+            push_action("DELETE_TRACKER", TRACKER_TABLE, prev_df, df)
+            return True
+    return False
+
+def update_tracker(tracker_id: str, remaining_count: int, target_bonuses: list[dict]) -> bool:
+    """Updates an existing tracker and records history."""
+    df = load_trackers()
+    idx = df[df["id"].astype(str) == str(tracker_id)].index
+    if idx.empty: return False
+    
+    prev_df = df.copy()
     df.at[idx[0], "remaining_count"] = remaining_count
     for i in range(5):
         rt, rl = f"target_rest_{i+1}_type", f"target_rest_{i+1}_level"
@@ -110,7 +110,7 @@ def update_tracker(tracker_id: str, remaining_count: int, target_bonuses: list[d
             df.at[idx[0], rt] = "なし"
             df.at[idx[0], rl] = "なし"
     
-    if save_data(TRACKER_TABLE, df):
-        record_history("UPDATE", prev_df, df)
+    if save_trackers(df):
+        push_action("UPDATE_TRACKER", TRACKER_TABLE, prev_df, df)
         return True
     return False

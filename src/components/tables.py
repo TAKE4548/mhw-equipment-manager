@@ -93,8 +93,7 @@ def render_active_upgrades(df):
                                     previous_states = df[['id', 'remaining_count']].to_dict('records')
                                     st.session_state['undo_stack'].append({'action_type': 'EXECUTE_ALL', 'decrement': rem, 'previous_states': previous_states})
                                     st.session_state['redo_stack'].clear()
-                                    execute_all_upgrades(rem)
-                                    update_equipment_skills(w['id'], skill_part, group_part)
+                                    execute_upgrade(row['id'], rem, weapon_id=w['id'])
                                     st.rerun()
 
                     st.divider()

@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from src.logic.master import get_master_data
 from src.logic.equipment_box import (
-    load_equipment, register_equipment, delete_equipment, update_equipment,
+    load_equipment, add_equipment, delete_equipment, update_equipment,
     validate_restoration_bonuses, get_weapon_label, format_bonus_summary, normalize_bonus,
     format_bonus_list, filter_equipment,
     ATTRIBUTE_COLORS
@@ -113,8 +113,20 @@ if not st.session_state.get('mhw_ready') and not st.session_state.get('user'):
     st.info("⏳ データを読み込み中...")
     st.stop()
 
-st.title("所有巨戟アーティア一覧 📦")
-st.markdown("巨戟アーティア武器のステータスやボーナス状況を詳細に管理します。")
+from src.logic.history import undo_last_action, redo_last_action, get_history
+
+st.title("所持武器台帳 🎒")
+st.markdown("武器を登録・管理し、強化状況をトラッキングします。")
+
+# History Controls
+h_col1, h_col2, h_col3 = st.columns([1, 1, 6])
+u_stack, r_stack = get_history()
+with h_col1:
+    if st.button("Undo ↩️", disabled=not u_stack, use_container_width=True):
+        if undo_last_action(): st.rerun()
+with h_col2:
+    if st.button("Redo ↪️", disabled=not r_stack, use_container_width=True):
+        if redo_last_action(): st.rerun()
 
 st.divider()
 
@@ -202,7 +214,7 @@ with st.expander("➕ 武器を新規登録する", expanded=False):
         if not is_valid:
             st.error(err_msg)
         else:
-            record_id = register_equipment(
+            record_id = add_equipment(
                 final_weapon_name, w_type, element, 
                 current_series, current_group, enhancement,
                 [pb1, pb2, pb3], parsed_rbs

@@ -2,74 +2,39 @@ import streamlit as st
 import pandas as pd
 from src.database.storage_manager import load_data, save_data
 
+def get_history():
+    """Returns the undo and redo stacks from session state."""
+    if 'undo_stack' not in st.session_state: st.session_state['undo_stack'] = []
+    if 'redo_stack' not in st.session_state: st.session_state['redo_stack'] = []
+    return st.session_state['undo_stack'], st.session_state['redo_stack']
+
+def push_action(action_type: str, table: str, prev_df: pd.DataFrame, next_df: pd.DataFrame):
+    """Records an action for Undo/Redo."""
+    undo_stack, redo_stack = get_history()
+    undo_stack.append({
+        'action_type': action_type,
+        'table': table,
+        'prev_df': prev_df.copy(),
+        'next_df': next_df.copy()
+    })
+    redo_stack.clear()
+    # Limit stack size to 20
+    if len(undo_stack) > 20: undo_stack.pop(0)
+
 def undo_last_action() -> bool:
-    if 'undo_stack' not in st.session_state or len(st.session_state['undo_stack']) == 0:
-        return False
-        
-    action = st.session_state['undo_stack'].pop()
-    df = load_data("upgrades")
-    if df.empty and action['action_type'] != 'REGISTER':
-        return False
-
-    if action['action_type'] == 'REGISTER':
-        # Undo Register = Delete the record
-        # Store full record for Redo
-        idx = df[df["id"].astype(str) == str(action['target_id'])].index
-        if not idx.empty:
-            action['full_record'] = df.loc[idx].iloc[0].to_dict()
-            df = df.drop(idx)
+    undo_stack, redo_stack = get_history()
+    if not undo_stack: return False
     
-    elif action['action_type'] == 'EXECUTE':
-        # Undo Execute = Restore previous count
-        idx = df[df["id"].astype(str) == str(action['target_id'])].index
-        if not idx.empty:
-            action['redo_count'] = df.loc[idx, "remaining_count"].iloc[0]
-            df.loc[idx, "remaining_count"] = action['previous_count']
-
-    elif action['action_type'] == 'EXECUTE_ALL':
-        # Undo Execute All = Restore all previous counts
-        for state in action['previous_states']:
-            idx = df[df["id"].astype(str) == str(state['id'])].index
-            if not idx.empty:
-                df.loc[idx, "remaining_count"] = state['remaining_count']
-
-    save_data("upgrades", df)
-    
-    if 'redo_stack' not in st.session_state:
-        st.session_state['redo_stack'] = []
-    st.session_state['redo_stack'].append(action)
+    action = undo_stack.pop()
+    save_data(action['table'], action['prev_df'])
+    redo_stack.append(action)
     return True
 
 def redo_last_action() -> bool:
-    if 'redo_stack' not in st.session_state or len(st.session_state['redo_stack']) == 0:
-        return False
-        
-    action = st.session_state['redo_stack'].pop()
-    df = load_data("upgrades")
-
-    if action['action_type'] == 'REGISTER':
-        # Redo Register = Re-add the record
-        new_row = pd.DataFrame([action['full_record']])
-        if df.empty:
-            df = new_row
-        else:
-            df = pd.concat([df, new_row], ignore_index=True)
-        
-    elif action['action_type'] == 'EXECUTE':
-        # Redo Execute = Apply the count change again
-        idx = df[df["id"].astype(str) == str(action['target_id'])].index
-        if not idx.empty:
-            df.loc[idx, "remaining_count"] = action['redo_count']
-
-    elif action['action_type'] == 'EXECUTE_ALL':
-        # Redo Execute All = Apply the decrement again
-        target_ids = [str(state['id']) for state in action['previous_states']]
-        mask = df["id"].astype(str).isin(target_ids)
-        df.loc[mask, "remaining_count"] = df.loc[mask, "remaining_count"].apply(lambda x: max(0, x - action['decrement']))
-
-    save_data("upgrades", df)
+    undo_stack, redo_stack = get_history()
+    if not redo_stack: return False
     
-    if 'undo_stack' not in st.session_state:
-        st.session_state['undo_stack'] = []
-    st.session_state['undo_stack'].append(action)
+    action = redo_stack.pop()
+    save_data(action['table'], action['next_df'])
+    undo_stack.append(action)
     return True

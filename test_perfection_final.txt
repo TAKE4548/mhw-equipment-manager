@@ -1,0 +1,156 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.4, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\audih\.pyenv\pyenv-win\versions\3.11.4\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\audih\ws\hogehoge\mhw-equipment-manager
+plugins: anyio-4.13.0, mock-3.15.1
+collecting ... collected 11 items
+
+tests/unit/test_equipment.py::test_register_upgrade PASSED               [  9%]
+tests/unit/test_equipment.py::test_execute_upgrade_decrement PASSED      [ 18%]
+tests/unit/test_equipment.py::test_execute_all_upgrades PASSED           [ 27%]
+tests/unit/test_equipment.py::test_execute_upgrade_sync_to_weapon PASSED [ 36%]
+tests/unit/test_equipment_box.py::test_validate_restoration_bonuses_valid PASSED [ 45%]
+tests/unit/test_equipment_box.py::test_validate_restoration_bonuses_invalid_triple PASSED [ 54%]
+tests/unit/test_equipment_box.py::test_normalize_bonus_tuple_behavior PASSED [ 63%]
+tests/unit/test_history.py::test_push_undo_redo_flow PASSED              [ 72%]
+tests/unit/test_history.py::test_stack_limit PASSED                      [ 81%]
+tests/unit/test_restoration_tracker.py::test_advance_all_trackers_auto_delete PASSED [ 90%]
+tests/unit/test_restoration_tracker.py::test_execute_apply_sync_to_equipment FAILED [100%]
+
+================================== FAILURES ===================================
+____________________ test_execute_apply_sync_to_equipment _____________________
+
+self = Index(['id', 'weapon_id', 'remaining_count', 'target_rest_1_type',
+       'target_rest_1_level', 'target_rest_2_type', 'target_rest_2_level'],
+      dtype='object')
+key = 'target_rest_3_type'
+
+    def get_loc(self, key):
+        """
+        Get integer location, slice or boolean mask for requested label.
+    
+        Parameters
+        ----------
+        key : label
+    
+        Returns
+        -------
+        int if unique index, slice if monotonic index, else mask
+    
+        Examples
+        --------
+        >>> unique_index = pd.Index(list('abc'))
+        >>> unique_index.get_loc('b')
+        1
+    
+        >>> monotonic_index = pd.Index(list('abbc'))
+        >>> monotonic_index.get_loc('b')
+        slice(1, 3, None)
+    
+        >>> non_monotonic_index = pd.Index(list('abcb'))
+        >>> non_monotonic_index.get_loc('b')
+        array([False,  True, False,  True])
+        """
+        casted_key = self._maybe_cast_indexer(key)
+        try:
+>           return self._engine.get_loc(casted_key)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\indexes\base.py:3812: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pandas/_libs/index.pyx:167: in pandas._libs.index.IndexEngine.get_loc
+    ???
+pandas/_libs/index.pyx:196: in pandas._libs.index.IndexEngine.get_loc
+    ???
+pandas/_libs/hashtable_class_helper.pxi:7088: in pandas._libs.hashtable.PyObjectHashTable.get_item
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+>   ???
+E   KeyError: 'target_rest_3_type'
+
+pandas/_libs/hashtable_class_helper.pxi:7096: KeyError
+
+The above exception was the direct cause of the following exception:
+
+mock_storage = {'trackers':    id weapon_id  ...  target_rest_2_type target_rest_2_level
+0  T1        W1  ...           Sharpness    ...el rest_2_type rest_2_level
+0  W1          GS    Fire  ...       Level2   Sharpness       Level3
+
+[1 rows x 8 columns]}
+
+    def test_execute_apply_sync_to_equipment(mock_storage):
+        """Verifies that weapon data is synced when reinforcement is applied."""
+        mock_storage["trackers"] = pd.DataFrame([
+            {"id": "T1", "weapon_id": "W1", "remaining_count": 1,
+             "target_rest_1_type": "AttackBoost", "target_rest_1_level": "Level2",
+             "target_rest_2_type": "Sharpness", "target_rest_2_level": "Level3"}
+        ])
+        mock_storage["weapons"] = pd.DataFrame([
+            {"id": "W1", "weapon_type": "GS", "element": "Fire", "weapon_name": "TestSword",
+             "rest_1_type": "None", "rest_1_level": "None", "rest_2_type": "None", "rest_2_level": "None"}
+        ])
+    
+        with patch("src.logic.restoration_tracker.push_action") as mock_push:
+>           execute_apply_and_advance("T1")
+
+tests\unit\test_restoration_tracker.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\logic\restoration_tracker.py:77: in execute_apply_and_advance
+    eq_df.at[w_idx[0], f"rest_{i}_type"] = row[f"target_rest_{i}_type"]
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\series.py:1133: in __getitem__
+    return self._get_value(key)
+           ^^^^^^^^^^^^^^^^^^^^
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\series.py:1249: in _get_value
+    loc = self.index.get_loc(label)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = Index(['id', 'weapon_id', 'remaining_count', 'target_rest_1_type',
+       'target_rest_1_level', 'target_rest_2_type', 'target_rest_2_level'],
+      dtype='object')
+key = 'target_rest_3_type'
+
+    def get_loc(self, key):
+        """
+        Get integer location, slice or boolean mask for requested label.
+    
+        Parameters
+        ----------
+        key : label
+    
+        Returns
+        -------
+        int if unique index, slice if monotonic index, else mask
+    
+        Examples
+        --------
+        >>> unique_index = pd.Index(list('abc'))
+        >>> unique_index.get_loc('b')
+        1
+    
+        >>> monotonic_index = pd.Index(list('abbc'))
+        >>> monotonic_index.get_loc('b')
+        slice(1, 3, None)
+    
+        >>> non_monotonic_index = pd.Index(list('abcb'))
+        >>> non_monotonic_index.get_loc('b')
+        array([False,  True, False,  True])
+        """
+        casted_key = self._maybe_cast_indexer(key)
+        try:
+            return self._engine.get_loc(casted_key)
+        except KeyError as err:
+            if isinstance(casted_key, slice) or (
+                isinstance(casted_key, abc.Iterable)
+                and any(isinstance(x, slice) for x in casted_key)
+            ):
+                raise InvalidIndexError(key)
+>           raise KeyError(key) from err
+E           KeyError: 'target_rest_3_type'
+
+..\..\..\.pyenv\pyenv-win\versions\3.11.4\Lib\site-packages\pandas\core\indexes\base.py:3819: KeyError
+=========================== short test summary info ===========================
+FAILED tests/unit/test_restoration_tracker.py::test_execute_apply_sync_to_equipment
+======================== 1 failed, 10 passed in 1.82s =========================

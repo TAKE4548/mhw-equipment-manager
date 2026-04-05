@@ -30,15 +30,18 @@
 
 ## Application State (Session State)
 アプリ全体の安定稼働のため、`app.py` にて以下を一括管理します。
-- `gsheet_url`: スプレッドシートの接続先 URL
+- `user`: Supabase Auth ログインユーザー情報
+- `storage`: 統合ストレージインスタンス (`StorageManager`)
 - `undo_stack` / `redo_stack`: スキル抽選結果用の履歴
 - `history_undo` / `history_redo`: 復元強化厳選用の履歴
 - `tracker_reg_w_id`: 画面間をまたぐ武器選択状態
 
 ## Storage (ストレージ)
-- **Primary (Anonymous)**: Local Browser Cookie (`st.html` injection bypassing Streamlit iframe sandbox via `window.parent.document.cookie`). Data is compressed using `zlib` and `base64` to circumvent 4KB limits.
-- **Cloud/Syncing (Authenticated)**: Supabase (Provides cross-device synchronization and permanent backup).
-- **Google Sheets / SQLite**: Deprecated.
+- **Primary (Anonymous)**: Local Browser Cookie (`streamlit-cookies-controller` を使用し、Streamlitのiframe Sandboxを回避)。
+    - **zlib Compression**: 4KBのCookie制限を回避するため、データは `zlib` で圧縮し `base64` エンコードして保存。
+- **Cloud/Syncing (Authenticated)**: Supabase (ログイン時に自動的にCookieからクラウドへ同期し、デバイス間共有を実現)。
+- **Removed**: SQLite, Google Sheets (保守性と環境依存性の観点から廃止)。
+
 
 ### `ActionHistory` (アクション履歴)
 Not stored in SQLite. Stored in Streamlit's `st.session_state` as an in-memory stack to support Undo/Redo during the current session.

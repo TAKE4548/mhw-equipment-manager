@@ -1,0 +1,73 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.4, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\audih\.pyenv\pyenv-win\versions\3.11.4\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\audih\ws\hogehoge\mhw-equipment-manager
+plugins: anyio-4.13.0, mock-3.15.1
+collecting ... collected 11 items
+
+tests/unit/test_equipment.py::test_register_upgrade PASSED               [  9%]
+tests/unit/test_equipment.py::test_execute_upgrade_decrement PASSED      [ 18%]
+tests/unit/test_equipment.py::test_execute_all_upgrades PASSED           [ 27%]
+tests/unit/test_equipment.py::test_execute_upgrade_sync_to_weapon PASSED [ 36%]
+tests/unit/test_equipment_box.py::test_validate_restoration_bonuses_valid PASSED [ 45%]
+tests/unit/test_equipment_box.py::test_validate_restoration_bonuses_invalid_triple FAILED [ 54%]
+tests/unit/test_equipment_box.py::test_normalize_bonus_special_cases FAILED [ 63%]
+tests/unit/test_history.py::test_push_undo_redo_flow PASSED              [ 72%]
+tests/unit/test_history.py::test_stack_limit PASSED                      [ 81%]
+tests/unit/test_restoration_tracker.py::test_advance_all_trackers_auto_delete PASSED [ 90%]
+tests/unit/test_restoration_tracker.py::test_execute_apply_sync_to_equipment FAILED [100%]
+
+================================== FAILURES ===================================
+______________ test_validate_restoration_bonuses_invalid_triple _______________
+
+    def test_validate_restoration_bonuses_invalid_triple():
+        """Invalid case: 3 of same type and level."""
+        bonuses = [{"type": "Attack", "level": "II"}] * 3
+        is_valid, msg = validate_restoration_bonuses(bonuses)
+        assert not is_valid
+>       assert "Attack II" in msg
+E       AssertionError: assert 'Attack II' in '強化済みのボーナス「Attack[II]」が3枠以上重複することはあり得ません（最大2枠まで）。'
+
+tests\unit\test_equipment_box.py:20: AssertionError
+_____________________ test_normalize_bonus_special_cases ______________________
+
+    def test_normalize_bonus_special_cases():
+        """Normalizes various level strings correctly."""
+>       assert normalize_bonus("None") == "None"
+E       AssertionError: assert ('None', 'なし') == 'None'
+E        +  where ('None', 'なし') = normalize_bonus('None')
+
+tests\unit\test_equipment_box.py:24: AssertionError
+____________________ test_execute_apply_sync_to_equipment _____________________
+
+mock_storage = {'equipment':    id weapon_type element  ... rest_1_level rest_2_type rest_2_level
+0  W1          GS    Fire  ...     ...eapon_id, remaining_count, target_rest_1_type, target_rest_1_level, target_rest_2_type, target_rest_2_level]
+Index: []}
+
+    def test_execute_apply_sync_to_equipment(mock_storage):
+        """Verifies that weapon data is synced when reinforcement is applied."""
+        mock_storage["restoration_trackers"] = pd.DataFrame([
+            {"id": "T1", "weapon_id": "W1", "remaining_count": 1,
+             "target_rest_1_type": "AttackBoost", "target_rest_1_level": "Level2",
+             "target_rest_2_type": "Sharpness", "target_rest_2_level": "Level3"}
+        ])
+        mock_storage["equipment"] = pd.DataFrame([
+            {"id": "W1", "weapon_type": "GS", "element": "Fire", "weapon_name": "TestSword",
+             "rest_1_type": "None", "rest_1_level": "None", "rest_2_type": "None", "rest_2_level": "None"}
+        ])
+    
+        execute_apply_and_advance("T1")
+    
+        eq = mock_storage["equipment"]
+>       assert eq.iloc[0]["rest_1_type"] == "AttackBoost"
+E       AssertionError: assert 'None' == 'AttackBoost'
+E         
+E         - AttackBoost
+E         + None
+
+tests\unit\test_restoration_tracker.py:53: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/unit/test_equipment_box.py::test_validate_restoration_bonuses_invalid_triple
+FAILED tests/unit/test_equipment_box.py::test_normalize_bonus_special_cases
+FAILED tests/unit/test_restoration_tracker.py::test_execute_apply_sync_to_equipment
+========================= 3 failed, 8 passed in 1.41s =========================

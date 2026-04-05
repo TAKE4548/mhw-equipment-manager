@@ -4,3 +4,5 @@ supabase
 altair
 streamlit-cookies-controller
 streamlit-javascript
+pytest
+pytest-mock
