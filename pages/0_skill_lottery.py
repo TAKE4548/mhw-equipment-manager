@@ -1,9 +1,11 @@
 import streamlit as st
 import pandas as pd
 from src.logic.equipment import get_active_upgrades, register_upgrade, filter_upgrades
+from src.logic.equipment_box import load_equipment
 from src.logic.master import get_master_data
 from src.components.tables import render_active_upgrades
 from src.components.sidebar import render_shared_sidebar
+from src.components.auth import get_current_user_id
 from src.logic.history import undo_last_action, redo_last_action
 from src.logic.favorites import add_favorite, remove_favorite, get_favorite_list, is_favorite, prepare_skill_choices
 from src.components.pickers import render_skill_picker
@@ -15,9 +17,11 @@ render_shared_sidebar()
 
 st.title("スキル抽選結果 🏹")
 st.markdown("巨戟強化の抽選順序を確認し、スキルを武器に割り当てます。")
+ 
+user_id = get_current_user_id()
 
 @st.fragment
-def render_registration_form(master):
+def render_registration_form(master, user_id):
     with st.expander("🆕 未登録の強化抽選結果を追加する", expanded=False):
         series_skills_master = master.get("series_skills", [])
         group_skills_master = master.get("group_skills", [])
@@ -44,7 +48,7 @@ def render_registration_form(master):
             if not series_skill.strip() or not group_skill.strip():
                 st.error("スキルを正しく選択してください。")
             else:
-                record_id = register_upgrade(w_type, element, series_skill, group_skill, count)
+                record_id = register_upgrade(w_type, element, series_skill, group_skill, count, user_id=user_id)
                 if record_id:
                     st.session_state['undo_stack'].append({'action_type': 'REGISTER', 'target_id': record_id})
                     st.session_state['redo_stack'].clear()
@@ -54,12 +58,12 @@ def render_registration_form(master):
                     st.error("登録に失敗しました。")
 
 master = get_master_data()
-render_registration_form(master)
+render_registration_form(master, user_id)
 
 st.divider()
 
 @st.fragment
-def render_tracker_list(master):
+def render_tracker_list(master, user_id):
     # --- Search & Filter UI ---
     st.subheader("検索とフィルタ 🔍")
     series_skills_master = master.get("series_skills", [])
@@ -94,7 +98,7 @@ def render_tracker_list(master):
             st.rerun()
 
     # --- Main Dashboard List ---
-    df_raw = get_active_upgrades()
+    df_raw = get_active_upgrades(user_id=user_id)
     df = filter_upgrades(
         df_raw,
         weapon_types=f_types,
@@ -103,6 +107,7 @@ def render_tracker_list(master):
         group_skills=f_groups,
         sort_by=f_sort
     )
-    render_active_upgrades(df)
+    eq_df_all = load_equipment(user_id)
+    render_active_upgrades(df, user_id, eq_df_all)
 
-render_tracker_list(master)
+render_tracker_list(master, user_id)

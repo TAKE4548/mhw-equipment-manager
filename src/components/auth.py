@@ -30,17 +30,24 @@ def render_auth_component():
                             try:
                                 # Supabase auth handles login
                                 res = client.auth.sign_in_with_password({"email": email, "password": password})
-                                st.session_state.user = res.user
-                                
-                                # Persistence: Save session to cookie
-                                if res.session:
-                                    from src.database.storage_manager import set_auth_cookie
-                                    set_auth_cookie(res.session.access_token, res.session.refresh_token)
-                                
-                                # After login, trigger sync from local to cloud
-                                sync_local_to_cloud()
-                                st.toast("✅ ログイン成功", icon="🎉")
-                                st.rerun()
+                                if res.user:
+                                    st.session_state.user = res.user
+                                    
+                                    # Persistence: Save session to cookie
+                                    if res.session:
+                                        from src.database.storage_manager import set_auth_cookie, pull_cloud_to_local
+                                        set_auth_cookie(res.session.access_token, res.session.refresh_token)
+                                        # Key Fix: Pull cloud data into local memory immediately after login
+                                        pull_cloud_to_local()
+                                    
+                                    # Clear logical caches and state
+                                    from src.utils.cache_utils import clear_all_logic_caches
+                                    clear_all_logic_caches()
+                                    st.session_state['undo_stack'] = []
+                                    st.session_state['redo_stack'] = []
+                                    st.session_state['logging_out'] = False # Reset if it was set
+                                    st.toast("✅ ログイン成功", icon="🎉")
+                                    st.rerun()
                             except Exception as e:
                                 st.error(f"❌ ログイン失敗: {e}")
 
@@ -65,14 +72,31 @@ def render_auth_component():
                 st.info("🔃 同期完了")
                 
             if col2.button("ログアウト", use_container_width=True):
+                # Key Fix: Set logging_out flag to prevent auto-restore on rerun
+                st.session_state['logging_out'] = True
                 st.session_state.user = None
+                
+                # Reset memory state: Force re-initialization from local browser cookie
+                from src.database.storage_manager import set_auth_cookie, MANAGED_TABLES
+                import pandas as pd
+                st.session_state['mhw_ready'] = False
+                st.session_state['mhw_data'] = {t: pd.DataFrame() for t in MANAGED_TABLES}
+                
                 # Clear auth cookie
-                from src.database.storage_manager import set_auth_cookie
                 set_auth_cookie("", "")
+                
+                # Clear logical caches and state
+                from src.utils.cache_utils import clear_all_logic_caches
+                clear_all_logic_caches()
+                st.session_state['undo_stack'] = []
+                st.session_state['redo_stack'] = []
                 st.rerun()
 
 def get_current_user_id():
-    """Helper to get the current logged-in user ID or None."""
+    """
+    Helper to get the current logged-in user ID.
+    Returns 'local' if no user is authenticated to maintain a consistent logic signature.
+    """
     if "user" in st.session_state and st.session_state.user:
         return st.session_state.user.id
-    return None
+    return "local"

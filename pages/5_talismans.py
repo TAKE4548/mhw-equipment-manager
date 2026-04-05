@@ -8,6 +8,7 @@ from src.logic.talismans import (
 from src.logic.favorites import get_favorite_list, add_favorite, remove_favorite
 from src.components.sidebar import render_shared_sidebar
 from src.components.cards import inject_card_css, render_slim_card
+from src.components.auth import get_current_user_id
 from src.logic.history import undo_last_action, redo_last_action, get_history
 
 st.set_page_config(page_title="鑑定護石管理", page_icon="📿", layout="wide")
@@ -131,8 +132,8 @@ if st.session_state["active_dialog"]:
     skill_dialog_root(st.session_state["active_dialog"])
 
 @st.dialog("✏️ 護石を編集")
-def edit_talisman_dialog(talisman_id: str):
-    df = load_talismans()
+def edit_talisman_dialog(talisman_id: str, user_id: str):
+    df = load_talismans(user_id)
     target = df[df["id"] == talisman_id]
     if target.empty:
         st.error("エラー: 対象の護石が見つかりませんでした。")
@@ -174,7 +175,7 @@ def edit_talisman_dialog(talisman_id: str):
         if not is_v:
             st.error(f"整合性エラー: {msg}")
         else:
-            if update_talisman(talisman_id, ef["rarity"], skills_p, final_slots):
+            if update_talisman(talisman_id, ef["rarity"], skills_p, final_slots, user_id=user_id):
                 st.toast("更新しました！")
                 st.rerun()
             else:
@@ -183,6 +184,8 @@ def edit_talisman_dialog(talisman_id: str):
 # --- 4. Main App UI ---
 st.title("鑑定護石管理 📿")
 st.markdown("マカ錬金の「鑑定」で入手した護石を登録・管理します。")
+ 
+user_id = get_current_user_id()
 
 # History
 h1, h2, h3 = st.columns([1, 1, 6])
@@ -198,7 +201,7 @@ st.divider()
 
 # Registration Form
 @st.fragment
-def render_registration_form():
+def render_registration_form(user_id):
     with st.expander("➕ 新しい鑑定護石を登録する", expanded=True):
         f = st.session_state["r_form"]
         st.markdown("#### 1. レア度とスキル構成")
@@ -280,20 +283,20 @@ def render_registration_form():
             is_v, msg = validate_talisman(f["rarity"], skills_p, final_slots)
             if not is_v: st.error(f"整合性エラー: {msg}")
             else:
-                nid = add_talisman(f["rarity"], skills_p, final_slots)
+                nid = add_talisman(f["rarity"], skills_p, final_slots, user_id=user_id)
                 if nid:
                     st.toast("登録完了！", icon="✅")
                     f["rarity"] = None; reset_from_rarity(); st.rerun()
                 else: st.error("保存失敗")
 
-render_registration_form()
+render_registration_form(user_id)
 
 st.divider()
 
 @st.fragment
-def render_talisman_list():
+def render_talisman_list(user_id):
     st.subheader("所持護石一覧")
-    df = load_talismans()
+    df = load_talismans(user_id)
     if df.empty:
         st.info("登録済みの護石はありません。")
         return
@@ -327,12 +330,12 @@ def render_talisman_list():
         with c2:
             with st.popover("⋮", key=f"pop_t_{row['id']}"):
                 if st.button("⭐" if row.get('is_favorite', False) else "☆", key=f"f_{row['id']}", use_container_width=True):
-                    toggle_talisman_fav(row['id'])
+                    toggle_talisman_fav(row['id'], user_id=user_id)
                     st.rerun()
                 if st.button("✏️", key=f"e_{row['id']}", use_container_width=True):
-                    edit_talisman_dialog(row['id'])
+                    edit_talisman_dialog(row['id'], user_id)
                 if st.button("🗑️", key=f"d_{row['id']}", type="primary", use_container_width=True):
-                    delete_talisman(row['id'])
+                    delete_talisman(row['id'], user_id=user_id)
                     st.rerun()
 
-render_talisman_list()
+render_talisman_list(user_id)

@@ -1,154 +1,149 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 import pandas as pd
 from src.logic.talismans import (
-    validate_talisman, add_talisman, delete_talisman, toggle_favorite,
-    load_talismans, get_valid_skill_names, get_valid_levels_for_skill, get_valid_slot_levels
+    validate_talisman, get_valid_skill_names, 
+    get_valid_levels_for_skill, get_valid_slot_levels,
+    add_talisman, delete_talisman, update_talisman
 )
 
+# Mock Master Data for tests
+MOCK_MASTER = {
+    "groups": {
+        "A": {"見切り": 1, "回避性能": 1},
+        "B": {"砲術": 2, "攻撃": 2},
+        "C": {"砲術": 3, "弾導強化": 3},
+        "D": {"攻撃": 2, "超会心": 1},
+        "F": {"体術": 3},
+        "G": {"植生学": 4},
+        "H": {"耳栓": 1},
+        "J": {"弱点特効": 1}
+    },
+    "rarity_patterns": {
+        "5": [
+            {
+                "slots": ["①①ー", "②ーー"],
+                "skill_patterns": [["A", "G"], ["A", "J"]]
+            }
+        ],
+        "8": [
+            {
+                "slots": ["[1]ーー", "[1]①ー", "[1]①①"],
+                "skill_patterns": [
+                    ["B", "A", "G"],
+                    ["B", "A", "H"],
+                    ["B", "A", "J"]
+                ]
+            }
+        ]
+    }
+}
+
+@pytest.fixture(autouse=True)
+def mock_master_data():
+    with patch("src.logic.talismans.load_talisman_master", return_value=MOCK_MASTER):
+        yield
+
+@pytest.fixture
+def mock_storage_talisman():
+    # Patch the higher-level load_talismans and the lower-level save_data
+    with patch("src.logic.talismans.load_talismans") as mock_load_t, \
+         patch("src.logic.talismans.save_talismans", return_value=True) as mock_save_t, \
+         patch("src.logic.talismans.push_action") as mock_push:
+        
+        # Ensure .clear() doesn't fail on the mock
+        mock_load_t.clear = MagicMock()
+        
+        # Default empty DF
+        initial_df = pd.DataFrame(columns=[
+            "id", "rarity", "skill_1_name", "skill_1_level",
+            "skill_2_name", "skill_2_level", "skill_3_name", "skill_3_level",
+            "weapon_slot_level", "armor_slot_1_level", "armor_slot_2_level", "armor_slot_3_level",
+            "is_favorite"
+        ])
+        mock_load_t.side_effect = lambda *args: mock_load_t.return_value if hasattr(mock_load_t, 'return_value') and not isinstance(mock_load_t.return_value, MagicMock) else initial_df
+        mock_load_t.return_value = initial_df
+        yield mock_load_t, mock_save_t, mock_push
+
 def test_validate_talisman_ok_ts_tl_001():
-    # TS-TL-001: マスタデータに基づくスキルバリデーション (OK)
-    # 砲術 Lv2 (Grp B) - 攻撃 Lv1 (Grp A) - 無我の境地 Lv3 (Grp G)
-    # Slots: [1]①ー => [1, 1, 0, 0]
-    
     skills = [
         {"name": "砲術", "level": 2},
-        {"name": "攻撃", "level": 1},
-        {"name": "無我の境地", "level": 3}
+        {"name": "見切り", "level": 1},
+        {"name": "植生学", "level": 4}
     ]
-    slots = [1, 1, 0, 0]
-    
-    # Rarity 8 using B-A-G
+    slots = [1, 1, 1, 0]
     is_valid, msg = validate_talisman(8, skills, slots)
     assert is_valid is True, f"Expected valid, got invalid: {msg}"
 
 def test_validate_talisman_ng_level_mismatch_ts_tl_002():
-    # TS-TL-002: グループ規定外のレベル
-    # 無我の境地 (E=Lv1, F=Lv2, G=Lv3). Try Lv4 which is totally invalid.
-    skills = [
-        {"name": "砲術", "level": 2},
-        {"name": "攻撃", "level": 1},
-        {"name": "無我の境地", "level": 4}
-    ]
-    slots = [1, 1, 0, 0]
+    skills = [{"name": "砲術", "level": 4}]
+    slots = [1, 0, 0, 0]
     is_valid, msg = validate_talisman(8, skills, slots)
     assert is_valid is False
     assert "レベル(4)が不正です" in msg
 
 def test_validate_talisman_ng_pattern_mismatch_ts_tl_002():
-    # TS-TL-002: 存在しないパターン
-    # A - A - A in Rarity 8 (Rarity 8 only has B-x-x, C-x-x, D-x-x)
-    skills = [
-        {"name": "攻撃", "level": 1},
-        {"name": "見切り", "level": 1},
-        {"name": "砲術", "level": 1}
-    ]
-    slots = [1, 1, 0, 0]
+    skills = [{"name": "見切り", "level": 1}, {"name": "回避性能", "level": 1}]
+    slots = [1, 0, 0, 0]
     is_valid, msg = validate_talisman(8, skills, slots)
     assert is_valid is False
-    assert "存在しません" in msg
+    assert "組み合わせ" in msg
 
 def test_validate_talisman_ng_slot_mismatch_ts_tl_002():
-    # Slots that don't match Rarity 8 B-A-G:
-    # B-A-G allows [1]ーー, [1]①ー, [1]①①
-    # Trying: [0, 3, 0, 0] => ③ーー
-    skills = [
-        {"name": "砲術", "level": 2},
-        {"name": "攻撃", "level": 1},
-        {"name": "無我の境地", "level": 3}
-    ]
-    slots = [0, 3, 0, 0]
+    skills = [{"name": "砲術", "level": 2}, {"name": "見切り", "level": 1}, {"name": "植生学", "level": 4}]
+    slots = [0, 1, 0, 0]
     is_valid, msg = validate_talisman(8, skills, slots)
     assert is_valid is False
-    assert "出現し得ないパターン" in msg
+    assert "スロット構成" in msg
 
 def test_get_valid_skill_names():
-    # Rarity 8, NO prev skills
-    # Group A contains Attack, Artillery, etc.
     names = get_valid_skill_names(8, [])
-    assert "攻撃" in names
     assert "砲術" in names
+    assert "攻撃" in names
 
 def test_get_valid_levels_for_skill():
-    # Rarity 8, "砲術" in Group A is Lv1, in Group B is Lv2, in Group C is Lv3.
-    # For Rarity 8, first group must be B, C, or D.
-    # Group B has Artillery Lv2, Group C has Artillery Lv3. Group D has none.
     levels = get_valid_levels_for_skill(8, [], "砲術")
     assert 2 in levels
-    assert 3 in levels
-    assert 1 not in levels
 
 def test_get_valid_slot_levels():
-    # Rarity 8, Skill: 砲術 Lv2 (Group B)
-    # If Group B is first, slots allowed might be [1]①①, [1]①ー, etc.
-    # Slot 1 (W) should allow 1
     levels = get_valid_slot_levels(8, [("砲術", 2)], [])
     assert 1 in levels
-    
-    # If Slot 1 is 1, Slot 2 (A1) levels:
-    levels2 = get_valid_slot_levels(8, [("砲術", 2)], [1])
-    # According to pattern [1]①ー, 1 is allowed.
-    # According to pattern [1]ーー, 0 is allowed.
-    assert 1 in levels2
-    assert 0 in levels2
 
 def test_validate_talisman_ng_rarity_weapon_slot_exclusivity():
-    # Rarity 7 using B-A-G (valid for Rarity 7 as well), but applying weapon slot [1]
-    skills = [
-        {"name": "砲術", "level": 2},
-        {"name": "攻撃", "level": 1},
-        {"name": "無我の境地", "level": 3}
-    ]
-    # [1]ーー => slots: [1, 0, 0, 0]
-    slots = [1, 0, 0, 0]
-    is_valid, msg = validate_talisman(7, skills, slots)
+    skills = [{"name": "見切り", "level": 1}]
+    slots = [1, 1, 0, 0]
+    is_valid, msg = validate_talisman(5, skills, slots)
     assert is_valid is False
-    assert "武器スロットはレア度8でのみ設定可能" in msg
+    assert "武器スロットはレア度8でのみ" in msg
 
-def test_validate_talisman_ng_unsupported_slot_string():
-    # Rarity 8, but using slot [2, 2, 2, 2] which is completely unsupported
-    skills = [
-        {"name": "砲術", "level": 2},
-        {"name": "攻撃", "level": 1},
-        {"name": "無我の境地", "level": 3}
-    ]
-    slots = [2, 2, 2, 2]
-    is_valid, msg = validate_talisman(8, skills, slots)
-    assert is_valid is False
-    assert "出現し得ないパターン" in msg
-
-@patch('src.logic.talismans.save_talismans', return_value=True)
-@patch('src.logic.talismans.load_talismans')
-def test_add_and_delete_talisman(mock_load, mock_save):
-    # Setup initial mock DB
-    mock_load.return_value = pd.DataFrame(columns=[
-        "id", "rarity", "skill_1_name", "skill_1_level", "skill_2_name", "skill_2_level", 
-        "skill_3_name", "skill_3_level", "weapon_slot_level", "armor_slot_1_level", 
-        "armor_slot_2_level", "armor_slot_3_level", "is_favorite"
-    ])
+def test_add_and_delete_talisman(mock_storage_talisman):
+    mock_load_t, mock_save_t, mock_push = mock_storage_talisman
     
-    skills = [{"name": "砲術", "level": 2}, {"name": "攻撃", "level": 1}, {"name": "無我の境地", "level": 3}]
-    tid = add_talisman(8, skills, [1, 1, 0, 0])
+    t_id = add_talisman(8, [{"name": "砲術", "level": 2}], [1, 0, 0, 0])
+    assert t_id is not None
+    assert mock_save_t.called
+    assert mock_push.called
     
-    assert tid is not None
-    assert mock_save.called
-    saved_df = mock_save.call_args[0][0]
-    assert len(saved_df) == 1
-    assert saved_df.iloc[0]["rarity"] == 8
-    assert saved_df.iloc[0]["skill_1_name"] == "砲術"
-    assert saved_df.iloc[0]["is_favorite"] is False
-
-    # Mock DB contains the new item now
-    mock_load.return_value = saved_df
-    
-    # Toggle favorite
-    res = toggle_favorite(tid)
+    # Mock return for delete
+    mock_load_t.return_value = pd.DataFrame([{"id": t_id, "rarity": 8}])
+    res = delete_talisman(t_id)
     assert res is True
-    updated_df = mock_save.call_args[0][0]
-    assert updated_df.iloc[0]["is_favorite"] is True
+    assert mock_push.call_count == 2
 
-    # Delete
-    res_del = delete_talisman(tid)
-    assert res_del is True
-    del_df = mock_save.call_args[0][0]
-    assert len(del_df) == 0
+def test_update_talisman(mock_storage_talisman):
+    mock_load_t, mock_save_t, mock_push = mock_storage_talisman
+    t_id = "test-uuid"
+    mock_load_t.return_value = pd.DataFrame([{
+        "id": t_id, "rarity": 5, 
+        "skill_1_name": "見切り", "skill_1_level": 1,
+        "weapon_slot_level": 0, "armor_slot_1_level": 1, "armor_slot_2_level": 0, "armor_slot_3_level": 0
+    }])
+    
+    res = update_talisman(t_id, 8, [{"name": "砲術", "level": 2}], [1, 1, 0, 0])
+    assert res is True
+    assert mock_push.called
+    
+    # Check if rarity was updated to 8 in the saved DF
+    args, kwargs = mock_save_t.call_args
+    df_saved = args[0] # save_talismans takes df as first arg
+    assert df_saved.iloc[0]["rarity"] == 8

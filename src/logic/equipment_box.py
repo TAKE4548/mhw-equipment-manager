@@ -96,8 +96,12 @@ def validate_restoration_bonuses(bonuses: list[dict]):
     return True, ""
 
 @st.cache_data
-def load_equipment() -> pd.DataFrame:
-    """Loads equipment and applies auto-normalization."""
+def load_equipment(user_id: str = "local") -> pd.DataFrame:
+    """
+    Loads equipment and applies auto-normalization.
+    Cached per user_id to ensure multi-user isolation.
+    """
+
     df = load_data(EQUIPMENT_TABLE, required_columns=EQUIPMENT_COLUMNS)
     if not df.empty:
         for idx, row in df.iterrows():
@@ -116,9 +120,9 @@ def save_equipment(df: pd.DataFrame) -> bool:
 
 def add_equipment(weapon_name: str, weapon_type: str, element: str, 
                   current_series_skill: str, current_group_skill: str, enhancement_type: str,
-                  p_bonuses: list, restoration_bonuses: list):
+                  p_bonuses: list, restoration_bonuses: list, user_id: str = "local"):
     """Adds a new equipment and records history."""
-    df = load_equipment(); prev_df = df.copy()
+    df = load_equipment(user_id); prev_df = df.copy()
     new_id = str(uuid.uuid4())
     new_row = {
         "id": new_id, "weapon_type": weapon_type, "element": element,
@@ -138,20 +142,30 @@ def add_equipment(weapon_name: str, weapon_type: str, element: str,
         return new_id
     return None
 
-def delete_equipment(equipment_id: str) -> bool:
-    """Deletes equipment and records history."""
-    df = load_equipment()
+def delete_equipment(equipment_id: str, user_id: str = "local") -> bool:
+    """Deletes equipment and records history. Cascades to associated trackers."""
+    df = load_equipment(user_id)
     idx = df[df["id"].astype(str) == str(equipment_id)].index
     if not idx.empty:
         prev_df = df.copy(); df = df.drop(idx)
         if save_equipment(df):
+            # 1. Cascade Delete: Remove trackers referencing this weapon
+            from src.logic.restoration_tracker import load_trackers, save_trackers, TRACKER_TABLE
+            t_df = load_trackers(user_id)
+            if not t_df.empty:
+                t_idx = t_df[t_df["weapon_id"].astype(str) == str(equipment_id)].index
+                if not t_idx.empty:
+                    t_df = t_df.drop(t_idx)
+                    if save_trackers(t_df):
+                        load_trackers.clear()
+            
             load_equipment.clear()
             push_action("DELETE_EQUIPMENT", EQUIPMENT_TABLE, prev_df, df)
             return True
     return False
 
-def update_equipment_skills(equipment_id: str, series_skill: str, group_skill: str) -> bool:
-    df = load_equipment()
+def update_equipment_skills(equipment_id: str, series_skill: str, group_skill: str, user_id: str = "local") -> bool:
+    df = load_equipment(user_id)
     idx = df[df["id"].astype(str) == str(equipment_id)].index
     if not idx.empty:
         prev_df = df.copy()
@@ -165,9 +179,9 @@ def update_equipment_skills(equipment_id: str, series_skill: str, group_skill: s
 
 def update_equipment(record_id: str, weapon_name: str, weapon_type: str, element: str, 
                      series_skill: str, group_skill: str, enhancement_type: str,
-                     p_bonuses: list, r_bonuses: list) -> bool:
+                     p_bonuses: list, r_bonuses: list, user_id: str = "local") -> bool:
     """Updates all fields of an existing equipment record and records history."""
-    df = load_equipment()
+    df = load_equipment(user_id)
     idx = df[df["id"].astype(str) == str(record_id)].index
     if idx.empty: return False
     

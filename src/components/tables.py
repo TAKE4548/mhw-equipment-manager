@@ -3,7 +3,7 @@ from src.logic.equipment import execute_upgrade, execute_all_upgrades, delete_up
 from src.components.cards import render_slim_card, get_badge_html, inject_card_css
 
 @st.dialog("強化抽選結果を編集")
-def edit_upgrade_dialog(row):
+def edit_upgrade_dialog(row, user_id):
     from src.logic.master import get_master_data
     from src.logic.favorites import get_favorite_list, prepare_skill_choices
     master = get_master_data()
@@ -26,24 +26,23 @@ def edit_upgrade_dialog(row):
     
     if st.button("保存", type="primary", use_container_width=True):
         if update_upgrade(row['id'], row['weapon_type'], row['element'], 
-                          sorted_s[sel_s]['skill_parts'], sorted_g[sel_g]['group_name'], new_count):
+                          sorted_s[sel_s]['skill_parts'], sorted_g[sel_g]['group_name'], new_count, user_id=user_id):
             st.toast("更新しました")
             st.rerun()
         else: st.error("更新に失敗しました")
 
-def render_active_upgrades(df):
+def render_active_upgrades(df, user_id, eq_df_all):
     if df.empty:
         st.info("登録されている強化抽選結果はありません。'Register' から追加してください。")
         return
 
     from src.logic.master import get_master_data
-    from src.logic.equipment_box import ATTRIBUTE_COLORS, load_equipment, update_equipment_skills
+    from src.logic.equipment_box import ATTRIBUTE_COLORS, update_equipment_skills
     
     inject_card_css()
     master = get_master_data()
     series_map = {s['skill_parts']: s['skill_name'] for s in master.get("series_skills", [])}
     group_map = {g['group_name']: g['skill_name'] for g in master.get("group_skills", [])}
-    eq_df_all = load_equipment()
 
     for _, row in df.iterrows():
         rem = row['remaining_count']
@@ -93,7 +92,7 @@ def render_active_upgrades(df):
                                     previous_states = df[['id', 'remaining_count']].to_dict('records')
                                     st.session_state['undo_stack'].append({'action_type': 'EXECUTE_ALL', 'decrement': rem, 'previous_states': previous_states})
                                     st.session_state['redo_stack'].clear()
-                                    execute_upgrade(row['id'], rem, weapon_id=w['id'])
+                                    execute_upgrade(row['id'], rem, weapon_id=w['id'], user_id=user_id)
                                     st.rerun()
 
                     st.divider()
@@ -101,16 +100,16 @@ def render_active_upgrades(df):
                         previous_states = df[['id', 'remaining_count']].to_dict('records')
                         st.session_state['undo_stack'].append({'action_type': 'EXECUTE_ALL', 'decrement': rem, 'previous_states': previous_states})
                         st.session_state['redo_stack'].clear()
-                        execute_all_upgrades(rem)
+                        execute_all_upgrades(rem, user_id=user_id)
                         st.rerun()
                 
                 # 2. Edit Action
                 if st.button("✏️ 編集", key=f"ed_upg_{row['id']}", use_container_width=True):
-                    edit_upgrade_dialog(row)
+                    edit_upgrade_dialog(row, user_id)
                 
                 st.divider()
                 # 3. Delete Action
                 if st.button("🗑️ 削除", key=f"del_upg_{row['id']}", type="primary", use_container_width=True):
-                    if delete_upgrade(row['id']):
+                    if delete_upgrade(row['id'], user_id=user_id):
                         st.toast("削除しました")
                         st.rerun()

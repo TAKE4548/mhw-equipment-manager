@@ -74,9 +74,24 @@
 - [x] T050 [Engineer] Implement filtering and sorting UI (toolbar) for the active tracker list in `pages/reinforcement_registration.py`.
 - [x] T051 [Engineer] Ensure all visual changes adhere to `docs/design_system.md` standards.
 
-## Phase 12: Performance Optimization (パフォーマンス最適化) [Planned]
+## Phase 12: Performance Optimization (パフォーマンス最適化) [Completed]
 - [x] T052 [Engineer] Apply `@st.cache_data` to `get_master_data()`, `load_equipment()`, and `load_trackers()`.
 - [x] T053 [Engineer] Apply `functools.lru_cache` to `get_abbr_item()` and other core utility logic.
 - [x] T054 [Engineer] Refactor `pages/` (especially `reinforcement_registration.py` and `0_skill_lottery.py`) to isolate list rendering in `st.fragment`.
 - [x] T055 [Engineer] Move DataFrame merges and normalization outside of rendering loops to ensure O(1) or O(N) instead of O(N^2) complexity.
+
+## Phase 13: Multi-User Data Isolation & Cache Stabilization [Completed]
+- [x] T056 [Engineer] Partition logic loaders (`load_equipment`, etc.) using `user_id` as cache key.
+- [x] T057 [Engineer] Propagate `user_id` context through all UI components (`tables.py`) and logic calls.
+- [x] T058 [Engineer] Implement mandatory `undo_stack` and `redo_stack` cleanup on auth change.
+
+## Phase 14: Persistent Cloud Deletion & Integrity Repair [Completed]
+- [x] T059 [Engineer] Implement ID-based full synchronization in `_save_to_cloud` to handle deletions.
+- [x] T060 [Engineer] Implement cascading deletions (weapon -> tracker) to maintain FK consistency.
+- [x] T061 [Engineer] Add self-healing orphan pruning to the cloud sync process.
+
+## Phase 15: Session Security & Sync Hardening [Completed]
+- [x] T062 [Engineer] Implement `logging_out` guard to prevent race conditions in session restoration.
+- [x] T063 [Engineer] Implement proactive `pull_cloud_to_local()` on login to prevent sync-on-login data loss.
+- [x] T064 [Engineer] Correct cookie expiration policy (max-age=0) for reliable logout.
 

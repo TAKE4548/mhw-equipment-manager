@@ -12,6 +12,7 @@ from src.logic.favorites import get_favorite_list, prepare_skill_choices, add_fa
 from src.components.sidebar import render_shared_sidebar
 from src.components.cards import inject_card_css, render_slim_card, get_badge_html
 from src.components.pickers import render_skill_picker
+from src.components.auth import get_current_user_id
 
 st.set_page_config(page_title="所有巨戟アーティア一覧", page_icon="📦", layout="wide")
 inject_card_css()
@@ -19,7 +20,7 @@ inject_card_css()
 # Deleted render_skill_selector_with_toggle as it is replaced by render_skill_picker
 
 @st.dialog("武器情報を編集")
-def edit_equipment_dialog(row):
+def edit_equipment_dialog(row, user_id):
     master = get_master_data()
     st.markdown(f"#### {row['weapon_name']} の編集")
     
@@ -100,7 +101,7 @@ def edit_equipment_dialog(row):
         else:
             if update_equipment(row['id'], new_name, w_type, element, 
                                 sel_s, sel_g,
-                                enhancement, [pb1, pb2, pb3], parsed_rbs):
+                                enhancement, [pb1, pb2, pb3], parsed_rbs, user_id=user_id):
                 st.toast("更新しました！")
                 st.rerun()
             else: st.error("更新に失敗しました。")
@@ -117,6 +118,8 @@ from src.logic.history import undo_last_action, redo_last_action, get_history
 
 st.title("所持武器台帳 🎒")
 st.markdown("武器を登録・管理し、強化状況をトラッキングします。")
+ 
+user_id = get_current_user_id()
 
 # History Controls
 h_col1, h_col2, h_col3 = st.columns([1, 1, 6])
@@ -131,7 +134,7 @@ with h_col2:
 st.divider()
 
 @st.fragment
-def render_registration_section(master):
+def render_registration_section(master, user_id):
     st.subheader("新しい武器を登録")
     # Favorites for sorting
     fav_series = get_favorite_list("series")
@@ -204,7 +207,7 @@ def render_registration_section(master):
                 record_id = add_equipment(
                     final_weapon_name, w_type, element, 
                     current_series, current_group, enhancement,
-                    [pb1, pb2, pb3], parsed_rbs
+                    [pb1, pb2, pb3], parsed_rbs, user_id=user_id
                 )
                 if record_id:
                     st.toast(f"{final_weapon_name} を登録しました！", icon="✅")
@@ -212,12 +215,12 @@ def render_registration_section(master):
                 else: st.error("登録に失敗しました。")
 
 master = get_master_data()
-render_registration_section(master)
+render_registration_section(master, user_id)
 
 st.divider()
 
 @st.fragment
-def render_equipment_list(master):
+def render_equipment_list(master, user_id):
     st.subheader("検索とフィルタ 🔍")
     enhancement_opts = master.get("kyogeki_enhancements", [])
     p_bonus_opts = master.get("production_bonuses", [])
@@ -251,7 +254,7 @@ def render_equipment_list(master):
             f_rbs = st.multiselect("復元ボーナス", f_rbs_opts, key="f_w_rbs_list")
 
     st.subheader("所持武器一覧")
-    df_raw = load_equipment()
+    df_raw = load_equipment(user_id)
     df = filter_equipment(df_raw, search_name=f_name, weapon_types=f_types, elements=f_elements, series_skills=f_series, group_skills=f_groups, enhancements=f_enhancements, p_bonuses=f_pbs, r_bonuses=f_rbs, sort_by=f_sort)
 
     if df.empty:
@@ -282,14 +285,14 @@ def render_equipment_list(master):
             with col_act:
                 with st.popover("⋮", help="操作メニュー", use_container_width=True, key=f"pop_w_{row['id']}"):
                     if st.button("✏️ 編集", key=f"edit_{row['id']}", use_container_width=True):
-                        edit_equipment_dialog(row)
+                        edit_equipment_dialog(row, user_id)
                     if st.button("🎯 強化厳選へ", key=f"tr_{row['id']}", use_container_width=True):
                         st.session_state.tracker_reg_w_id = row['id']
                         st.switch_page("pages/reinforcement_registration.py")
                     st.divider()
                     if st.button("🗑️ 削除", key=f"del_{row['id']}", type="primary", use_container_width=True):
-                        if delete_equipment(row['id']):
+                        if delete_equipment(row['id'], user_id=user_id):
                             st.toast("武器を削除しました。")
                             st.rerun()
 
-render_equipment_list(master)
+render_equipment_list(master, user_id)

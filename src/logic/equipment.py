@@ -10,13 +10,17 @@ UPGRADES_TABLE = "upgrades"
 UPGRADES_COLUMNS = ["id", "weapon_type", "element", "series_skill", "group_skill", "remaining_count"]
 
 @st.cache_data
-def load_upgrades() -> pd.DataFrame:
-    """Loads all upgrades from storage."""
+def load_upgrades(user_id: str = "local") -> pd.DataFrame:
+    """
+    Loads all upgrades from storage.
+    Cached per user_id to ensure multi-user isolation.
+    """
+
     return load_data(UPGRADES_TABLE, required_columns=UPGRADES_COLUMNS)
 
-def register_upgrade(weapon_type: str, element: str, series_skill: str, group_skill: str, count: int) -> str:
+def register_upgrade(weapon_type: str, element: str, series_skill: str, group_skill: str, count: int, user_id: str = "local") -> str:
     """Registers a new skill upgrade in storage and returns its ID."""
-    df = load_upgrades()
+    df = load_upgrades(user_id)
     new_id = str(uuid.uuid4())
     new_row = {
         "id": new_id,
@@ -33,18 +37,18 @@ def register_upgrade(weapon_type: str, element: str, series_skill: str, group_sk
         return new_id
     return None
 
-def get_active_upgrades() -> pd.DataFrame:
+def get_active_upgrades(user_id: str = "local") -> pd.DataFrame:
     """Returns active upgrades from storage as a DataFrame."""
-    df = load_upgrades()
+    df = load_upgrades(user_id)
     if df.empty:
         return pd.DataFrame(columns=UPGRADES_COLUMNS)
     active_df = df[df["remaining_count"] > 0].copy()
     active_df = active_df.sort_values(by="remaining_count", ascending=True)
     return active_df
 
-def execute_upgrade(record_id: str, decrement: int = 1, weapon_id: str = None) -> bool:
+def execute_upgrade(record_id: str, decrement: int = 1, weapon_id: str = None, user_id: str = "local") -> bool:
     """Decrements count and optionally updates weapon skills."""
-    df = load_upgrades()
+    df = load_upgrades(user_id)
     if df.empty: return False
     
     idx = df[df["id"].astype(str) == str(record_id)].index
@@ -52,15 +56,15 @@ def execute_upgrade(record_id: str, decrement: int = 1, weapon_id: str = None) -
         row = df.loc[idx[0]]
         # 1. Sync skills to weapon if weapon_id provided
         if weapon_id:
-            update_equipment_skills(weapon_id, row['series_skill'], row['group_skill'])
+            update_equipment_skills(weapon_id, row['series_skill'], row['group_skill'], user_id=user_id)
             
         # 2. Proceed the count for ALL records (Shared Table Logic)
-        return execute_all_upgrades(decrement)
+        return execute_all_upgrades(decrement, user_id=user_id)
     return False
 
-def execute_all_upgrades(decrement: int = 1) -> bool:
+def execute_all_upgrades(decrement: int = 1, user_id: str = "local") -> bool:
     """Decrements remaining_count for all entries and records history."""
-    df = load_upgrades()
+    df = load_upgrades(user_id)
     if df.empty: return True
     
     prev_df = df.copy()
@@ -70,13 +74,15 @@ def execute_all_upgrades(decrement: int = 1) -> bool:
     
     if save_data(UPGRADES_TABLE, df):
         load_upgrades.clear()
-        push_action("EXECUTE_ALL", UPGRADES_TABLE, prev_df, df)
+        push_action("EXECUTE_ALL_UPGRADES", UPGRADES_TABLE, prev_df, df)
+        from src.logic.equipment_box import load_equipment
+        load_equipment.clear()
         return True
     return False
 
-def delete_upgrade(record_id: str) -> bool:
+def delete_upgrade(record_id: str, user_id: str = "local") -> bool:
     """Deletes an upgrade record and records history."""
-    df = load_upgrades()
+    df = load_upgrades(user_id)
     idx = df[df["id"].astype(str) == str(record_id)].index
     if not idx.empty:
         prev_df = df.copy()
@@ -84,6 +90,8 @@ def delete_upgrade(record_id: str) -> bool:
         if save_data(UPGRADES_TABLE, df):
             load_upgrades.clear()
             push_action("DELETE_UPGRADE", UPGRADES_TABLE, prev_df, df)
+            from src.logic.equipment_box import load_equipment
+            load_equipment.clear()
             return True
     return False
 
@@ -117,9 +125,9 @@ def filter_upgrades(df: pd.DataFrame,
     return filtered_df
 
 def update_upgrade(record_id: str, weapon_type: str, element: str, 
-                   series_skill: str, group_skill: str, count: int) -> bool:
+                   series_skill: str, group_skill: str, count: int, user_id: str = "local") -> bool:
     """Updates an existing skill upgrade record."""
-    df = load_upgrades()
+    df = load_upgrades(user_id)
     if df.empty: return False
     idx = df[df["id"].astype(str) == str(record_id)].index
     if not idx.empty:
@@ -132,5 +140,7 @@ def update_upgrade(record_id: str, weapon_type: str, element: str,
         if save_data(UPGRADES_TABLE, df):
             load_upgrades.clear()
             push_action("UPDATE_UPGRADE", UPGRADES_TABLE, prev_df, df)
+            from src.logic.equipment_box import load_equipment
+            load_equipment.clear()
             return True
     return False

@@ -214,18 +214,33 @@ def _load_from_cloud(table: str, required_columns: list) -> pd.DataFrame:
         st.error(f"Cloud load error (table: {table}): {e}")
         return pd.DataFrame(columns=required_columns)
 
-def _save_to_cloud(table: str, df: pd.DataFrame) -> bool:
+def _save_to_cloud(table: str, df: pd.DataFrame, sync_deletion: bool = True) -> bool:
     client = get_supabase_client()
     if not client or not is_logged_in():
         return False
     
-    if df.empty:
-        return True
-        
-    df_save = df.copy()
-    df_save["user_id"] = st.session_state.user.id
+    user_id = st.session_state.user.id
     
     try:
+        # 1. Handle complete deletion if df is empty (EXPLICIT SYNC ONLY)
+        if df.empty:
+            if sync_deletion:
+                client.table(table).delete().eq("user_id", user_id).execute()
+            return True
+            
+        # 2. Identify and Delete removed records (Sync)
+        if sync_deletion:
+            res = client.table(table).select("id").eq("user_id", user_id).execute()
+            cloud_ids = {str(r["id"]) for r in res.data}
+            local_ids = {str(x) for x in df["id"].tolist()}
+            
+            ids_to_delete = cloud_ids - local_ids
+            if ids_to_delete:
+                client.table(table).delete().in_("id", list(ids_to_delete)).eq("user_id", user_id).execute()
+        
+        # 3. Perform Upsert for additions/updates
+        df_save = df.copy()
+        df_save["user_id"] = user_id
         data_to_save = df_save.to_dict(orient="records")
         client.table(table).upsert(data_to_save).execute()
         return True
@@ -235,21 +250,47 @@ def _save_to_cloud(table: str, df: pd.DataFrame) -> bool:
 
 # --- Unified Interface ---
 
-def load_data(key: str, required_columns: list) -> pd.DataFrame:
+def pull_cloud_to_local():
+    """Fetches all cloud data and overwrites the local session state (Memory).
+    This ensures that memory-based operations like 'Sync' are safe."""
+    if not is_logged_in():
+        return
+    
+    init_memory_storage()
+    # Define required columns for each table to ensure consistency
+    columns_map = {
+        "weapons": ["id", "name", "weapon_type", "rarity", "element", "ele_val", "attack", "affinity", "sharpness", "slots", "series_skill", "group_skill"] + [f"rest_{i}_{attr}" for i in range(1, 6) for attr in ["type", "level"]],
+        "trackers": ["id", "weapon_id", "weapon_name", "remaining_count"] + [f"target_rest_{i}_{attr}" for i in range(1, 6) for attr in ["type", "level"]],
+        "upgrades": ["id", "weapon_id", "weapon_name", "series_skill", "group_skill", "remaining_count"],
+        "favorites": ["id", "skill_name"],
+        "talismans": ["id", "rarity", "skill1_name", "skill1_level", "skill2_name", "skill2_level", "slot1", "slot2", "slot3"]
+    }
+    
+    for table in MANAGED_TABLES:
+        required = columns_map.get(table, [])
+        df = _load_from_cloud(table, required)
+        st.session_state["mhw_data"][table] = df
+
+def load_data(key: str, required_columns: list=None) -> pd.DataFrame:
+    """Loads data, prioritizing cloud if logged in."""
     if is_logged_in():
-        return _load_from_cloud(key, required_columns)
+        return _load_from_cloud(key, required_columns or [])
+    
     init_memory_storage()
     df = st.session_state["mhw_data"].get(key, pd.DataFrame())
-    if df.empty:
-        return pd.DataFrame(columns=required_columns)
-    for col in required_columns:
-        if col not in df.columns:
-            df[col] = None
-    return df[[c for c in required_columns if c in df.columns]]
+    if not df.empty:
+        if required_columns:
+            for col in required_columns:
+                if col not in df.columns:
+                    df[col] = None
+            return df[[c for c in required_columns if c in df.columns]]
+        return df
+    return pd.DataFrame(columns=required_columns or [])
 
 def save_data(key: str, df: pd.DataFrame) -> bool:
     if is_logged_in():
-        return _save_to_cloud(key, df)
+        # save_data (typically called after a single record change) uses sync_deletion=True
+        return _save_to_cloud(key, df, sync_deletion=True)
     init_memory_storage()
     st.session_state["mhw_data"][key] = df
     persist_to_browser()
@@ -284,28 +325,52 @@ def sync_local_to_cloud():
     success_count = 0
     for table in MANAGED_TABLES:
         df = st.session_state.get("mhw_data", {}).get(table, pd.DataFrame())
-        if not df.empty:
-            if _save_to_cloud(table, df):
-                success_count += 1
+        
+        # Protective Push: Do not sync empty tables (to avoid wiping cloud on login)
+        if df.empty:
+            continue
+            
+        # Self-healing: Prune orphaned trackers locally before syncing
+        if table == "trackers":
+            weapons_df = st.session_state.get("mhw_data", {}).get("weapons", pd.DataFrame())
+            if not weapons_df.empty:
+                valid_ids = weapons_df["id"].astype(str).tolist()
+                df = df[df["weapon_id"].astype(str).isin(valid_ids)]
+            else:
+                # If no weapons exist locally, we can't safely sync trackers
+                continue
+        
+        # sync_deletion=True for manual sync/active use
+        if _save_to_cloud(table, df, sync_deletion=True):
+            success_count += 1
                 
     if success_count > 0:
+        from src.utils.cache_utils import clear_all_logic_caches
+        clear_all_logic_caches()
         progress_text.success(f"✅ {success_count} 個のテーブルをクラウドに同期しました。")
     else:
         progress_text.empty()
+
 
 # --- Persistent Auth ---
 
 AUTH_COOKIE_KEY = "mhw_auth"
 
 def set_auth_cookie(access_token: str, refresh_token: str):
-    """Writes the Supabase session tokens to a browser cookie."""
-    cookie_val = f"{access_token}|{refresh_token}" if access_token else ""
-    cookie_str = f"{AUTH_COOKIE_KEY}={cookie_val}; path=/; max-age=2592000; SameSite=Lax"
+    """Writes the Supabase session tokens to a browser cookie.
+    If access_token is empty, forces cookie expiration to log out."""
+    if not access_token:
+        # Force expiration: max-age=0 and date in 1970
+        cookie_str = f"{AUTH_COOKIE_KEY}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax"
+    else:
+        cookie_val = f"{access_token}|{refresh_token}"
+        cookie_str = f"{AUTH_COOKIE_KEY}={cookie_val}; path=/; max-age=2592000; SameSite=Lax"
     
     js = f"""
     <script>
         (function() {{
             const cookie = {json.dumps(cookie_str)};
+            console.log("MHW Auth Update: " + (cookie.includes("max-age=0") ? "Logout" : "Login"));
             try {{ document.cookie = cookie; }} catch(e) {{}}
             try {{ if (window.parent && window.parent.document) window.parent.document.cookie = cookie; }} catch(e) {{}}
         }})();
@@ -314,7 +379,11 @@ def set_auth_cookie(access_token: str, refresh_token: str):
     st.html(js, unsafe_allow_javascript=True)
 
 def try_restore_session():
-    """Attempts to restore a Supabase session from the browser cookie."""
+    """Attempts to restore a Supabase session from the browser cookie.
+    Skips if a logout is currently in progress."""
+    if st.session_state.get("logging_out"):
+        return False
+        
     if st.session_state.get("user"):
         return True # Already logged in
         
@@ -330,6 +399,8 @@ def try_restore_session():
             res = client.auth.set_session(access, refresh)
             if res.user:
                 st.session_state.user = res.user
+                # Unify state: Pull cloud data into memory after successful restoration
+                pull_cloud_to_local()
                 return True
     except Exception:
         pass

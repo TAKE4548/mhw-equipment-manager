@@ -12,6 +12,8 @@ from src.logic.restoration_tracker import (
     delete_tracker, execute_apply_and_advance,
     update_tracker
 )
+from src.components.auth import get_current_user_id
+
 
 from src.components.sidebar import render_shared_sidebar
 from src.components.cards import inject_card_css, render_slim_card, get_badge_html
@@ -21,7 +23,7 @@ inject_card_css()
 render_shared_sidebar()
 
 @st.dialog("トラッキング内容を編集")
-def edit_tracker_dialog(row, w_row):
+def edit_tracker_dialog(row, w_row, user_id):
     master = get_master_data()
     st.markdown(f"**{w_row['weapon_name']}** のトラッキング編集")
     
@@ -68,7 +70,7 @@ def edit_tracker_dialog(row, w_row):
                 parsed_rbs.append({"type": parts[0], "level": parts[1][:-1]})
             else: parsed_rbs.append({"type": rb, "level": "無印"})
             
-        if update_tracker(row['id'], new_count, parsed_rbs):
+        if update_tracker(row['id'], new_count, parsed_rbs, user_id=user_id):
             st.toast("更新しました")
             st.rerun()
         else: st.error("更新に失敗しました")
@@ -89,7 +91,8 @@ with h_col2:
 
 st.divider()
 
-eq_df = load_equipment()
+user_id = get_current_user_id()
+eq_df = load_equipment(user_id)
 if eq_df.empty:
     st.warning("まず Equipment Box に武器を登録してください。")
     st.stop()
@@ -176,7 +179,7 @@ def render_registration_section(master, eq_df):
                         parts = rb.split(" [")
                         parsed_rbs.append({"type": parts[0], "level": parts[1][:-1]})
                     else: parsed_rbs.append({"type": rb, "level": "無印"})
-                if register_tracker(st.session_state.tracker_reg_w_id, count_val, parsed_rbs):
+                if register_tracker(st.session_state.tracker_reg_w_id, count_val, parsed_rbs, user_id=user_id):
                     st.session_state.tracker_reg_w_id = None
                     st.toast("追加しました", icon="📋")
                     st.rerun()
@@ -188,9 +191,9 @@ st.divider()
 
 # --- Tracking List Toolbar ---
 @st.fragment
-def render_active_tracker_list(master, eq_df):
+def render_active_tracker_list(master, eq_df, user_id):
     st.subheader("トラッキング中の抽選結果")
-    tracker_df = load_trackers()
+    tracker_df = load_trackers(user_id)
 
     if tracker_df.empty:
         st.info("トラッキング中の強化抽選結果はありません。")
@@ -263,11 +266,11 @@ def render_active_tracker_list(master, eq_df):
         with col_act:
             with st.popover("⋮", use_container_width=True, key=f"pop_{row['id']}"):
                 if st.button("🔨 進行/適用", key=f"ap_{row['id']}", use_container_width=True):
-                    if execute_apply_and_advance(row['id']): st.rerun()
+                    if execute_apply_and_advance(row['id'], user_id=user_id): st.rerun()
                 if st.button("✏️ 編集", key=f"ed_tr_{row['id']}", use_container_width=True):
-                    edit_tracker_dialog(row, row)
+                    edit_tracker_dialog(row, row, user_id)
                 st.divider()
                 if st.button("🗑️ 削除", key=f"dl_{row['id']}", type="primary", use_container_width=True):
-                    if delete_tracker(row['id']): st.rerun()
+                    if delete_tracker(row['id'], user_id=user_id): st.rerun()
 
-render_active_tracker_list(master, eq_df)
+render_active_tracker_list(master, eq_df, user_id)

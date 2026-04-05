@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from src.database.storage_manager import load_data, save_data
 
+from src.utils.cache_utils import clear_logic_cache
+
 def get_history():
     """Returns the undo and redo stacks from session state."""
     if 'undo_stack' not in st.session_state: st.session_state['undo_stack'] = []
@@ -26,15 +28,21 @@ def undo_last_action() -> bool:
     if not undo_stack: return False
     
     action = undo_stack.pop()
-    save_data(action['table'], action['prev_df'])
-    redo_stack.append(action)
-    return True
+    if save_data(action['table'], action['prev_df']):
+        clear_logic_cache(action['table'])
+        redo_stack.append(action)
+        return True
+    return False
 
 def redo_last_action() -> bool:
     undo_stack, redo_stack = get_history()
     if not redo_stack: return False
     
     action = redo_stack.pop()
-    save_data(action['table'], action['next_df'])
-    undo_stack.append(action)
-    return True
+    if save_data(action['table'], action['next_df']):
+        clear_logic_cache(action['table'])
+        undo_stack.append(action)
+        return True
+    return False
+
+

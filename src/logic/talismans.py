@@ -19,15 +19,24 @@ TALISMANS_COLUMNS = [
 
 @st.cache_data
 def load_talisman_master() -> dict:
-    path = os.path.join(os.path.dirname(__file__), "..", "data", "talisman_master.json")
+    # Use absolute path resolution for robustness across different execution contexts
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.normpath(os.path.join(current_dir, "..", "data", "talisman_master.json"))
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except Exception as e:
+        # In a real app, we might log this. In Streamlit, st.error could be used but we're in logic.
+        print(f"Error loading talisman master data: {e}")
         return {"groups": {}, "rarity_patterns": {}}
 
 @st.cache_data
-def load_talismans() -> pd.DataFrame:
+def load_talismans(user_id: str = "local") -> pd.DataFrame:
+    """
+    Loads all talismans from storage.
+    Cached per user_id to ensure multi-user isolation.
+    """
+
     df = load_data(TALISMANS_TABLE, required_columns=TALISMANS_COLUMNS)
     # Ensure types
     for i in range(1, 4):
@@ -299,14 +308,14 @@ def validate_talisman(rarity: int, skills: list, slots: list) -> tuple[bool, str
     return True, ""
 
 
-def add_talisman(rarity: int, skills: list, slots: list) -> str:
-    df = load_talismans()
+def add_talisman(rarity: int, skills: list, slots: list, user_id: str = "local") -> str:
+    df = load_talismans(user_id)
     prev_df = df.copy()
     
     new_id = str(uuid.uuid4())
     new_row = {
         "id": new_id,
-        "rarity": rarity,
+        "rarity": int(rarity),
         "weapon_slot_level": int(slots[0]),
         "armor_slot_1_level": int(slots[1]),
         "armor_slot_2_level": int(slots[2]),
@@ -329,8 +338,8 @@ def add_talisman(rarity: int, skills: list, slots: list) -> str:
         return new_id
     return None
 
-def delete_talisman(talisman_id: str) -> bool:
-    df = load_talismans()
+def delete_talisman(talisman_id: str, user_id: str = "local") -> bool:
+    df = load_talismans(user_id)
     idx = df[df["id"].astype(str) == str(talisman_id)].index
     if not idx.empty:
         prev_df = df.copy()
@@ -341,9 +350,9 @@ def delete_talisman(talisman_id: str) -> bool:
             return True
     return False
 
-def update_talisman(talisman_id: str, rarity: int, skills: list, slots: list) -> bool:
+def update_talisman(talisman_id: str, rarity: int, skills: list, slots: list, user_id: str = "local") -> bool:
     """Updates an existing talisman and records history."""
-    df = load_talismans()
+    df = load_talismans(user_id)
     idx = df[df["id"].astype(str) == str(talisman_id)].index
     if idx.empty: return False
     
@@ -368,8 +377,8 @@ def update_talisman(talisman_id: str, rarity: int, skills: list, slots: list) ->
         return True
     return False
 
-def toggle_favorite(talisman_id: str) -> bool:
-    df = load_talismans()
+def toggle_favorite(talisman_id: str, user_id: str = "local") -> bool:
+    df = load_talismans(user_id)
     idx = df[df["id"].astype(str) == str(talisman_id)].index
     if not idx.empty:
         curr = df.at[idx[0], "is_favorite"]

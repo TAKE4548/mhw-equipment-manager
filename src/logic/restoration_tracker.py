@@ -16,8 +16,12 @@ TRACKER_COLUMNS = [
 ]
 
 @st.cache_data
-def load_trackers() -> pd.DataFrame:
-    """Loads all restoration trackers from the database."""
+def load_trackers(user_id: str = "local") -> pd.DataFrame:
+    """
+    Loads all restoration trackers from the database.
+    Cached per user_id to ensure multi-user isolation.
+    """
+
     df = load_data(TRACKER_TABLE, required_columns=TRACKER_COLUMNS)
     if not df.empty and "remaining_count" in df.columns:
         df["remaining_count"] = pd.to_numeric(df["remaining_count"], errors="coerce").fillna(0).astype(int)
@@ -27,9 +31,9 @@ def save_trackers(df: pd.DataFrame) -> bool:
     """Saves restoration trackers to the database."""
     return save_data(TRACKER_TABLE, df)
 
-def register_tracker(weapon_id: str, remaining_count: int, target_bonuses: list[dict]) -> bool:
+def register_tracker(weapon_id: str, remaining_count: int, target_bonuses: list[dict], user_id: str = "local") -> bool:
     """Registers a new restoration tracker and records history."""
-    df = load_trackers()
+    df = load_trackers(user_id)
     prev_df = df.copy()
     new_id = str(uuid.uuid4())
     new_row = {"id": new_id, "weapon_id": weapon_id, "remaining_count": remaining_count}
@@ -48,9 +52,11 @@ def register_tracker(weapon_id: str, remaining_count: int, target_bonuses: list[
         return True
     return False
 
-def advance_all_trackers(decrement: int) -> bool:
+
+
+def advance_all_trackers(decrement: int, user_id: str = "local") -> bool:
     """Decrements all trackers and removes those that reach 0."""
-    df = load_trackers()
+    df = load_trackers(user_id)
     if df.empty: return True
     
     prev_df = df.copy()
@@ -64,14 +70,14 @@ def advance_all_trackers(decrement: int) -> bool:
         return True
     return False
 
-def execute_apply_and_advance(tracker_id: str) -> bool:
+def execute_apply_and_advance(tracker_id: str, user_id: str = "local") -> bool:
     """Applies target bonuses to weapon and advances all trackers."""
-    df = load_trackers()
+    df = load_trackers(user_id)
     idx = df[df["id"].astype(str) == str(tracker_id)].index
     if idx.empty: return False
     
     row = df.loc[idx[0]]
-    eq_df = load_equipment()
+    eq_df = load_equipment(user_id)
     
     w_idx = eq_df[eq_df["id"].astype(str) == str(row["weapon_id"])].index
     if not w_idx.empty:
@@ -83,11 +89,11 @@ def execute_apply_and_advance(tracker_id: str) -> bool:
             load_equipment.clear()
             push_action("APPLY_UPGRADE", "equipment", prev_eq_df, eq_df)
         
-    return advance_all_trackers(int(row["remaining_count"]))
+    return advance_all_trackers(int(row["remaining_count"]), user_id=user_id)
 
-def delete_tracker(tracker_id: str) -> bool:
+def delete_tracker(tracker_id: str, user_id: str = "local") -> bool:
     """Deletes a tracker record and records history."""
-    df = load_trackers()
+    df = load_trackers(user_id)
     idx = df[df["id"].astype(str) == str(tracker_id)].index
     if not idx.empty:
         prev_df = df.copy()
@@ -98,9 +104,9 @@ def delete_tracker(tracker_id: str) -> bool:
             return True
     return False
 
-def update_tracker(tracker_id: str, remaining_count: int, target_bonuses: list[dict]) -> bool:
+def update_tracker(tracker_id: str, remaining_count: int, target_bonuses: list[dict], user_id: str = "local") -> bool:
     """Updates an existing tracker and records history."""
-    df = load_trackers()
+    df = load_trackers(user_id)
     idx = df[df["id"].astype(str) == str(tracker_id)].index
     if idx.empty: return False
     
