@@ -7,7 +7,7 @@ from supabase import create_client, Client
 
 # --- Configuration ---
 COOKIE_KEY = "mhw_data"
-MANAGED_TABLES = ["weapons", "trackers", "upgrades", "favorites"]
+MANAGED_TABLES = ["weapons", "trackers", "upgrades", "favorites", "talismans"]
 
 # --- Compression ---
 

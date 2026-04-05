@@ -60,3 +60,10 @@
 - [ ] T040 [Engineer] 全画面（所持武器・抽選・復元）への一貫したUndo/Redoの実装
 - [ ] T041 Final consistency check: Variable naming vs Documentation terminology
 
+## Phase 10: Appraised Talismans (鑑定護石管理) [Completed]
+- [x] T042 [Architect/Engineer] Create `src/data/talisman_master.json` holding Skill Groups (A-J) and Rarity Patterns (5-8).
+- [x] T043 [Engineer] Expand `StorageManager` to handle `Talismans` table.
+- [x] T044 [Engineer] Create `src/logic/talismans.py` for registration, search, and logic validation using master data.
+- [x] T045 [Engineer] Create `pages/5_talismans.py` integrating the slim UI and `st.dialog` skill picker.
+- [x] T046 [Engineer] Implement Favorite (⭐) toggling and trash functions for Melding target management.
+- [x] T047 [Engineer] Implement unit tests for `src/logic/talismans.py` based on `docs/workflow/test_scenarios.md`.

@@ -28,12 +28,24 @@
 - `remaining_count` (INTEGER): 到達までの残り回数
 - `target_rest_1_type` ~ `target_rest_5_level` (TEXT): 抽選結果の5枠構成
 
+### `Talismans` (鑑定護石 / Sheet: `Talismans`)
+ランダムで付与される鑑定護石の所持状況とスキルを管理します。
+- `id` (STRING/UUID): ユニークID
+- `rarity` (INTEGER): レア度 (5〜8)
+- `skill_1_name`, `skill_1_level` (TEXT / INTEGER): 第1スキル
+- `skill_2_name`, `skill_2_level` (TEXT / INTEGER): 第2スキル
+- `skill_3_name`, `skill_3_level` (TEXT / INTEGER): 第3スキル
+- `weapon_slot_level` (INTEGER): 武器スロットのレベル (0〜3)
+- `armor_slot_1_level` ~ `3_level` (INTEGER): 防具スロットのレベル (0〜3)
+- `is_favorite` (BOOLEAN): お気に入り（錬金・売却保護フラグ）
+
 ## Application State (Session State)
-アプリ全体の安定稼働のため、`app.py` にて以下を一括管理します。
+アプリ全体の安定稼働のため、`app.py` および各ページにて以下を管理します。
 - `user`: Supabase Auth ログインユーザー情報
 - `storage`: 統合ストレージインスタンス (`StorageManager`)
-- `undo_stack` / `redo_stack`: スキル抽選結果用の履歴
-- `history_undo` / `history_redo`: 復元強化厳選用の履歴
+- `undo_stack` / `redo_stack`: アプリ全体のデータ操作履歴（Undo/Redo用）
+- `r_form`: 鑑定護石登録フォームの入力バッファ（カスケード制御用）
+- `active_dialog`: 現在開いているスキル選択ダイアログのターゲット情報
 - `tracker_reg_w_id`: 画面間をまたぐ武器選択状態
 
 ## Storage (ストレージ)
@@ -58,6 +70,11 @@ Located at `src/data/master_data.json`.
 - `production_bonuses`: 基礎攻撃力増強, 会心率増強
 - `kyogeki_enhancements`: 攻撃激化, 会心激化, 属性激化
 - `restoration_bonuses`: 標準化されたレベル定義（Ⅰ, Ⅱ, Ⅲ, EX, 無印）
+
+### `talisman_master.json`
+Located at `src/data/talisman_master.json` (鑑定護石専用マスタ).
+- `groups`: スキルグループ (A〜J) と所属スキル・固定レベル定義
+- `rarity_patterns`: レア度 (5〜8) ごとの発生しうる「スキルグループの組み合わせ構造（例: B-A-G）」および「付与されるスロット構成」のパターン定義
 
 ## Data Normalization (正規化)
 - **Terminology Normalization**: 
