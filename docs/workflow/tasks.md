@@ -68,8 +68,8 @@
 - [x] T046 [Engineer] Implement Favorite (⭐) toggling and trash functions for Melding target management.
 - [x] T047 [Engineer] Implement unit tests for `src/logic/talismans.py` based on `docs/workflow/test_scenarios.md`.
 
-## Phase 11: Reinforcement Tracker Refactoring (強化厳選リファクタ) [Planned]
-- [ ] T048 [Engineer] Refactor `build_comp_mini` to use the fixed-width Visual Band UI (no icons).
-- [ ] T049 [Engineer] Update weapon selection cards in `pages/reinforcement_registration.py` to show Group Skill and Production Bonuses.
-- [ ] T050 [Engineer] Implement filtering and sorting UI (toolbar) for the active tracker list in `pages/reinforcement_registration.py`.
-- [ ] T051 [Engineer] Ensure all visual changes adhere to `docs/design_system.md` standards.
+## Phase 11: Reinforcement Tracker Refactoring (強化厳選リファクタ) [Completed]
+- [x] T048 [Engineer] Refactor `build_comp_mini` to use the fixed-width Visual Band UI (no icons).
+- [x] T049 [Engineer] Update weapon selection cards in `pages/reinforcement_registration.py` to show Group Skill and Production Bonuses.
+- [x] T050 [Engineer] Implement filtering and sorting UI (toolbar) for the active tracker list in `pages/reinforcement_registration.py`.
+- [x] T051 [Engineer] Ensure all visual changes adhere to `docs/design_system.md` standards.
