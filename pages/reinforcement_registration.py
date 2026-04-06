@@ -110,13 +110,33 @@ def render_registration_section(master, eq_df):
             with f_c1:
                 f_name = st.text_input("武器名で検索", placeholder="キーワード入力...", key="tr_f_name")
                 f_types = st.multiselect("武器種", master.get("weapon_types", []), key="tr_f_types")
-            with f_c2:
                 f_elements = st.multiselect("属性", master.get("elements", []), key="tr_f_elems")
+            with f_c2:
                 f_enhancements = st.multiselect("巨戟強化", master.get("kyogeki_enhancements", []), key="tr_f_enhs")
+                s_skills = [s['skill_parts'] for s in master.get("series_skills", []) if s['skill_parts'] != "なし"]
+                f_series = st.multiselect("シリーズスキル", sorted(s_skills), key="tr_f_series")
+                g_skills = [g['group_name'] for g in master.get("group_skills", []) if g['group_name'] != "なし"]
+                f_groups = st.multiselect("グループスキル", sorted(g_skills), key="tr_f_groups")
             with f_c3:
+                all_rb_options = []
+                for rt, lvs in master.get("restoration_bonuses", {}).items():
+                    if rt == "なし": continue
+                    for lv in lvs:
+                        all_rb_options.append(rt if lv == "無印" else f"{rt} [{lv}]")
+                f_rbs = st.multiselect("復元ボーナス (AND検索)", sorted(all_rb_options), key="tr_f_rbs", help="選択したすべてのボーナスを復元枠内に含む武器を抽出します。")
                 f_sort = st.selectbox("並び替え", ["武器種順", "属性順", "新着順"], index=0, key="tr_f_sort")
                 
-        eq_df_filtered = filter_equipment(eq_df, search_name=f_name, weapon_types=f_types, elements=f_elements, enhancements=f_enhancements, sort_by=f_sort)
+        eq_df_filtered = filter_equipment(
+            eq_df, 
+            search_name=f_name, 
+            weapon_types=f_types, 
+            elements=f_elements, 
+            enhancements=f_enhancements,
+            series_skills=f_series,
+            group_skills=f_groups,
+            restoration_bonuses=f_rbs,
+            sort_by=f_sort
+        )
         
         for idx, w_row in eq_df_filtered.iterrows():
             is_selected = (st.session_state.get("tracker_reg_w_id") == w_row['id'])

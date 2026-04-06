@@ -104,4 +104,17 @@
 - [x] T068 [Architect] Define filtering/sorting requirements (REQ-069) and UX logic for responsiveness (REQ-070).
 - [x] T069 [Engineer] Implement `filter_and_sort_talismans` in `src/logic/talismans.py` with comprehensive unit tests.
 - [x] T070 [Engineer] Integrate filter/sort UI in `pages/5_talismans.py` using `st.fragment` and `key` binding for 1-click response.
-- [x] T071 [Engineer] Verify functional and UX requirements using `browser_subagent` and `pytest`.
+
+## Phase 18: Deployed Environment Import & Schema Fix (REQ-071) [Completed]
+- [x] T072 [Engineer] Synchronize `columns_map` in `src/database/storage_manager.py` with `docs/data_model.md` and logic layers.
+- [x] T073 [Engineer] Align `talismans` and `favorites` column names (underscores) to fix data corruption on cloud sync.
+- [x] T074 [Engineer] Harden `sys.path` injection in `app.py` for Streamlit Cloud robustness.
+- [x] T075 [Engineer] Verify fix with automated schema consistency tests in `tests/unit/test_storage_schema.py`.
+
+## Phase 19: Expanded Weapon Search Filters (REQ-072) [Completed]
+- [x] T076 [Architect/UX] Define 3-column filter layout and AND-matching logic for restoration bonuses (REQ-072).
+- [x] T077 [Engineer] Expand `filter_equipment` in `src/logic/equipment_box.py` with level-specific AND logic.
+- [x] T078 [Engineer] Update `pages/reinforcement_registration.py` with the new filter UI and master-data integration.
+- [x] T079 [Engineer] Verify filter logic with unit tests in `tests/unit/test_filter_logic.py`.
+- [x] T080 [Architect] Update all SSoT documents (`requirements.md`, `ui_spec.md`, `ux_logic.md`).
+

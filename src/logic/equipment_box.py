@@ -209,12 +209,30 @@ def update_equipment(record_id: str, weapon_name: str, weapon_type: str, element
         return True
     return False
 
-def filter_equipment(df: pd.DataFrame, search_name: str = "", weapon_types: list = None, elements: list = None, sort_by: str = "新着順", **kwargs) -> pd.DataFrame:
+def filter_equipment(df: pd.DataFrame, search_name: str = "", weapon_types: list = None, elements: list = None, 
+                     enhancements: list = None, series_skills: list = None, group_skills: list = None,
+                     restoration_bonuses: list = None, sort_by: str = "新着順", **kwargs) -> pd.DataFrame:
     if df.empty: return df
     f_df = df.copy()
     if search_name: f_df = f_df[f_df['weapon_name'].str.contains(search_name, case=False, na=False)]
     if weapon_types: f_df = f_df[f_df['weapon_type'].isin(weapon_types)]
     if elements: f_df = f_df[f_df['element'].isin(elements)]
+    if enhancements: f_df = f_df[f_df['enhancement_type'].isin(enhancements)]
+    if series_skills: f_df = f_df[f_df['current_series_skill'].isin(series_skills)]
+    if group_skills: f_df = f_df[f_df['current_group_skill'].isin(group_skills)]
+
+    if restoration_bonuses:
+        # Check if all selected bonuses exist in the weapon's 5 slots (AND logic)
+        def check_all_bonuses(row):
+            weapon_slots = []
+            for i in range(1, 6):
+                rt, rl = row[f'rest_{i}_type'], row[f'rest_{i}_level']
+                if rt != "なし":
+                    label = rt if rl == "無印" else f"{rt} [{rl}]"
+                    weapon_slots.append(label)
+            return set(restoration_bonuses).issubset(set(weapon_slots))
+        
+        f_df = f_df[f_df.apply(check_all_bonuses, axis=1)]
     
     master = get_master_data()
     w_order = master.get("weapon_types", []); e_order = master.get("elements", [])
