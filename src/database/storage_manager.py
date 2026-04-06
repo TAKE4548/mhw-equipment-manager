@@ -114,6 +114,35 @@ def _migrate_local_ids():
                 if not df.empty:
                     _save_to_cloud(table, df)
 
+def _migrate_skill_names():
+    """Migrates skill names in the session data to match master data updates."""
+    if "mhw_data" not in st.session_state: return
+    data = st.session_state["mhw_data"]
+    
+    # Migrate talismans
+    df_t = data.get("talismans", pd.DataFrame())
+    if not df_t.empty:
+        changed = False
+        # Handle both skill_1_name and skill1_name styles due to potential inconsistencies
+        target_cols = [c for c in df_t.columns if "skill" in c and "name" in c]
+        for col in target_cols:
+            mask = df_t[col] == "ガード"
+            if mask.any():
+                df_t.loc[mask, col] = "ガード性能"
+                changed = True
+        if changed:
+            data["talismans"] = df_t
+            st.session_state["needs_persist"] = True
+
+    # Migrate favorites
+    df_f = data.get("favorites", pd.DataFrame())
+    if not df_f.empty and "skill_name" in df_f.columns:
+        mask = df_f["skill_name"] == "ガード"
+        if mask.any():
+            df_f.loc[mask, "skill_name"] = "ガード性能"
+            data["favorites"] = df_f
+            st.session_state["needs_persist"] = True
+
 # --- Boot: Read from HTTP cookie headers ---
 
 def boot_from_browser():
@@ -126,11 +155,11 @@ def boot_from_browser():
         if raw:
             data = _decompress(raw)
             for t in MANAGED_TABLES:
-                records = data.get(t, [])
                 st.session_state["mhw_data"][t] = (
                     pd.DataFrame(records) if records else pd.DataFrame()
                 )
             _migrate_local_ids()
+            _migrate_skill_names()
     except Exception:
         pass
 
@@ -270,6 +299,8 @@ def pull_cloud_to_local():
         required = columns_map.get(table, [])
         df = _load_from_cloud(table, required)
         st.session_state["mhw_data"][table] = df
+    
+    _migrate_skill_names()
 
 def load_data(key: str, required_columns: list=None) -> pd.DataFrame:
     """Loads data, prioritizing cloud if logged in."""
