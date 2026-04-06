@@ -286,13 +286,38 @@ def pull_cloud_to_local():
         return
     
     init_memory_storage()
-    # Define required columns for each table to ensure consistency
+    # Define required columns for each table to ensure consistency with SSoT (docs/data_model.md)
     columns_map = {
-        "weapons": ["id", "name", "weapon_type", "rarity", "element", "ele_val", "attack", "affinity", "sharpness", "slots", "series_skill", "group_skill"] + [f"rest_{i}_{attr}" for i in range(1, 6) for attr in ["type", "level"]],
-        "trackers": ["id", "weapon_id", "weapon_name", "remaining_count"] + [f"target_rest_{i}_{attr}" for i in range(1, 6) for attr in ["type", "level"]],
+        "weapons": [
+            "id", "weapon_name", "weapon_type", "element", 
+            "current_series_skill", "current_group_skill",
+            "enhancement_type",
+            "p_bonus_1", "p_bonus_2", "p_bonus_3",
+            "rest_1_type", "rest_1_level",
+            "rest_2_type", "rest_2_level",
+            "rest_3_type", "rest_3_level",
+            "rest_4_type", "rest_4_level",
+            "rest_5_type", "rest_5_level"
+        ],
+        "trackers": [
+            "id", "weapon_id", "remaining_count",
+            "target_rest_1_type", "target_rest_1_level",
+            "target_rest_2_type", "target_rest_2_level",
+            "target_rest_3_type", "target_rest_3_level",
+            "target_rest_4_type", "target_rest_4_level",
+            "target_rest_5_type", "target_rest_5_level"
+        ],
         "upgrades": ["id", "weapon_id", "weapon_name", "series_skill", "group_skill", "remaining_count"],
-        "favorites": ["id", "skill_name"],
-        "talismans": ["id", "rarity", "skill1_name", "skill1_level", "skill2_name", "skill2_level", "slot1", "slot2", "slot3"]
+        "favorites": ["id", "favorite_type", "skill_value"],
+        "talismans": [
+            "id", "rarity", 
+            "skill_1_name", "skill_1_level", 
+            "skill_2_name", "skill_2_level", 
+            "skill_3_name", "skill_3_level",
+            "weapon_slot_level", 
+            "armor_slot_1_level", "armor_slot_2_level", "armor_slot_3_level",
+            "is_favorite"
+        ]
     }
     
     for table in MANAGED_TABLES:

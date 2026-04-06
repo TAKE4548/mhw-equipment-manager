@@ -2,9 +2,10 @@ import streamlit as st
 import sys
 import os
 
-# Ensure the root directory is in the path for src imports
-if os.getcwd() not in sys.path:
-    sys.path.append(os.getcwd())
+# Ensure the root directory is in the path for src imports (Robust absolute path resolution)
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
 from src.utils.session import init_session_state
 
