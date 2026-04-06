@@ -55,77 +55,82 @@ def reset_from_slot2():
 # --- 3. Dialog Implementation with Fragment for Seamless Phase Switching ---
 @st.dialog("🎯 スキル選択")
 def skill_dialog_root(key: str):
-    # Use a fragment to isolate internal dialog reruns (phase switching)
-    @st.fragment
-    def dialog_body():
-        f = st.session_state["r_form"]
-        rarity = f["rarity"]
-        idx = int(key[1])
+    f = st.session_state["r_form"]
+    rarity = f["rarity"]
+    idx = int(key[1])
+    
+    # Calculate phase
+    if f"dialog_phase_{key}" not in st.session_state:
+        st.session_state[f"dialog_phase_{key}"] = "name"
+    phase = st.session_state[f"dialog_phase_{key}"]
+    
+    # Calculate context
+    prev = []
+    for i in range(1, idx):
+        n = f[f"s{i}_name"]; l = f[f"s{i}_level"]
+        if n != "なし": prev.append((n, l))
+    
+    if phase == "name":
+        st.subheader("1. スキル名を選択")
+        names = get_valid_skill_names(rarity, prev)
+        favs = get_favorite_list("talisman_skill")
+        sorted_names = sorted(names, key=lambda x: (x not in favs, x))
         
-        # Local phase within the dialog (can use session state to persist across fragment reruns)
-        if f"dialog_phase_{key}" not in st.session_state:
-            st.session_state[f"dialog_phase_{key}"] = "name"
-        phase = st.session_state[f"dialog_phase_{key}"]
-        
-        # Calculate context
-        prev = []
-        for i in range(1, idx):
-            n = f[f"s{i}_name"]; l = f[f"s{i}_level"]
-            if n != "なし": prev.append((n, l))
-        
-        if phase == "name":
-            st.subheader("1. スキル名を選択")
-            names = get_valid_skill_names(rarity, prev)
-            favs = get_favorite_list("talisman_skill")
-            sorted_names = sorted(names, key=lambda x: (x not in favs, x))
+        if st.button("🚫 なしを選択", use_container_width=True):
+            f[f"{key}_name"] = "なし"; f[f"{key}_level"] = 0
+            if key == "s1": reset_from_s1()
+            elif key == "s2": reset_from_s2()
+            elif key == "s3": reset_from_s3()
+            st.session_state["active_dialog"] = None 
+            st.rerun()
             
-            if st.button("🚫 なしを選択", use_container_width=True):
-                f[f"{key}_name"] = "なし"; f[f"{key}_level"] = 0
+        st.divider()
+        for n in sorted_names:
+            c1, c2 = st.columns([5, 1])
+            with c1:
+                if st.button(n, key=f"sel_n_{n}_{key}", use_container_width=True):
+                    # UX Improvement: Check if only one level is possible
+                    lvls = get_valid_levels_for_skill(rarity, prev, n)
+                    if len(lvls) == 1:
+                        # Auto-confirm and close
+                        f[f"{key}_name"] = n; f[f"{key}_level"] = lvls[0]
+                        if key == "s1": reset_from_s1()
+                        elif key == "s2": reset_from_s2()
+                        elif key == "s3": reset_from_s3()
+                        st.session_state["active_dialog"] = None
+                        if f"dialog_phase_{key}" in st.session_state: del st.session_state[f"dialog_phase_{key}"]
+                        st.rerun()
+                    else:
+                        # Go to level selection
+                        st.session_state[f"temp_name_{key}"] = n
+                        st.session_state[f"dialog_phase_{key}"] = "level"
+                        st.rerun()
+            with c2:
+                is_f = n in favs
+                if st.button("⭐" if is_f else "☆", key=f"fav_n_{n}_{key}", use_container_width=True):
+                    if is_f: remove_favorite("talisman_skill", n)
+                    else: add_favorite("talisman_skill", n)
+                    st.rerun()
+    
+    elif phase == "level":
+        n = st.session_state[f"temp_name_{key}"]
+        st.subheader(f"2. レベルを選択 ({n})")
+        lvls = get_valid_levels_for_skill(rarity, prev, n)
+        
+        if st.button("⬅️ 名前を選び直す", use_container_width=True):
+            st.session_state[f"dialog_phase_{key}"] = "name"
+            st.rerun()
+            
+        st.divider()
+        for l in lvls:
+            if st.button(f"Lv{l}", key=f"btn_l_{l}_{key}", use_container_width=True):
+                f[f"{key}_name"] = n; f[f"{key}_level"] = l
                 if key == "s1": reset_from_s1()
                 elif key == "s2": reset_from_s2()
                 elif key == "s3": reset_from_s3()
-                st.session_state["active_dialog"] = None # Clear trigger
-                st.rerun() # Full Rerun to update main UI and close dialog
-                
-            st.divider()
-            for n in sorted_names:
-                c1, c2 = st.columns([5, 1])
-                with c1:
-                    # Clicking this button triggers a FRAGMENT rerun, not a full app rerun
-                    if st.button(n, key=f"sel_n_{n}_{key}", use_container_width=True):
-                        st.session_state[f"temp_name_{key}"] = n
-                        st.session_state[f"dialog_phase_{key}"] = "level"
-                        st.rerun(scope="fragment")
-                with c2:
-                    is_f = n in favs
-                    if st.button("⭐" if is_f else "☆", key=f"fav_n_{n}_{key}", use_container_width=True):
-                        if is_f: remove_favorite("talisman_skill", n)
-                        else: add_favorite("talisman_skill", n)
-                        st.rerun(scope="fragment")
-        
-        elif phase == "level":
-            n = st.session_state[f"temp_name_{key}"]
-            st.subheader(f"2. レベルを選択 ({n})")
-            lvls = get_valid_levels_for_skill(rarity, prev, n)
-            
-            if st.button("⬅️ 名前を選び直す", use_container_width=True):
-                st.session_state[f"dialog_phase_{key}"] = "name"
-                st.rerun(scope="fragment")
-                
-            st.divider()
-            for l in lvls:
-                # Selecting a level completes the process -> Full Rerun to close dialog
-                if st.button(f"Lv{l}", key=f"btn_l_{l}_{key}", use_container_width=True):
-                    f[f"{key}_name"] = n; f[f"{key}_level"] = l
-                    if key == "s1": reset_from_s1()
-                    elif key == "s2": reset_from_s2()
-                    elif key == "s3": reset_from_s3()
-                    st.session_state["active_dialog"] = None
-                    # Clean up local dialog state
-                    if f"dialog_phase_{key}" in st.session_state: del st.session_state[f"dialog_phase_{key}"]
-                    st.rerun() # Full app rerun to close dialog and show results
-
-    dialog_body()
+                st.session_state["active_dialog"] = None
+                if f"dialog_phase_{key}" in st.session_state: del st.session_state[f"dialog_phase_{key}"]
+                st.rerun()
 
 # Trigger dialog if state is active
 if st.session_state["active_dialog"]:
