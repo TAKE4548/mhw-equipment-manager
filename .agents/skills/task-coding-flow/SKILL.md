@@ -1,8 +1,12 @@
 ---
 name: task-coding-flow
-description: 確定したプランに基づき、ファイル編集、テスト記述、コミットを行う実行手順。
+description: 【必須手順】合意済みプランに基づく実装フェーズ。テスト先行(Test-First)と自動検証を強制する。
 ---
-# 🛠️ Implementation Workflow
+# 🛠️ Implementation Workflow (Mandatory)
+
+> [!IMPORTANT]
+> このフロー（Phase 0-4）は、承認済みの `implementation_plan.md` または明確な指示がある場合にのみ開始せよ。テストなしの実装は許可されない。
+> **各フェーズの開始・移行時には、必ずその旨を明示的に宣言せよ。**
 
 ### Phase 0: 仕様の同期
 - `docs/` の最新仕様とアーキテクトによる「実装プラン」を熟読し、修正箇所を完全に特定せよ。

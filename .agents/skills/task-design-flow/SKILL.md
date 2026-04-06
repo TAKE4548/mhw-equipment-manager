@@ -1,14 +1,23 @@
 ---
 name: task-design-flow
-description: 新規開発や仕様変更時に実行する、要求整理からプラン作成までの設計手順。
+description: 【必須手順】新規開発・仕様変更・不具合解決の設計フェーズ。docs/の更新とプラン作成を強制する。
 ---
-# 🏛️ Design Workflow
+# 🏛️ Design Workflow (Mandatory)
+
+> [!IMPORTANT]
+> すべての新規開発、仕様変更、不具合解決において、このフロー（Phase 0-3）を遵守することは義務です。docs/ の更新なしにコードを書き始めてはなりません。
+> **各フェーズの開始・移行時には、必ずその旨を明示的に宣言せよ。**
 
 ### Phase 0: 要求の明文化
 - `docs/requirements.md` に要求（REQ-XXX）を追記せよ。この記録なしに次へ進んではならない。
 
 ### Phase 1: 要求の構造化
 - 解決すべき課題を整理し、ユーザーと論点を合意せよ。
+
+### Phase 1.5: UI/UX詳細設計 (委譲フェーズ)
+- **UI変更が1点でもある場合、このフェーズは必須である。**
+- `role-ux-designer` を召喚し、`task-ux-design` を実行させよ。
+- `ui_spec.md` が更新され、UXデザイナーから「完了」の報告を受けるまで、Phase 2 に進んではならない。
 
 ### Phase 2: 設計書の改廃 (Single Source of Truth)
 - 合意に基づき、`docs/` 内の関連ファイルを全て更新せよ。
