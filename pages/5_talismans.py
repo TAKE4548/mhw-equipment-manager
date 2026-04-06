@@ -3,7 +3,7 @@ import pandas as pd
 from src.logic.talismans import (
     load_talismans, add_talisman, delete_talisman, update_talisman, toggle_favorite as toggle_talisman_fav,
     validate_talisman, get_all_skills_flat, get_skill_level_from_master, load_talisman_master, parse_master_slot,
-    get_valid_skill_names, get_valid_levels_for_skill, get_valid_slot_levels
+    get_valid_skill_names, get_valid_levels_for_skill, get_valid_slot_levels, filter_and_sort_talismans
 )
 from src.logic.favorites import get_favorite_list, add_favorite, remove_favorite
 from src.components.sidebar import render_shared_sidebar
@@ -23,6 +23,15 @@ if "r_form" not in st.session_state:
         "s2_name": "なし", "s2_level": 0,
         "s3_name": "なし", "s3_level": 0,
         "slot_1": 0, "slot_2": 0, "slot_3": 0
+    }
+
+if "t_filter" not in st.session_state:
+    st.session_state["t_filter"] = {
+        "rarity": [],
+        "skills": [],
+        "slot_w": 0, "slot_a1": 0, "slot_a2": 0, "slot_a3": 0,
+        "fav_only": False,
+        "sort_by": "登録順 (新しい順)"
     }
 
 if "active_dialog" not in st.session_state:
@@ -306,8 +315,49 @@ def render_talisman_list(user_id):
         st.info("登録済みの護石はありません。")
         return
 
-    # --- Sorting Pre-processing ---
-    df = df.sort_values(by=["rarity", "is_favorite"], ascending=[False, False])
+    # --- Filter & Sort UI ---
+    with st.expander("🔍 絞り込み・並べ替え"):
+        tf = st.session_state["t_filter"]
+        
+        c1, c2 = st.columns([1, 2])
+        with c1:
+            tf["rarity"] = st.multiselect("レア度", [5, 6, 7, 8], default=tf["rarity"])
+        with c2:
+            all_skills = get_all_skills_flat()
+            tf["skills"] = st.multiselect("スキル (いずれかを含む)", all_skills, default=tf["skills"])
+        
+        st.write("最低スロットレベル:")
+        s1, s2, s3, s4 = st.columns(4)
+        slot_opts = [0, 1, 2, 3, 4]
+        tf["slot_w"] = s1.selectbox("武器", slot_opts, index=slot_opts.index(tf["slot_w"]))
+        tf["slot_a1"] = s2.selectbox("防具①", slot_opts, index=slot_opts.index(tf["slot_a1"]))
+        tf["slot_a2"] = s3.selectbox("防具②", slot_opts, index=slot_opts.index(tf["slot_a2"]))
+        tf["slot_a3"] = s4.selectbox("防具③", slot_opts, index=slot_opts.index(tf["slot_a3"]))
+        
+        so1, so2 = st.columns([1, 1])
+        tf["fav_only"] = so1.checkbox("お気に入りのみ表示", value=tf["fav_only"])
+        sort_opts = ["登録順 (新しい順)", "登録順 (古い順)", "レア度 (高→低)", "レア度 (低→高)", "スキル名順"]
+        tf["sort_by"] = so2.selectbox("並べ替え", sort_opts, index=sort_opts.index(tf["sort_by"]))
+
+    # --- Applying Filter & Sort ---
+    tf = st.session_state["t_filter"]
+    df = filter_and_sort_talismans(
+        df,
+        rarity=tf["rarity"],
+        skills=tf["skills"],
+        slot_w_min=tf["slot_w"],
+        slot_a1_min=tf["slot_a1"],
+        slot_a2_min=tf["slot_a2"],
+        slot_a3_min=tf["slot_a3"],
+        fav_only=tf["fav_only"],
+        sort_by=tf["sort_by"]
+    )
+
+    if df.empty:
+        st.warning("条件に一致する護石が見つかりませんでした。")
+        return
+
+    st.caption(f"該当件数: {len(df)} 件")
     
     def sc(v, is_w=False):
         if pd.isna(v) or v == 0: return "ー"
