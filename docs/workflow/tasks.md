@@ -100,3 +100,8 @@
 - [x] T066 [Engineer] Implement user-scoped caching for favorites logic with proactive invalidation.
 - [x] T067 [Engineer] Resolve TypeError in favorites query logic for multi-user environments.
 
+## Phase 17: Talisman Filter & Sort UX Improvement [Completed]
+- [x] T068 [Architect] Define filtering/sorting requirements (REQ-069) and UX logic for responsiveness (REQ-070).
+- [x] T069 [Engineer] Implement `filter_and_sort_talismans` in `src/logic/talismans.py` with comprehensive unit tests.
+- [x] T070 [Engineer] Integrate filter/sort UI in `pages/5_talismans.py` using `st.fragment` and `key` binding for 1-click response.
+- [x] T071 [Engineer] Verify functional and UX requirements using `browser_subagent` and `pytest`.
