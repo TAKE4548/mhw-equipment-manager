@@ -33,6 +33,10 @@ if "t_filter" not in st.session_state:
         "fav_only": False,
         "sort_by": "登録順 (新しい順)"
     }
+# Sync individual keys for 1-click filter response (REQ-070)
+for k, v in st.session_state["t_filter"].items():
+    if f"f_{k}" not in st.session_state:
+        st.session_state[f"f_{k}"] = v
 
 if "active_dialog" not in st.session_state:
     st.session_state["active_dialog"] = None
@@ -317,40 +321,37 @@ def render_talisman_list(user_id):
 
     # --- Filter & Sort UI ---
     with st.expander("🔍 絞り込み・並べ替え"):
-        tf = st.session_state["t_filter"]
-        
         c1, c2 = st.columns([1, 2])
         with c1:
-            tf["rarity"] = st.multiselect("レア度", [5, 6, 7, 8], default=tf["rarity"])
+            st.multiselect("レア度", [5, 6, 7, 8], key="f_rarity")
         with c2:
             all_skills = get_all_skills_flat()
-            tf["skills"] = st.multiselect("スキル (いずれかを含む)", all_skills, default=tf["skills"])
+            st.multiselect("スキル (いずれかを含む)", all_skills, key="f_skills")
         
         st.write("最低スロットレベル:")
         s1, s2, s3, s4 = st.columns(4)
         slot_opts = [0, 1, 2, 3, 4]
-        tf["slot_w"] = s1.selectbox("武器", slot_opts, index=slot_opts.index(tf["slot_w"]))
-        tf["slot_a1"] = s2.selectbox("防具①", slot_opts, index=slot_opts.index(tf["slot_a1"]))
-        tf["slot_a2"] = s3.selectbox("防具②", slot_opts, index=slot_opts.index(tf["slot_a2"]))
-        tf["slot_a3"] = s4.selectbox("防具③", slot_opts, index=slot_opts.index(tf["slot_a3"]))
+        s1.selectbox("武器", slot_opts, key="f_slot_w")
+        s2.selectbox("防具①", slot_opts, key="f_slot_a1")
+        s3.selectbox("防具②", slot_opts, key="f_slot_a2")
+        s4.selectbox("防具③", slot_opts, key="f_slot_a3")
         
         so1, so2 = st.columns([1, 1])
-        tf["fav_only"] = so1.checkbox("お気に入りのみ表示", value=tf["fav_only"])
+        st.checkbox("お気に入りのみ表示", key="f_fav_only")
         sort_opts = ["登録順 (新しい順)", "登録順 (古い順)", "レア度 (高→低)", "レア度 (低→高)", "スキル名順"]
-        tf["sort_by"] = so2.selectbox("並べ替え", sort_opts, index=sort_opts.index(tf["sort_by"]))
+        st.selectbox("並べ替え", sort_opts, key="f_sort_by")
 
     # --- Applying Filter & Sort ---
-    tf = st.session_state["t_filter"]
     df = filter_and_sort_talismans(
         df,
-        rarity=tf["rarity"],
-        skills=tf["skills"],
-        slot_w_min=tf["slot_w"],
-        slot_a1_min=tf["slot_a1"],
-        slot_a2_min=tf["slot_a2"],
-        slot_a3_min=tf["slot_a3"],
-        fav_only=tf["fav_only"],
-        sort_by=tf["sort_by"]
+        rarity=st.session_state["f_rarity"],
+        skills=st.session_state["f_skills"],
+        slot_w_min=st.session_state["f_slot_w"],
+        slot_a1_min=st.session_state["f_slot_a1"],
+        slot_a2_min=st.session_state["f_slot_a2"],
+        slot_a3_min=st.session_state["f_slot_a3"],
+        fav_only=st.session_state["f_fav_only"],
+        sort_by=st.session_state["f_sort_by"]
     )
 
     if df.empty:
