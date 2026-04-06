@@ -408,3 +408,56 @@ def get_skill_level_from_master(skill_name: str) -> int:
         if skill_name in g_skills:
             return int(g_skills[skill_name])
     return 1
+def filter_and_sort_talismans(
+    df: pd.DataFrame, 
+    rarity: list = None, 
+    skills: list = None, 
+    slot_w_min: int = 0, 
+    slot_a1_min: int = 0, 
+    slot_a2_min: int = 0, 
+    slot_a3_min: int = 0, 
+    fav_only: bool = False,
+    sort_by: str = "登録順 (新しい順)"
+) -> pd.DataFrame:
+    """
+    Applies complex filtering and sorting logic to a talisman DataFrame.
+    """
+    res = df.copy()
+    
+    # 1. Filtering
+    if rarity:
+        res = res[res["rarity"].isin(rarity)]
+    
+    if skills:
+        # OR within skills: match any skill slot to any selected skill
+        res = res[
+            res["skill_1_name"].isin(skills) | 
+            res["skill_2_name"].isin(skills) | 
+            res["skill_3_name"].isin(skills)
+        ]
+        
+    if slot_w_min > 0:
+        res = res[res["weapon_slot_level"] >= slot_w_min]
+    if slot_a1_min > 0:
+        res = res[res["armor_slot_1_level"] >= slot_a1_min]
+    if slot_a2_min > 0:
+        res = res[res["armor_slot_2_level"] >= slot_a2_min]
+    if slot_a3_min > 0:
+        res = res[res["armor_slot_3_level"] >= slot_a3_min]
+        
+    if fav_only:
+        res = res[res["is_favorite"] == True]
+        
+    # 2. Sorting
+    if sort_by == "登録順 (新しい順)":
+        res = res.iloc[::-1]
+    elif sort_by == "登録順 (古い順)":
+        pass
+    elif sort_by == "レア度 (高→低)":
+        res = res.sort_values(by=["rarity", "is_favorite"], ascending=[False, False])
+    elif sort_by == "レア度 (低→高)":
+        res = res.sort_values(by=["rarity", "is_favorite"], ascending=[True, False])
+    elif sort_by == "スキル名順":
+        res = res.sort_values(by=["skill_1_name", "skill_2_name", "rarity"], ascending=[True, True, False])
+        
+    return res
