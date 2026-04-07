@@ -15,6 +15,12 @@ description: "Project conventions. ALL IMPLEMENTATION PLANS MUST BE IN JAPANESE.
 - **MANDATORY LOGGING:** Your only allowed "action" for a request is updating `docs/backlog.md`.
 - **RESEARCH LOCK:** Do not use `view_file` or `grep_search` on any source code files during intake. ONLY refer to `docs/backlog.md` and `docs/architecture.md`.
 
+## /dev Workflow Governance (CRITICAL)
+- **MANDATORY PHASED PLANNING:** When a `/dev` session is initiated, you are FORBIDDEN from creating a one-shot "Implementation Plan" that covers coding (Step 6) before finishing the Design Phase (Step 3-4).
+- **MILESTONE ENFORCEMENT:** Your `task.md` MUST use the exact step names and numbers from `.agents/workflows/dev.md` (e.g., `Step 3: Architect Design`).
+- **APPROVAL GATES:** You must treat Step 5 ("User Approval") as a physical block. You cannot proceed to Step 6 without a user's explicit "OK" on the design artifacts (`docs/designs/*.md`, `docs/ui_spec.md`).
+- **ROLE ANNOUNCEMENT:** At the start of every step, you must explicitly state your current role (e.g., `[Role: Architect]`).
+
 ## Language of Artifacts (CRITICAL)
 - **IMPLEMENTATION PLANS MUST BE IN JAPANESE:** Any `implementation_plan.md` artifact created for user approval (Intake, Design review) MUST be written in **Japanese**.
 - **INTERNAL DOCUMENTS:** Tech specs like `docs/designs/xxx.md` or `docs/ui_spec.md` can remain in English for high technical precision unless otherwise requested.
