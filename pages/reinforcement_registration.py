@@ -16,7 +16,10 @@ from src.components.auth import get_current_user_id
 
 
 from src.components.sidebar import render_shared_sidebar
-from src.components.cards import inject_card_css, render_slim_card, get_badge_html
+from src.components.cards import (
+    inject_card_css, render_slim_card, get_badge_html, 
+    render_selectable_card
+)
 
 st.set_page_config(page_title="復元強化厳選", page_icon="✨", layout="wide")
 inject_card_css()
@@ -150,26 +153,29 @@ def render_registration_section(master, eq_df):
             badge_html = get_badge_html(elem, bgcolor=bg, color=txt_c)
             w_display = w_row['weapon_name'] if w_row['weapon_name'] and not w_row['weapon_name'].startswith("無銘の") else w_row['weapon_type']
             
-            # Render Selection Card
-            col_c, col_b = st.columns([12, 1], vertical_alignment="center")
-            with col_c:
-                curr_rbs = []
-                for i in range(1, 6):
-                    rt, rl = w_row[f'rest_{i}_type'], w_row[f'rest_{i}_level']
-                    curr_rbs.append(f"{rt}{rl if rl != '無印' else ''}" if rt != "なし" else "なし")
-                
-                # Expanded metadata for Phase 11
-                p_bonuses_list = [w_row[f'p_bonus_{i}'] for i in range(1, 4) if w_row[f'p_bonus_{i}'] != "なし"]
-                p_bonus_text = f"🛠️ {format_bonus_summary(p_bonuses_list)}" if p_bonuses_list else ""
-                r_bonus_text = f"✨ {format_bonus_list(curr_rbs)}"
-                bonus_html = f"{p_bonus_text}{'<br>' if p_bonus_text else ''}{r_bonus_text}"
-                
-                sub_text = f"📋 {w_row['enhancement_type']} | 🛡️ {w_row['current_series_skill']} | 👥 {w_row['current_group_skill']}"
-                render_slim_card(badge_html, w_display, sub_text, bonus_html, subtitle=w_row['weapon_type'])
-            with col_b:
-                if st.button("選", key=f"sel_{w_row['id']}", type="primary" if is_selected else "secondary", use_container_width=True):
-                    st.session_state.tracker_reg_w_id = w_row['id']
-                    st.rerun()
+            # Render Selection Card (Unified Clickable Interface)
+            curr_rbs = []
+            for i in range(1, 6):
+                rt, rl = w_row[f'rest_{i}_type'], w_row[f'rest_{i}_level']
+                curr_rbs.append(f"{rt}{rl if rl != '無印' else ''}" if rt != "なし" else "なし")
+            
+            p_bonuses_list = [w_row[f'p_bonus_{i}'] for i in range(1, 4) if w_row[f'p_bonus_{i}'] != "なし"]
+            p_bonus_text = f"🛠️ {format_bonus_summary(p_bonuses_list)}" if p_bonuses_list else ""
+            r_bonus_text = f"✨ {format_bonus_list(curr_rbs)}"
+            bonus_html = f"{p_bonus_text}{'<br>' if p_bonus_text else ''}{r_bonus_text}"
+            
+            sub_text = f"📋 {w_row['enhancement_type']} | 🛡️ {w_row['current_series_skill']} | 👥 {w_row['current_group_skill']}"
+            
+            from src.components.cards import render_selectable_card
+            if render_selectable_card(
+                badge_html, w_display, sub_text, bonus_html, 
+                key=f"sel_{w_row['id']}", 
+                subtitle=w_row['weapon_type'], 
+                is_selected=is_selected,
+                mode="hud"
+            ):
+                st.session_state.tracker_reg_w_id = w_row['id']
+                st.rerun()
 
         if st.session_state.get("tracker_reg_w_id"):
             st.divider()
@@ -289,19 +295,21 @@ def render_active_tracker_list(master, eq_df, user_id):
     merged_df['target_labels'] = merged_df.apply(lambda r: get_slot_labels(r, prefix="target_"), axis=1)
 
     def build_visual_comparison(before, after):
-        h = '<div style="background:#222; padding:2px; border-radius:4px; overflow:hidden;">'
-        h += '<table style="width:100%; table-layout:fixed; border-collapse:collapse; margin:0; border:none; line-height:1.2;">'
-        h += f'<tr style="background:rgba(255,255,255,0.05); border-left:2px solid #666;">'
-        for s in before:
-            h += f'<td style="width:20%; text-align:center; padding:1px 0; color:#888; font-size:0.8rem; border:none;">{s}</td>'
-        h += '</tr>'
-        h += f'<tr style="background:rgba(255,255,255,0.1); border-left:4px solid #27ae60;">'
+        # v14: ONE-LINE MICRO DIFF BAR (with spacing)
+        bc = " ".join([f'<span style="color:#666; font-size:0.78rem; margin-right:4px;">{s}</span>' for s in before])
+        # After labels: Highlight changes in yellow, with breathing room
+        ac = []
         for i, s in enumerate(after):
-            is_changed = s != before[i]
-            clr = "#f1c40f" if is_changed else "#fff"
+            is_changed = (s != before[i])
+            clr = "#f1c40f" if is_changed else "#ccc"
             fw = "bold" if is_changed else "normal"
-            h += f'<td style="width:20%; text-align:center; padding:3px 0; color:{clr}; font-weight:{fw}; font-size:1.2rem; border:none;">{s}</td>'
-        h += '</tr></table></div>'
+            ac.append(f'<span style="color:{clr}; font-weight:{fw}; font-size:0.9rem; margin-right:8px; display:inline-block;">{s}</span>')
+        
+        h = '<div style="display:flex; align-items:center; gap:10px; white-space:nowrap;">'
+        h += f'<div style="display:flex; align-items:center; opacity:0.7;">{bc}</div>'
+        h += '<span style="color:#ffd700; font-size:0.85rem; flex-shrink:0;">❯❯</span>'
+        h += f'<div style="display:flex; align-items:center;">{" ".join(ac)}</div>'
+        h += '</div>'
         return h
 
     # Render Tracker Cards
@@ -314,9 +322,10 @@ def render_active_tracker_list(master, eq_df, user_id):
         col_c = "#ff4b4b" if rem <= 1 else ("#f39c12" if rem < 5 else "#27ae60")
         sub_text = f"🛡️ {row['current_series_skill']} | 👥 {row['current_group_skill']} | <b style='color:{col_c};'>あと{rem}回</b>"
         
-        col_card, col_act = st.columns([12, 1], vertical_alignment="center")
+        from src.components.cards import CARD_ACTION_RATIO, render_slim_card
+        col_card, col_act = st.columns(CARD_ACTION_RATIO, vertical_alignment="center")
         with col_card:
-            render_slim_card(badge_html, w_display, sub_text, comp_html, subtitle=row['weapon_type'])
+            render_slim_card(badge_html, w_display, sub_text, comp_html, subtitle=row['weapon_type'], mode="hud")
         with col_act:
             with st.popover("⋮", use_container_width=True, key=f"pop_{row['id']}"):
                 if st.button("🔨 進行/適用", key=f"ap_{row['id']}", use_container_width=True):

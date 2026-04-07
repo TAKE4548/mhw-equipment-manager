@@ -278,7 +278,8 @@ def render_equipment_list(master, user_id):
             bonus_html = f"🛠️ {format_bonus_summary(pbs)} / ✨ {format_bonus_summary(rbs_with_lv)}"
             sub_text = f"📋 {row['enhancement_type']} | 🛡️ {row['current_series_skill']} | 👥 {row['current_group_skill']}"
             
-            col_card, col_act = st.columns([12, 1], vertical_alignment="center")
+            from src.components.cards import CARD_ACTION_RATIO
+            col_card, col_act = st.columns(CARD_ACTION_RATIO, vertical_alignment="center")
             with col_card:
                 render_slim_card(badge_html, w_display, sub_text, bonus_html, subtitle=row['weapon_type'])
                 

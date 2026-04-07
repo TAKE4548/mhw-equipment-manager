@@ -380,9 +380,10 @@ def render_talisman_list(user_id):
     df['disp_skill'], df['disp_slot'], df['disp_badge'] = zip(*results)
 
     for _, row in df.iterrows():
-        c1, c2 = st.columns([12, 1], vertical_alignment="center")
+        from src.components.cards import CARD_ACTION_RATIO
+        c1, c2 = st.columns(CARD_ACTION_RATIO, vertical_alignment="center")
         with c1:
-            render_slim_card(row['disp_badge'], row['disp_skill'], row['disp_slot'], "")
+            render_slim_card(row['disp_badge'], row['disp_skill'], row['disp_slot'], "", mode="long-text")
         with c2:
             with st.popover("⋮", key=f"pop_t_{row['id']}"):
                 if st.button("⭐" if row.get('is_favorite', False) else "☆", key=f"f_{row['id']}", use_container_width=True):
