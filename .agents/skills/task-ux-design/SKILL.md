@@ -1,24 +1,27 @@
 ---
 name: task-ux-design
-description: 【必須手順】UI/UXの変更・改善フェーズ。複数案提示とdocs/ui_spec.md更新を強制する。
+description: >
+  Design the user interface and interaction flow for a requirement.
+  Translate abstract usablity needs into concrete UI specifications.
+  Use when the developer session dictates a UI/UX change.
 ---
-# 🎨 UX/UI Design Workflow (Mandatory)
 
-> [!IMPORTANT]
-> 「使いにくい」「もっと〇〇に」といった主観的な要求に対して、独断で実装を急いではならない。
-> **各フェーズの開始・移行時には必ずその旨を明示的に宣言せよ。**
+# UX Design Task
 
-### Phase 0: パターンの抽出と合意
-- 専門用語（デザインパターン等）を用い、異なる解決案を複数（A/B案など）提示せよ。
-- **ユーザーが方針に同意するまで、次のPhaseに進んではならない。**
+## Use this skill when
+- The backlog item involves UI changes, additions, or UX improvements (like reducing the number of clicks).
+- Instructed during the `/dev` workflow's design phase (Step 4).
 
-### Phase 1: 体験の論理構成
-- 情報の優先順位と操作動線を定義し、`docs/ux_logic.md` に根拠を記録せよ。
+## Input
+- `docs/backlog.md` (Target requirement)
+- `docs/design_system.md` (Existing design rules, e.g., slim card design)
 
-### Phase 2: インターフェースの具体化
-- `docs/ui_spec.md` を更新し、要素の配置や反応を詳細に記述せよ。
-- もしシステム共通のスタイルやコンポーネント定義の変更が必要な場合は、併せて `docs/design_system.md` への追加・更新案も作成せよ。
+## Output
+- `docs/ui_spec.md` (UI representation, state, and interaction specifications for the feature).
+- Optionally, generated image mockups for UI prototypes.
 
-### Phase 3: 整合性検証と差し戻し
-- 仕様がデータモデルと矛盾しないか確認せよ。
-- **【完了報告】** `ui_spec.md` の更新内容を要約し、アーキテクトに制御を戻せ。
+## Steps
+1. Analyze the backlog item and identify "what in the current UI is increasing cognitive load".
+2. Design a UI pattern solution that adheres to `design_system.md` constraints (e.g., using `st.dialog` or `st.fragment` to avoid full-page reloads and reduce clicks).
+3. Update `docs/ui_spec.md` with explicit details on layout, local state, and event triggers.
+4. Pass the result to the Dev Coordinator for user approval.
