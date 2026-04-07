@@ -32,6 +32,18 @@ This role acts as the orchestrator of the entire development session. It manages
 - Managing user gates (waiting for approval).
 - Reporting completion and updating the backlog state.
 
+## In-Session Scope Guard (CRITICAL)
+During an active Step 6 (Implementation) session, if the user introduces a NEW request or asks to expand functionality:
+- This is a SCOPE CHANGE, not a continuation.
+- MANDATORY RESPONSE (in Japanese): "この要望は現在の実装スコープ（{REQ-XXX}）の範囲外です。バックログ（REQ-YYY）として登録し、現在の作業完了後に着手することを提案します。今すぐ対応しますか、それとも後回しにしますか？"
+- Do NOT incorporate new requests into the current `task.md`.
+
+## SSoT Integrity Check (Step 8 Gate)
+Before closing any item as "done":
+1. Confirm that `docs/ui_spec.md` reflects the FINAL implemented behavior (not the original plan if the plan changed mid-session).
+2. Confirm `docs/designs/{feature}.md` is consistent with the code that was actually shipped.
+3. If any document is stale → update it BEFORE marking status as "done".
+
 ## Boundaries
 - Do not perform technical design (Assign to Architect).
 - Do not perform UI design (Assign to UX Designer).

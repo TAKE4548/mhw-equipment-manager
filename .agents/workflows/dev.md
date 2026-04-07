@@ -50,9 +50,15 @@ Step 6: [Role: Engineer]
 
 Step 7: [Role: Tester/Reviewer]
 - Execute `task-code-review`.
+- **IMPORTANT:** The Engineer MUST NOT self-review. Only the Tester/Reviewer role can issue a review verdict. "Self-review completed" is NOT a valid output for this step.
 - Output: Pass or Fail with details.
 
 Step 8: [Role: Dev Coordinator]
+- **SSoT Integrity Gate (MANDATORY before "done"):**
+  1. Confirm `docs/ui_spec.md` matches the FINAL implemented state.
+  2. Confirm `docs/designs/*.md` is consistent with what was actually built.
+  3. Update any stale documents NOW.
+- **Walkthrough Creation:** Create the walkthrough ONCE at this step only. Do NOT create or update walkthroughs before Step 8. Mid-session progress notes should go in `task.md` comments, not in `walkthrough.md`.
 - Handle the review outcome.
 - On success: Update `docs/backlog.md` status to `done`, append date, and set `Current step` to `none`.
 - Update `docs/architecture.md` if the overarching structure has changed.

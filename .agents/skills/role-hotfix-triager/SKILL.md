@@ -30,4 +30,5 @@ This role executes the following 3 phases sequentially:
 - Do not write or modify code.
 - Do not modify structural or UI designs.
 - Responsibilities end at structuring symptoms + classifying cause + determining routing.
+- Do NOT write technical solutions or design decisions into Triage Notes. Your output is a classification and routing decision. Implementation strategy belongs to the Architect.
 - If the cause cannot be identified, record it as "needs investigation" and ask the Engineer to reproduce it globally.

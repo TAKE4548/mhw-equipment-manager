@@ -22,4 +22,9 @@ description: >
 ## Rules
 - Keep modifications minimal and related strictly to the failed UI interaction.
 - Ensure that unit tests are also rerun after UI fixes to catch any regressions.
-- If the UI fails to meet the interaction specification consistently after 3 attempts, escalate the issue to the Architect/UX Designer for a design review.
+- **Approach-Based Impasse Detection (CRITICAL):**
+  Track the TECHNICAL APPROACH being used (e.g., "CSS absolute positioning overlay").
+  If the SAME APPROACH fails 2 times, regardless of how many tweaks were applied:
+  → Immediately declare `[IMPASSE]` and hand off to Dev Coordinator.
+  → Do NOT try a 3rd CSS/JS variation of the same strategy.
+  → A fundamentally different approach must be proposed by the Architect first.

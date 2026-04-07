@@ -1,11 +1,10 @@
 ---
 name: task-hotfix-triage
 description: >
-  Activate when user reports critical failures or unexpected behavior.
-  Wait for triggers like:
-  "動かない", "エラー出た", "さっきの直ってないよ", "バグってる",
-  "反映されない", "真っ白になった", "落ちる", "壊れた", "おかしい",
-  "意図した動きじゃない", "前は動いてたのに".
+  Activate for ANY report of bugs, errors, or unexpected results. 
+  "動かない", "エラー出た", "直ってない", "バグってる", "修正して", "おかしい" 
+  などの直接的な「直し」の要求も、まずこのスキルで吸い上げること。
+  エンジニアとして直接走り出す前に、必ずこのトリアージを通さなければなりません。
 ---
 
 # Hotfix Triage Task
@@ -43,3 +42,14 @@ description: >
    - **Latent Bug**: Create a NEW backlog item with `Type: defect` and `Status: ready`. Tell user it's a pre-existing issue and is logged.
    - **Working as Designed**: Explain the specification. Ask if they want to treat it as an enhancement request instead.
    - **Cannot Determine**: Add a NEW item with `Status: needs-investigation`. Request reproduction steps in `/dev`.
+
+## Triage Notes Scope Restriction
+The "Triage Notes" field in `docs/backlog.md` MUST contain ONLY:
+- Symptom description (what the user observed)
+- Time-axis classification (regression / latent / by-design)
+- Routing decision (which step in `/dev` to resume from)
+
+**FORBIDDEN in Triage Notes:**
+- Technical solutions (how to fix it) — that is the Architect's task in Step 3.
+- CSS or code-level proposals.
+Writing design decisions in Triage Notes bypasses the Architect and causes Step 3 to be skipped.
