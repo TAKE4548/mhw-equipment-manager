@@ -10,6 +10,18 @@ description: >
 
 # Hotfix Triage Task
 
+## CRITICAL: NO SOURCE CODE MODIFICATION
+- **DO NOT MODIFY ANY SOURCE CODE** during this triage task.
+- You are allowed to READ code and logs to identify causes, but the output must be limited to updating `docs/backlog.md`.
+
+## Planning Mode Guidance (MANDATORY INTERPRETATION)
+- **YES, IT WARRANTS A PLAN:** If the system asks if this report warrants a plan, the answer is **YES**.
+- **BUT THE PLAN IS ONLY FOR TRIAGING:** The "plan" you create MUST be exclusively about:
+  1. Hearing the user's symptoms and structuring facts.
+  2. Searching for the root cause in logs or recent changes.
+  3. Updating the status and "Triage notes" in `docs/backlog.md`.
+- **FORBIDDEN:** Creating a plan to fix the bug directly. Fixing MUST be done in a separate `/dev` session.
+
 ## Use this skill when
 - The user reports an error, a crash, or things not working as expected.
 - It is NOT a new feature request, but a report about something that SHOULD work but does not.
