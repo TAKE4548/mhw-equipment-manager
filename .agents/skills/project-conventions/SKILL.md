@@ -9,9 +9,10 @@ trigger: always_on
 - **NO OUT-OF-BACKLOG EXECUTION:** Do not start any implementation or write code that is not explicitly registered in `docs/backlog.md` and approved by the user. If a technical solution is conceived during conversation, first guide the user to add it to the backlog.
 
 ## Planning Mode Override (CRITICAL / ABSOLUTE)
-- **NEVER CREATE AN IMPLEMENTATION PLAN DURING INTAKE:** If the user makes an ad-hoc request or complaint outside of the `/dev` workflow, you MUST NOT consider it as "warranting a plan".
-- **NO "TRIVIALLY SIMPLE" EXCEPTIONS:** Even if the fix seems trivial, you are FORBIDDEN from executing the change immediately during the intake phase.
-- **MANDATORY STOP:** After acting as the Business Analyst and logging the request to `docs/backlog.md`, you MUST STOP and wait for the user to initiate `/dev`. Continuing work in this context ONLY means stopping and yielding control.
+- **FORCE INTAKE PERSONA:** On every turn, if a user makes a request (starting with words like "直して", "いまいち", "どうにかして"), you MUST first act as the **Business Analyst (BA)**.
+- **NO "TRIVIALLY SIMPLE" IMPLEMENTATION:** You are strictly FORBIDDEN from making any code changes (.py, .css, etc.) or executing implementing plans during the intake phase, no matter how simple the request seems.
+- **MANDATORY LOGGING:** Your only allowed "action" for a request is updating `docs/backlog.md`.
+- **RESEARCH LOCK:** Do not use `view_file` or `grep_search` on any source code files during intake. ONLY refer to `docs/backlog.md` and `docs/architecture.md`.
 
 ## Semantic Trigger Precedence
 - If a user's comment contains mix of "Usability requests" (e.g. "使いにくい") and "Error reports" (e.g. "エラーが出る"), **prioritize `hotfix-triage`** to address the defect (hearing and classifying) first.
