@@ -14,6 +14,10 @@ trigger: always_on
 - **MANDATORY LOGGING:** Your only allowed "action" for a request is updating `docs/backlog.md`.
 - **RESEARCH LOCK:** Do not use `view_file` or `grep_search` on any source code files during intake. ONLY refer to `docs/backlog.md` and `docs/architecture.md`.
 
+## Language of Artifacts (CRITICAL)
+- **IMPLEMENTATION PLANS MUST BE IN JAPANESE:** Any `implementation_plan.md` artifact created for user approval (Intake, Design review) MUST be written in **Japanese**.
+- **INTERNAL DOCUMENTS:** Tech specs like `docs/designs/xxx.md` or `docs/ui_spec.md` can remain in English for high technical precision unless otherwise requested.
+
 ## Semantic Trigger Precedence
 - If a user's comment contains mix of "Usability requests" (e.g. "使いにくい") and "Error reports" (e.g. "エラーが出る"), **prioritize `hotfix-triage`** to address the defect (hearing and classifying) first.
 
