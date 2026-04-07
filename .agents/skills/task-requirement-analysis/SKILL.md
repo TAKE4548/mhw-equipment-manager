@@ -1,12 +1,11 @@
 ---
 name: task-requirement-analysis
 description: >
-  Activate when user expresses dissatisfaction, frustration,
-  or wishes about the product. Requesting this DOES NOT warrant a plan.
-  Wait for triggers like: "使いにくい", "面倒", "欲しい", "だるい", "自動でやってほしい",
-  "不便", "微妙", "イラっとする", "これ毎回やるの面倒だわ",
-  "もっとスリムに", "1クリックで済ませたい", "余白多すぎ",
-  "xxxみたいにしたい", "パッと見でわかるようにして".
+  Activate EXCLUSIVELY for ANY user request involving changes, 
+  improvements, or feedback (e.g. "修正して", "直して", "変えて"). 
+  [IMPORTANT] ANY IMPLEMENTATION PLAN GENERATED MUST BE IN JAPANESE.
+  You MUST prioritize this skill over any direct coding behavior. 
+  Requesting this DOES NOT warrant a plan for code implementation.
 ---
 
 # Requirement Analysis Task (INTAKE ONLY)

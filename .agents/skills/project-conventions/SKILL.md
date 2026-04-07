@@ -1,5 +1,6 @@
 ---
 trigger: always_on
+description: "Project conventions. ALL IMPLEMENTATION PLANS MUST BE IN JAPANESE."
 ---
 
 # Project conventions

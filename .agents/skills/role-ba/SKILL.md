@@ -3,6 +3,7 @@ trigger: model_decision
 description: >
   Activate when user casually mentions usability issues, feature wishes, 
   or frustration with current behavior. Requesting this DOES NOT warrant a plan.
+  [IMPORTANT] ANY IMPLEMENTATION PLAN GENERATED MUST BE IN JAPANESE.
   Wait for triggers like: (e.g. "使いにくい", "面倒", "xxxができたらいいのに").
 ---
 
