@@ -255,7 +255,7 @@ def render_equipment_list(master, user_id):
 
     st.subheader("所持武器一覧")
     df_raw = load_equipment(user_id)
-    df = filter_equipment(df_raw, search_name=f_name, weapon_types=f_types, elements=f_elements, series_skills=f_series, group_skills=f_groups, enhancements=f_enhancements, p_bonuses=f_pbs, r_bonuses=f_rbs, sort_by=f_sort)
+    df = filter_equipment(df_raw, search_name=f_name, weapon_types=f_types, elements=f_elements, series_skills=f_series, group_skills=f_groups, enhancements=f_enhancements, production_bonuses=f_pbs, restoration_bonuses=f_rbs, sort_by=f_sort)
 
     if df.empty:
         st.info("条件に一致する武器がありません。")
