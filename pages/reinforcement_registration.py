@@ -118,6 +118,9 @@ def render_registration_section(master, eq_df):
                 g_skills = [g['group_name'] for g in master.get("group_skills", []) if g['group_name'] != "なし"]
                 f_groups = st.multiselect("グループスキル", sorted(g_skills), key="tr_f_groups")
             with f_c3:
+                p_bonus_opts = master.get("production_bonuses", [])
+                f_pbs = st.multiselect("生産ボーナス", p_bonus_opts, key="tr_f_pbs")
+                
                 all_rb_options = []
                 for rt, lvs in master.get("restoration_bonuses", {}).items():
                     if rt == "なし": continue
@@ -134,6 +137,7 @@ def render_registration_section(master, eq_df):
             enhancements=f_enhancements,
             series_skills=f_series,
             group_skills=f_groups,
+            production_bonuses=f_pbs,
             restoration_bonuses=f_rbs,
             sort_by=f_sort
         )
@@ -229,11 +233,41 @@ def render_active_tracker_list(master, eq_df, user_id):
         with t_c3:
             t_f_sort = st.selectbox("並び替え", ["残り回数(少)", "残り回数(多)", "武器種順", "属性順", "新着順"], index=0, key="t_sort_by")
 
+        st.markdown("##### ボーナスで絞り込み")
+        tb_c1, tb_c2 = st.columns(2)
+        with tb_c1:
+            t_f_rbs_opts = []
+            for rt, lvs in master.get("restoration_bonuses", {}).items():
+                if rt == "なし": continue
+                for lv in lvs: t_f_rbs_opts.append(rt if lv == "無印" else f"{rt} [{lv}]")
+            t_f_rbs = st.multiselect("目標復元ボーナス (AND検索)", t_f_rbs_opts, key="t_filter_rbs")
+
     # Apply Filtering to Tracker List
     merged_df = tracker_df.merge(eq_df, left_on='weapon_id', right_on='id', suffixes=('', '_eq'))
     
     if t_f_types: merged_df = merged_df[merged_df['weapon_type'].isin(t_f_types)]
     if t_f_elems: merged_df = merged_df[merged_df['element'].isin(t_f_elems)]
+
+    if t_f_rbs:
+        # Target tuples for robust matching
+        target_tuples = []
+        for s in t_f_rbs:
+            if " [" in s:
+                parts = s.split(" [")
+                target_tuples.append((parts[0], parts[1][:-1]))
+            else:
+                target_tuples.append((s, "無印"))
+        target_set = set(target_tuples)
+
+        def check_tracker_rbs(row):
+            tr_bonuses = set()
+            for i in range(1, 6):
+                rt, rl = row[f'target_rest_{i}_type'], row[f'target_rest_{i}_level']
+                if rt != "なし":
+                    tr_bonuses.add((rt, rl))
+            return target_set.issubset(tr_bonuses)
+        
+        merged_df = merged_df[merged_df.apply(check_tracker_rbs, axis=1)]
     
     # Apply Sorting
     w_order = master.get("weapon_types", []); e_order = master.get("elements", [])

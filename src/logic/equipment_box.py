@@ -211,7 +211,8 @@ def update_equipment(record_id: str, weapon_name: str, weapon_type: str, element
 
 def filter_equipment(df: pd.DataFrame, search_name: str = "", weapon_types: list = None, elements: list = None, 
                      enhancements: list = None, series_skills: list = None, group_skills: list = None,
-                     restoration_bonuses: list = None, sort_by: str = "新着順", **kwargs) -> pd.DataFrame:
+                     production_bonuses: list = None, restoration_bonuses: list = None, 
+                     sort_by: str = "新着順", **kwargs) -> pd.DataFrame:
     if df.empty: return df
     f_df = df.copy()
     if search_name: f_df = f_df[f_df['weapon_name'].str.contains(search_name, case=False, na=False)]
@@ -221,16 +222,34 @@ def filter_equipment(df: pd.DataFrame, search_name: str = "", weapon_types: list
     if series_skills: f_df = f_df[f_df['current_series_skill'].isin(series_skills)]
     if group_skills: f_df = f_df[f_df['current_group_skill'].isin(group_skills)]
 
+    if production_bonuses:
+        # Check if all selected production bonuses exist in the weapon's 3 slots (AND logic)
+        target_pb_set = set(production_bonuses)
+        def check_pb(row):
+            w_pbs = set([row[f'p_bonus_{i}'] for i in range(1, 4) if row[f'p_bonus_{i}'] != "なし"])
+            return target_pb_set.issubset(w_pbs)
+        f_df = f_df[f_df.apply(check_pb, axis=1)]
+
     if restoration_bonuses:
+        # Parse filter strings back into (Type, Level) tuples for robust matching
+        # Format: "Type [Level]" or just "Type"
+        target_tuples = []
+        for s in restoration_bonuses:
+            if " [" in s:
+                parts = s.split(" [")
+                target_tuples.append((parts[0], parts[1][:-1]))
+            else:
+                target_tuples.append((s, "無印"))
+        target_set = set(target_tuples)
+
         # Check if all selected bonuses exist in the weapon's 5 slots (AND logic)
         def check_all_bonuses(row):
-            weapon_slots = []
+            weapon_bonuses = set()
             for i in range(1, 6):
                 rt, rl = row[f'rest_{i}_type'], row[f'rest_{i}_level']
                 if rt != "なし":
-                    label = rt if rl == "無印" else f"{rt} [{rl}]"
-                    weapon_slots.append(label)
-            return set(restoration_bonuses).issubset(set(weapon_slots))
+                    weapon_bonuses.add((rt, rl))
+            return target_set.issubset(weapon_bonuses)
         
         f_df = f_df[f_df.apply(check_all_bonuses, axis=1)]
     
