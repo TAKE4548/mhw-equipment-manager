@@ -8,56 +8,33 @@ from src.components.auth import get_current_user_id
 st.set_page_config(page_title="Home", page_icon="🏠", layout="wide")
 inject_card_css()
 
-# Custom CSS for "Button-as-Card" UI
+# Safety First: Simplified Styling for st.button
 st.markdown("""
 <style>
-    /* Style EVERY button in the Quick Action grid to look like a card */
+    /* Card-like sizing for buttons but simple text handling */
     [data-testid="stHorizontalBlock"] div[data-testid="stButton"] button {
-        height: 180px !important;
+        height: 120px !important;
         background-color: #1a1a1a !important;
         border: 1px solid #333 !important;
-        border-radius: 12px !important;
-        color: #eee !important;
+        border-radius: 8px !important;
+        color: #ddd !important;
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease !important;
         display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        transition: all 0.3s ease !important;
-        white-space: pre-wrap !important;
-        line-height: 1.4 !important;
-        font-family: inherit !important;
-        padding: 20px !important;
     }
     
     [data-testid="stHorizontalBlock"] div[data-testid="stButton"] button:hover {
         border-color: #ffd700 !important;
         background-color: #222 !important;
-        transform: translateY(-5px) !important;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.5), 0 0 15px rgba(255,215,0,0.1) !important;
         color: #fff !important;
     }
 
-    [data-testid="stHorizontalBlock"] div[data-testid="stButton"] button p {
-        font-size: 1rem !important;
-        margin: 0 !important;
-    }
-
-    /* Icon resizing inside button text */
-    .btn-icon {
-        font-size: 2.5rem !important;
-        display: block;
-        margin-bottom: 0.5rem;
-    }
-    .btn-title {
-        font-size: 1.2rem !important;
-        font-weight: 700 !important;
-        display: block;
-    }
-    .btn-desc {
-        font-size: 0.8rem !important;
-        color: #888 !important;
-        display: block;
-        margin-top: 5px;
+    /* Deactive State for System Settings */
+    button[key*="go_set"] {
+        filter: grayscale(100%) !important;
+        opacity: 0.2 !important;
+        pointer-events: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -80,7 +57,7 @@ st.divider()
 # --- Statistics Summary Section ---
 st.subheader("現在のステータス 📊")
 
-# Load data for stats (Counts only for slim performance and simpler UI)
+# Load data for stats
 eq_df = load_equipment(user_id)
 tali_df = load_talismans(user_id)
 
@@ -96,46 +73,39 @@ with col_stat3:
 
 st.divider()
 
-# --- Quick Action Grid (Large Integrated Buttons) ---
+# --- Quick Action Grid (Simplified for Stability) ---
 st.subheader("クイックアクション ⚡")
-st.info("カードをクリックすると各ページへ移動します。")
-
-# Label contents with pseudo-classes for styling (standard text with formatting)
-# Note: Streamlit button labels don't support HTML, but we can style them with CSS
-# We use a combined string and rely on white-space: pre-wrap and line-height.
 
 c1, c2, c3 = st.columns(3)
 
-# Row 1
 with c1:
-    if st.button("📦\n所持武器台帳\n所有武器の登録と管理", key="go_box", use_container_width=True):
+    if st.button("📦 所持武器台帳", key="go_box", use_container_width=True):
         st.switch_page("pages/equipment_box.py")
 
 with c2:
-    if st.button("⚔️\nスキル抽選管理\n未来の強化シードを確認", key="go_skill", use_container_width=True):
+    if st.button("⚔️ スキル抽選管理", key="go_skill", use_container_width=True):
         st.switch_page("pages/0_skill_lottery.py")
 
 with c3:
-    if st.button("✨\n復元強化厳選\n最適なボーナスを追求", key="go_rein", use_container_width=True):
+    if st.button("✨ 復元強化厳選", key="go_rein", use_container_width=True):
         st.switch_page("pages/reinforcement_registration.py")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 c4, c5, c6 = st.columns(3)
 
-# Row 2
 with c4:
-    if st.button("📿\n鑑定護石管理\n護石のデータベース管理", key="go_tali", use_container_width=True):
+    if st.button("📿 鑑定護石管理", key="go_tali", use_container_width=True):
         st.switch_page("pages/5_talismans.py")
 
 with c5:
-    if st.button("📊\n分析統計\nデータの詳細な可視化", key="go_dash", use_container_width=True):
+    if st.button("📊 分析統計", key="go_dash", use_container_width=True):
         st.switch_page("pages/4_analytics_dashboard.py")
 
 with c6:
-    if st.button("⚙️\nシステム設定\n(サイドバーより操作可能)", key="go_set", use_container_width=True, disabled=True):
+    # Stylized as deactive via CSS (grayscale + opacity)
+    if st.button("⚙️ システム設定", key="go_set", use_container_width=True, disabled=True):
         pass
 
-# Optional: Add footer note
 st.divider()
-st.markdown("<div style='text-align: right; color: #444; font-size: 0.8rem;'>MHWs Equipment Manager v10.0 (Deferred Sync)</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align: right; color: #444; font-size: 0.8rem;'>MHWs Equipment Manager v10.0</div>", unsafe_allow_html=True)
