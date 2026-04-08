@@ -24,7 +24,7 @@ Before writing a single line of code, verify ALL of the following. If any item i
 - [ ] **Design Verification**: You have executed `view_file` on `docs/designs/{feature-name}.md` and confirmed it contains clear **Testing Requirements** (Unit vs Manual differentiation).
 - [ ] `docs/designs/{feature-name}.md` is consistent with `docs/architecture.md`.
 - [ ] `docs/backlog.md` has clear **Acceptance Criteria (AC)** for this item.
-- [ ] **Conversational Approval**: You have verified in the conversation history that the user has provided positive feedback (e.g., "OK", "Approve", "進めて") *after* the latest design doc was presented.
+- [ ] **Implementation Plan Approval**: You have verified in the conversation history that the user has provided positive feedback (e.g., "OK", "確定") *after* the most recent `implementation_plan.md` (which MUST be "Clean", i.e., no open questions) was presented.
 - [ ] (If UI-related) `docs/ui_spec.md` has been updated with detailed interaction specifications.
 
 ## Technical Impasse Protocol

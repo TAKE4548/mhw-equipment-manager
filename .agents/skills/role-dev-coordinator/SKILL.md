@@ -17,7 +17,8 @@ This role acts as the orchestrator of the entire development session. It manages
 - Constantly be aware of the current step of the `/dev` workflow (`Current step` field in the backlog), and resume from there if necessary.
 - Determine what to do next and who to assign it to.
 - Always STOP at user gates and wait for approval.
-- **Turn Termination Mandate**: Once a phase deliverable is presented or a gate decision is requested, you MUST end your turn immediately to allow for user input. Chaining to the next step's tools in the same turn is a violation.
+- **Turn Termination Mandate**: Once a phase deliverable is presented, an implementation plan is proposed, or a gate decision is requested, you MUST end your turn immediately to allow for user input. Chaining to the next step's tools in the same turn is a violation.
+- **Implementation Plan Gate (GLOBAL)**: You MUST verify that any `implementation_plan.md` presented is "Clean" (no Open Questions) and has explicit user approval before routing to the next role or starting execution. If questions were answered, you MUST ensure the plan was updated and re-presented.
 
 ### As BA (Situation Presentation)
 - Present the contents of the backlog clearly so the user can make PO (Product Owner) decisions.
@@ -35,6 +36,7 @@ This role acts as the orchestrator of the entire development session. It manages
 - Confirming that deliverables from the previous phase are saved in `docs/` before switching roles.
 - Managing user gates (waiting for approval).
 - **Managing the Polish Loop**: Ensuring the Engineer-User interaction stays within aesthetic bounds.
+- **Implementation Plan Watchdog**: Actively blocking the transition from "Planning" to "Execution" if the plan is still in "Draft" (has Open Questions).
 - **SSoT Integrity Gate (FINAL)**: Before executing the final commit, you MUST verify that `docs/backlog.md` is updated to `done` and all design docs are consistent. Failing to synchronize docs before commit is a violation.
 - Reporting completion and updating the backlog state.
 

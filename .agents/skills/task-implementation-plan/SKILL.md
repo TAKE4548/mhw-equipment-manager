@@ -23,3 +23,7 @@ description: >
 2. Order the tasks based on module dependencies (e.g., models -> logic -> UI layer).
 3. Determine the testing strategy for each subtask (unit test vs manual/browser test).
 4. Outline the exact test cases and manual test scenarios to be written.
+5. **Handle Open Questions**: 
+   - If there are unknowns, include them in the "Open Questions" section of the plan.
+   - Explicitly label the plan as "Draft" if it contains Open Questions.
+   - Once the user answers, update the plan and re-present it for final approval before starting execution.
