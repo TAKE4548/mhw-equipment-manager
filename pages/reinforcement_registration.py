@@ -153,11 +153,11 @@ def render_registration_section(master, eq_df):
                 r_bonus_text = f"✨ {format_bonus_list(curr_rbs)}"
                 bonus_html = f"{p_bonus_text}{'<br>' if p_bonus_text else ''}{r_bonus_text}"
                 
-                sub_text = f"📋 {w_row['enhancement_type']} | 🛡️ {w_row['current_series_skill']} | 👥 {w_row['current_group_skill']}"
+                sub_text = f"📋 {w_row['enhancement_type']} | 🛡️ {w_row['current_series_skill']} | 👥 {w_row['current_group_skill']} | {bonus_html}"
                 
                 from src.components.cards import render_selectable_card
                 if render_selectable_card(
-                    badge_html, w_display, sub_text, bonus_html, 
+                    badge_html, w_display, sub_text, "", # Metric area empty for weapon selection
                     key=f"sel_{w_row['id']}", 
                     subtitle=w_row['weapon_type'], 
                     is_selected=is_selected,
@@ -310,12 +310,16 @@ def render_active_tracker_list(master, eq_df, user_id):
             badge_html = get_badge_html(row['element'], bgcolor=ATTRIBUTE_COLORS.get(row['element'], "#444"), color=("black" if row['element'] in ["氷", "雷", "無", "睡眠"] else "white"))
             w_display = row['weapon_name'] if row['weapon_name'] and not str(row['weapon_name']).startswith("無銘の") else row['weapon_type']
             col_c = "#ff4b4b" if rem <= 1 else ("#f39c12" if rem < 5 else "#27ae60")
-            sub_text = f"🛡️ {row['current_series_skill']} | 👥 {row['current_group_skill']} | <b style='color:{col_c};'>あと{rem}回</b>"
+            
+            # REQ-026: Unify count position (Metric) and Comparison Bar position (Spec)
+            # Simplified sub_text to prioritize the comparison bar
+            sub_text = f"<span style='opacity:0.5; margin-right:10px;'>{row['current_series_skill']} / {row['current_group_skill']}</span> {comp_html}"
+            metric_html = f"<b style='color:{col_c};'>あと{rem}回</b>"
             
             from src.components.cards import CARD_ACTION_RATIO, render_slim_card
             col_card, col_act = st.columns(CARD_ACTION_RATIO, vertical_alignment="center")
             with col_card:
-                render_slim_card(badge_html, w_display, sub_text, comp_html, subtitle=row['weapon_type'], mode="hud")
+                render_slim_card(badge_html, w_display, sub_text, metric_html, subtitle=row['weapon_type'], mode="hud")
             with col_act:
                 with st.popover("⋮", use_container_width=True, key=f"pop_{row['id']}"):
                     if st.button("🔨 進行/適用", key=f"ap_{row['id']}", use_container_width=True):
