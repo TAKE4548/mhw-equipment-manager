@@ -9,14 +9,14 @@ from src.components.auth import get_current_user_id
 from src.logic.history import undo_last_action, redo_last_action
 from src.logic.favorites import add_favorite, remove_favorite, get_favorite_list, is_favorite, prepare_skill_choices
 from src.components.pickers import render_skill_picker
+from src.components.common import render_lean_header, render_item_count
 
 st.set_page_config(page_title="スキル抽選管理", page_icon="⚔️", layout="wide")
 
-# Render shared sidebar (boots from cookie instantly)
+# Render shared sidebar
 render_shared_sidebar()
 
-st.title("スキル抽選管理 ⚔️")
-st.markdown("巨戟強化の抽選順序を確認し、スキルを武器に割り当てます。")
+render_lean_header("スキル抽選結果", "スキル抽選の順序を確認し、武器へ割り当てます。", icon="⚔️")
  
 user_id = get_current_user_id()
 
@@ -37,7 +37,7 @@ def render_registration_form(master, user_id):
         with c1: w_type = st.selectbox("武器種", master.get("weapon_types", []), key="lottery_reg_wt")
         with c2: element = st.selectbox("属性", master.get("elements", []), key="lottery_reg_elem")
             
-        st.markdown("##### 抽選スキル (横並び表示)")
+        st.markdown("**抽選スキル**")
         c_lot_s, c_lot_g = st.columns(2)
         with c_lot_s: series_skill = render_skill_picker("シリーズスキル", master.get("series_skills", []), "series", "lot_reg_s")
         with c_lot_g: group_skill = render_skill_picker("グループスキル", master.get("group_skills", []), "group", "lot_reg_g")
@@ -46,28 +46,25 @@ def render_registration_form(master, user_id):
         
         if st.button("登録の確定", type="primary", use_container_width=True):
             if not series_skill.strip() or not group_skill.strip():
-                st.error("スキルを正しく選択してください。")
+                st.error("スキルを選択してください")
             else:
                 record_id = register_upgrade(w_type, element, series_skill, group_skill, count, user_id=user_id)
                 if record_id:
-                    st.toast("抽選結果を登録しました！", icon="✅")
+                    st.toast("登録完了")
                     st.rerun()
                 else:
-                    st.error("登録に失敗しました。")
+                    st.error("登録失敗")
 
 master = get_master_data()
 render_registration_form(master, user_id)
 
-st.divider()
-
 @st.fragment
 def render_tracker_list(master, user_id):
     # --- Search & Filter UI ---
-    st.subheader("検索とフィルタ 🔍")
     series_skills_master = master.get("series_skills", [])
     group_skills_master = master.get("group_skills", [])
 
-    with st.expander("🔎 表示内容を絞り込む", expanded=False):
+    with st.expander("🔎 抽選結果を絞り込む・並び替え", expanded=False):
         fl_c1, fl_c2, fl_c3 = st.columns(3)
         with fl_c1:
             f_types = st.multiselect("武器種", master.get("weapon_types", []))
@@ -82,19 +79,6 @@ def render_tracker_list(master, user_id):
         with fs_c2:
             f_groups = st.multiselect("グループスキル", [g['group_name'] for g in group_skills_master if g['group_name'] != "なし"])
 
-    # --- Dashboard Actions ---
-    h_col1, h_col2, h_col3 = st.columns([1, 1, 6], vertical_alignment="center")
-    with h_col1:
-        undo_disabled = not st.session_state.get('undo_stack', [])
-        if st.button("Undo ↩️", disabled=undo_disabled, use_container_width=True):
-            undo_last_action()
-            st.rerun()
-    with h_col2:
-        redo_disabled = not st.session_state.get('redo_stack', [])
-        if st.button("Redo ↪️", disabled=redo_disabled, use_container_width=True):
-            redo_last_action()
-            st.rerun()
-
     # --- Main Dashboard List ---
     df_raw = get_active_upgrades(user_id=user_id)
     df = filter_upgrades(
@@ -105,7 +89,11 @@ def render_tracker_list(master, user_id):
         group_skills=f_groups,
         sort_by=f_sort
     )
+    render_item_count(len(df))
     eq_df_all = load_equipment(user_id)
-    render_active_upgrades(df, user_id, eq_df_all)
+    # Localize high-density layout to ONLY the list container
+    with st.container():
+        st.markdown('<div class="v12-dense-list" style="display:none"></div>', unsafe_allow_html=True)
+        render_active_upgrades(df, user_id, eq_df_all)
 
 render_tracker_list(master, user_id)

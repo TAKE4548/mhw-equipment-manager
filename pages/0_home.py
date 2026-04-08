@@ -54,9 +54,10 @@ if not st.session_state.get('mhw_ready') and not st.session_state.get('user'):
 user_id = get_current_user_id()
 
 # --- Header Section ---
-st.title("MHW Equipment Manager 💎")
-st.markdown("### 巨戟アーティア武器・鑑定護石 統合管理ポータル")
-st.divider()
+# --- Header Section ---
+st.markdown("### MHW Equipment Manager 💎")
+st.markdown("<p style='font-size:0.9rem; color:#888; margin-top:-10px;'>巨戟アーティア武器・鑑定護石 統合管理ポータル</p>", unsafe_allow_html=True)
+st.markdown('<div class="lean-sep"></div>', unsafe_allow_html=True)
 
 # --- Statistics Summary Section ---
 st.subheader("現在のステータス 📊")
@@ -75,7 +76,7 @@ with col_stat3:
     fav_count = (tali_df['is_favorite'].sum() if not tali_df.empty else 0)
     st.metric("お気に入り護石", fav_count)
 
-st.divider()
+st.markdown('<div class="lean-sep"></div>', unsafe_allow_html=True)
 
 # --- Quick Action Grid (Simplified for Stability) ---
 st.subheader("クイックアクション ⚡")
@@ -111,5 +112,5 @@ with c6:
     if st.button("⚙️ システム設定", key="go_set", use_container_width=True, disabled=True):
         pass
 
-st.divider()
+st.markdown('<div class="lean-sep"></div>', unsafe_allow_html=True)
 st.markdown("<div style='text-align: right; color: #444; font-size: 0.8rem;'>MHWs Equipment Manager v10.0</div>", unsafe_allow_html=True)
