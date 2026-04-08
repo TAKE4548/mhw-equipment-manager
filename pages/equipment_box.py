@@ -14,7 +14,7 @@ from src.components.cards import inject_card_css, render_slim_card, get_badge_ht
 from src.components.pickers import render_skill_picker
 from src.components.auth import get_current_user_id
 
-st.set_page_config(page_title="所有巨戟アーティア一覧", page_icon="📦", layout="wide")
+st.set_page_config(page_title="所持武器台帳", page_icon="📦", layout="wide")
 inject_card_css()
 
 # Deleted render_skill_selector_with_toggle as it is replaced by render_skill_picker

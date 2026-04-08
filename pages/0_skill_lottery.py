@@ -10,12 +10,12 @@ from src.logic.history import undo_last_action, redo_last_action
 from src.logic.favorites import add_favorite, remove_favorite, get_favorite_list, is_favorite, prepare_skill_choices
 from src.components.pickers import render_skill_picker
 
-st.set_page_config(page_title="スキル抽選結果", page_icon="⚔️", layout="wide")
+st.set_page_config(page_title="スキル抽選管理", page_icon="⚔️", layout="wide")
 
 # Render shared sidebar (boots from cookie instantly)
 render_shared_sidebar()
 
-st.title("スキル抽選結果 🏹")
+st.title("スキル抽選管理 ⚔️")
 st.markdown("巨戟強化の抽選順序を確認し、スキルを武器に割り当てます。")
  
 user_id = get_current_user_id()

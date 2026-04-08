@@ -5,29 +5,33 @@ from src.components.sidebar import render_shared_sidebar
 from src.components.cards import inject_card_css
 from src.components.auth import get_current_user_id
 
-st.set_page_config(page_title="Home", page_icon="🏠", layout="wide")
+st.set_page_config(page_title="ホーム", page_icon="🏠", layout="wide")
 inject_card_css()
 
 # Safety First: Simplified Styling for st.button
 st.markdown("""
 <style>
-    /* Card-like sizing for buttons but simple text handling */
-    [data-testid="stHorizontalBlock"] div[data-testid="stButton"] button {
-        height: 120px !important;
-        background-color: #1a1a1a !important;
-        border: 1px solid #333 !important;
+    /* Scoped to main content to avoid sidebar regression */
+    [data-testid="stMain"] [data-testid="stHorizontalBlock"] div[data-testid="stButton"] button {
+        height: 100px !important;
+        background-color: #262626 !important;
+        border: 1px solid #444 !important;
         border-radius: 8px !important;
         color: #ddd !important;
         font-size: 1.1rem !important;
         font-weight: 600 !important;
         transition: all 0.2s ease !important;
         display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
     }
     
-    [data-testid="stHorizontalBlock"] div[data-testid="stButton"] button:hover {
+    [data-testid="stMain"] [data-testid="stHorizontalBlock"] div[data-testid="stButton"] button:hover {
         border-color: #ffd700 !important;
-        background-color: #222 !important;
+        background-color: #333 !important;
         color: #fff !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
     }
 
     /* Deactive State for System Settings */
