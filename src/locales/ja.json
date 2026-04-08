@@ -1,6 +1,6 @@
 {
-  "NAV.HOME": "ホーム",
-  "NAV.BOX": "所持武器台帳",
+  "NAV.HOME": "Home",
+  "NAV.BOX": "巨戟アーティア武器",
   "NAV.SKILL": "スキル抽選管理",
   "NAV.REIN": "復元強化厳選",
   "NAV.TALI": "鑑定護石管理",
@@ -17,7 +17,7 @@
   "HOME.STATS_TALISMANS": "登録護石合計",
   "HOME.STATS_FAVORITES": "お気に入り護石",
   "HOME.QUICK_HEADER": "クイックアクション ⚡",
-  "HOME.ACTION_BOX": "📦 所持武器台帳",
+  "HOME.ACTION_BOX": "📦 巨戟アーティア武器",
   "HOME.ACTION_SKILL": "⚔️ スキル抽選管理",
   "HOME.ACTION_REIN": "✨ 復元強化厳選",
   "HOME.ACTION_TALI": "📿 鑑定護石管理",

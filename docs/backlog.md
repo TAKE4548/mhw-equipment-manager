@@ -261,8 +261,8 @@ This document is the Single Source of Truth for all feature requests, bug report
 +    - 画面占有率と操作ステップ数のバランスが改善されている（例：グリッド表示の検討、より洗練されたフィルターの導入等）。
 
 ### REQ-025: UI 文言の一元管理化 (Centralized String Management)
-- **Status**: in-progress
-- **Current step**: Step 1
+- **Status**: done (2026-04-09)
+- **Current step**: none
 - **Type**: enhancement
 - **Priority**: high
 - **Source**: "各所の文言調整を、開発者が手動でやりやすいように一元管理できる仕組みにしておきたい。例えば、ページのタイトルを変えたいとかいう程度で、逐一この開発フローを回す程ではない。"

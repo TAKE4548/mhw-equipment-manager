@@ -3,8 +3,11 @@ import os
 import streamlit as st
 
 @st.cache_data
-def _load_translations():
-    """Loads the translation JSON file."""
+def _load_translations(mtime):
+    """
+    Loads the translation JSON file.
+    The mtime argument ensures the cache is invalidated when the file changes on disk.
+    """
     # Robust path resolution
     base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     json_path = os.path.join(base_path, "locales", "ja.json")
@@ -22,7 +25,12 @@ def t(key, **kwargs):
     Supports variables via kwargs (e.g., t("HI", name="Alice")).
     If key is not found, returns the key itself.
     """
-    translations = _load_translations()
+    # Get file modification time to use as cache key
+    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    json_path = os.path.join(base_path, "locales", "ja.json")
+    mtime = os.path.getmtime(json_path) if os.path.exists(json_path) else 0
+
+    translations = _load_translations(mtime)
     val = translations.get(key, key)
     
     if kwargs and isinstance(val, str):
