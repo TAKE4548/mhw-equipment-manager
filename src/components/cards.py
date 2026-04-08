@@ -105,7 +105,7 @@ def inject_card_css():
         .v12-col-metric { display: flex; align-items: center; width: 100px; flex-shrink: 0; overflow: hidden; font-size: 0.75rem; justify-content: center; }
 
         .v12-sub-label { font-size: 0.65rem; color: #666; text-transform: uppercase; min-width: 60px; flex-shrink: 0; }
-        .v12-skill-label { font-size: 0.72rem; color: #555; overflow: hidden; text-overflow: ellipsis; width: 100%; display: flex; align-items: center; }
+        .v12-skill-label { font-size: 0.72rem; color: #888; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .v14-mode-long .v12-skill-label { font-size: 0.85rem; color: #888; } /* Larger skill text for Talismans */
 
         .v11-sep { color: #333; margin: 0 8px; font-weight: 300; flex-shrink: 0; }

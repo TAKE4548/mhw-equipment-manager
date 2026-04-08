@@ -312,8 +312,8 @@ def render_active_tracker_list(master, eq_df, user_id):
             col_c = "#ff4b4b" if rem <= 1 else ("#f39c12" if rem < 5 else "#27ae60")
             
             # REQ-026: Unify count position (Metric) and Comparison Bar position (Spec)
-            # Simplified sub_text to prioritize the comparison bar
-            sub_text = f"<span style='opacity:0.5; margin-right:10px;'>{row['current_series_skill']} / {row['current_group_skill']}</span> {comp_html}"
+            # Improved opacity for visibility and removed redundant separator
+            sub_text = f"<span style='opacity:0.8; margin-right:12px;'>{row['current_series_skill']} / {row['current_group_skill']}</span> {comp_html}"
             metric_html = f"<b style='color:{col_c};'>あと{rem}回</b>"
             
             from src.components.cards import CARD_ACTION_RATIO, render_slim_card
