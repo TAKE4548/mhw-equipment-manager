@@ -23,3 +23,9 @@ description: >
 2. Order the tasks based on module dependencies (e.g., models -> logic -> UI layer).
 3. Determine the testing strategy for each subtask (unit test vs manual/browser test).
 4. Outline the exact test cases and manual test scenarios to be written.
+
+## MANDATORY GATE: Open Questions
+If the implementation plan contains any **Open Questions** (質問項目) that require user clarification or decision:
+- **ONE-ACTION POLICY**: Presenting the plan with these questions MUST be the only action in your turn. 
+- **STOP IMMEDIATELY**: Do NOT proceed to execute any implementation tools (e.g., `task-tdd-implementation`) in the same turn.
+- You MUST wait for the user's explicit response to the questions before proceeding.

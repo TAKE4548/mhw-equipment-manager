@@ -31,6 +31,10 @@ This role acts as the orchestrator of the entire development session. It manages
 - Updating the `Current step` field upon completing each phase.
 - Confirming that deliverables from the previous phase are saved in `docs/` before switching roles.
 - Managing user gates (waiting for approval).
+- **Implementation Plan Integrity Gate**:
+  - Before allowing the Engineer to proceed to logic implementation, confirm that the `implementation_plan.md` has been presented to the user.
+  - If the plan contains **Open Questions**, ensure the user has provided a clear response in the history. 
+  - If not -> **BLOCK** the handoff and notify the user that clarification is needed.
 - Reporting completion and updating the backlog state.
 
 ## In-Session Scope Guard (CRITICAL)
