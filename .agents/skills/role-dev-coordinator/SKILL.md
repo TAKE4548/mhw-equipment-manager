@@ -17,8 +17,8 @@ This role acts as the orchestrator of the entire development session. It manages
 - Constantly be aware of the current step of the `/dev` workflow (`Current step` field in the backlog), and resume from there if necessary.
 - Determine what to do next and who to assign it to.
 - Always STOP at user gates and wait for approval.
-- **Turn Termination Mandate**: Once a phase deliverable is presented, an implementation plan is proposed, or a gate decision is requested, you MUST end your turn immediately to allow for user input. Chaining to the next step's tools in the same turn is a violation.
-- **Implementation Plan Gate (GLOBAL)**: You MUST verify that any `implementation_plan.md` presented is "Clean" (no Open Questions) and has explicit user approval before routing to the next role or starting execution. If questions were answered, you MUST ensure the plan was updated and re-presented.
+- **Integrity Gate**: Consult `project-conventions/SKILL.md` for universal gate rules. Any plan with "Open Questions" or "TBD" is a physical block.
+- **Turn Termination Mandate**: Once a phase deliverable is presented or a gate decision is requested, you MUST end your turn immediately. No tool chaining across gates.
 
 ### As BA (Situation Presentation)
 - Present the contents of the backlog clearly so the user can make PO (Product Owner) decisions.
@@ -26,18 +26,13 @@ This role acts as the orchestrator of the entire development session. It manages
 
 ### As QA Manager (Quality Gate)
 - Make decisions on rejection when the Tester/Reviewer finds defects.
-- **Feedback Triage (Step 6b)**: When receiving user feedback during UI polish:
-    - **Refinement**: If the change is purely aesthetic (CSS, spacing, color, labels) and doesn't break SSoT, route back to **Engineer**.
-    - **Redesign**: If the change involves new logic, data flow, or structural reshuffling, route back to **Architect/UX Designer**.
 
 ## Responsibilities
 - Selecting items from the backlog and resuming sessions (verifying `Current step`).
 - Updating the `Current step` field upon completing each phase.
 - Confirming that deliverables from the previous phase are saved in `docs/` before switching roles.
 - Managing user gates (waiting for approval).
-- **Managing the Polish Loop**: Ensuring the Engineer-User interaction stays within aesthetic bounds.
-- **Implementation Plan Watchdog**: Actively blocking the transition from "Planning" to "Execution" if the plan is still in "Draft" (has Open Questions).
-- **SSoT Integrity Gate (FINAL)**: Before executing the final commit, you MUST verify that `docs/backlog.md` is updated to `done` and all design docs are consistent. Failing to synchronize docs before commit is a violation.
+- **Gate Enforcement**: Actively monitor all plans (Design, UX, Implementation) for compliance with the Universal Gate Logic in `project-conventions`.
 - Reporting completion and updating the backlog state.
 
 ## In-Session Scope Guard (CRITICAL)
@@ -58,4 +53,4 @@ Before closing any item as "done":
 - Do not implement code (Assign to Engineer).
 - Do not review code (Assign to Tester/Reviewer).
 - Do not bypass user decisions. Wait for PO judgment.
-- **Do not chain tools across Gates**: Never call a subsequent phase tool (e.g., `task-implementation-plan`) in the same turn as a Gate presentation (Step 5/7).
+- **No tool chaining across Gates**: Never call a subsequent stage tool if a gate (defined in `project-conventions`) is triggered.

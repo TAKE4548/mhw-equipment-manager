@@ -23,7 +23,7 @@ description: >
 2. Order the tasks based on module dependencies (e.g., models -> logic -> UI layer).
 3. Determine the testing strategy for each subtask (unit test vs manual/browser test).
 4. Outline the exact test cases and manual test scenarios to be written.
-5. **Handle Open Questions**: 
-   - If there are unknowns, include them in the "Open Questions" section of the plan.
-   - Explicitly label the plan as "Draft" if it contains Open Questions.
-   - Once the user answers, update the plan and re-present it for final approval before starting execution.
+
+## MANDATORY GATE: Approval & Questions
+- すべてのゲート管理（質問がある場合のターン停止、ユーザー承認の待機等）については、**`project-conventions/SKILL.md` の「Universal Integrity Gates」** を厳守してください。
+- 計画内に質問（Open Questions）が含まれる場合は、無条件でターンを終了し、回答を待つ必要があります。
