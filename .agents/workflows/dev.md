@@ -46,8 +46,9 @@ Step 5: [Role: Dev Coordinator]
   - [ ] `docs/designs/{feature-name}.md` contains Architecture, Data Flow, and Testing Requirements.
   - [ ] (If UI changes) `docs/ui_spec.md` is updated with specific interaction flows.
 - Present the Architect's technical design AND the UX Designer's UI spec to the user.
-- **MANDATORY STOP: Wait for user approval.**
-- **DO NOT proceed to Step 6** until the user provides an affirmative word (e.g., "approve", "OK", "進めて").
+- **MANDATORY STOP & TURN-END**:
+    - **One-Action Policy**: This presentation MUST be the final action of your current turn. Do NOT call `task-implementation-plan` or any other tool in the same turn.
+    - **Wait for user approval**: Do NOT proceed until the user provides an affirmative word (e.g., "OK", "進めて").
 - Update `Current step` to `Step 5`.
 - If the user rejects the logic -> return to Step 3. If they reject the UI -> return to Step 4.
 
@@ -64,7 +65,9 @@ Step 7: [Role: Tester/Reviewer]
   - [ ] Engineer has provided Browser Debug Results (for UI tasks).
 - Execute `task-code-review`.
 - **IMPORTANT:** The Engineer MUST NOT self-review. Only the Tester/Reviewer role can issue a review verdict. 
-- **MANDATORY OUTPUT:** Output a standalone message with a clear **Review Verdict (Pass/Fail)** and specific evidence check results.
+- **MANDATORY TURN-END**: 
+    - Output the **Review Verdict (Pass/Fail)** as a standalone message and then END your turn immediately.
+    - Do NOT proceed to Step 8 in the same turn.
 - **DO NOT proceed to Step 8** without a "Pass" verdict.
 
 Step 8: [Role: Dev Coordinator]

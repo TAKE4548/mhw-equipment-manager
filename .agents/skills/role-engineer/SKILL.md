@@ -15,12 +15,16 @@ description: >
   > Logic implementation MUST be verified with **unit tests**. 
   > UI component behavior and interactions (e.g. "1-click close") MUST be verified by a **browser sub-agent (manual tests)**. Do not mix their responsibilities.
 
+## MANDATORY THOUGHT PATTERN
+Before performing any tool calls, perform this gate check in your `<thought>` block:
+- `[GATE CHECK] 対象機能の設計（docs/designs/*.md）が提示され、ユーザーからの「承認/OK」が履歴に実在することを確認した。`
+
 ## Handoff Acceptance Check (受入検査)
 Before writing a single line of code, verify ALL of the following. If any item is NO → STOP and notify the Dev Coordinator. Reject the task.
 - [ ] `docs/designs/{feature-name}.md` exists AND contains clear **Testing Requirements** (Unit vs Manual differentiation).
 - [ ] `docs/designs/{feature-name}.md` is consistent with `docs/architecture.md`.
 - [ ] `docs/backlog.md` has clear **Acceptance Criteria (AC)** for this item.
-- [ ] User approval on the design was confirmed in the session history.
+- [ ] **Conversational Approval**: You have verified in the conversation history that the user has provided positive feedback (e.g., "OK", "Approve", "進めて") *after* the latest design doc was presented.
 - [ ] (If UI-related) `docs/ui_spec.md` has been updated with detailed interaction specifications.
 
 ## Technical Impasse Protocol

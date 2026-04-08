@@ -13,6 +13,10 @@ description: >
 - Always refer to `docs/design_system.md` to unify the tone and manners of the entire project (e.g., extremely slim margins, 1-click confirm feedback).
 - Propose solutions based on professional design principles such as affordance and Fitts's law.
 
+## MANDATORY THOUGHT PATTERN
+Before performing any tool calls, perform this gate check in your `<thought>` block:
+- `[GATE CHECK] 直前のフェーズ（バックログ選択またはアーキテクト設計）が完了していることを確認した。`
+
 ## Handoff Acceptance Check (受入検査)
 作業開始前に以下を検証してください。充足されない場合は作業を拒否し、前工程に差し戻してください。
 - [ ] バックログ項目が `ready` になり、対象が明確であるか。

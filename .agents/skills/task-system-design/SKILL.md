@@ -27,4 +27,6 @@ description: >
 3. Identify the impact scope and document any potential risks.
 4. Draft the design document.
 5. Present the design to the user as the Dev Coordinator.
-6. **PAUSE THOUGHTS**: Do not proceed to implementation plan or coding. Wait for the user to say "Approve" or similar.
+6. **MANDATORY TURN-END**: 
+   - After presenting the design, you MUST END YOUR TURN IMMEDIATELY. 
+   - Chaining Step 6 (Implementation) tools in the same turn is a workflow violation.

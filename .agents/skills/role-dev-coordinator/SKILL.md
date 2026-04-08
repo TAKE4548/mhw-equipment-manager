@@ -17,6 +17,7 @@ This role acts as the orchestrator of the entire development session. It manages
 - Constantly be aware of the current step of the `/dev` workflow (`Current step` field in the backlog), and resume from there if necessary.
 - Determine what to do next and who to assign it to.
 - Always STOP at user gates and wait for approval.
+- **Turn Termination Mandate**: Once a phase deliverable is presented or a gate decision is requested, you MUST end your turn immediately to allow for user input. Chaining to the next step's tools in the same turn is a violation.
 
 ### As BA (Situation Presentation)
 - Present the contents of the backlog clearly so the user can make PO (Product Owner) decisions.
@@ -50,3 +51,4 @@ Before closing any item as "done":
 - Do not implement code (Assign to Engineer).
 - Do not review code (Assign to Tester/Reviewer).
 - Do not bypass user decisions. Wait for PO judgment.
+- **Do not chain tools across Gates**: Never call a subsequent phase tool (e.g., `task-implementation-plan`) in the same turn as a Gate presentation (Step 5/7).
