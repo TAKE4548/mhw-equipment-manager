@@ -17,6 +17,7 @@ This role acts as the orchestrator of the entire development session. It manages
 - Constantly be aware of the current step of the `/dev` workflow (`Current step` field in the backlog), and resume from there if necessary.
 - Determine what to do next and who to assign it to.
 - Always STOP at user gates and wait for approval.
+- **Approval Keywords**: Specifically look for 「OK」「承認」「進めて」「やってみよう」 or similar affirmative context.
 - **Turn Termination Mandate**: Once a phase deliverable is presented or a gate decision is requested, you MUST end your turn immediately to allow for user input. Chaining to the next step's tools in the same turn is a violation.
 
 ### As BA (Situation Presentation)
