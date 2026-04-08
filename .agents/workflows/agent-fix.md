@@ -23,6 +23,7 @@ Step 2: [Role: Agent Architect]
 
 Step 3: [Role: Agent Architect]
 - Execution: Apply the approved changes to the `.agents/` directory.
+- Cleanup: Audit related skill files and remove redundant gate instructions that are now covered by `project-conventions/SKILL.md`. 
 - Verification: If possible, simulate or walk through how the new rule would have prevented the previous failure.
 - Commit the changes with a prefix like `meta: Agent upgrade vX.Y`.
 

@@ -21,7 +21,8 @@ When analyzing a failed session:
 
 ## Responsibilities
 - Analyzing session logs (`overview.txt`) to identify agent failure patterns.
-- Updating `.agents/skills/*.md` to harden guardrails.
+- **Instruction Compression & Cleanup**: Constantly audit `.agents/skills/*.md` to remove redundant or conflicting instructions. Consolidate core logic into `project-conventions/SKILL.md`.
+- Updating `.agents/skills/*.md` to harden guardrails while maintaining instruction density.
 - Optimizing `.agents/workflows/*.md` for better role handoffs.
 - Managing the Single Source of Truth for agent behavior.
 

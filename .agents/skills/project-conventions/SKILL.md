@@ -5,33 +5,32 @@ description: "Project conventions. ALL IMPLEMENTATION PLANS MUST BE IN JAPANESE.
 
 # Project conventions
 
-## General Guardrails (Interrupt Prevention)
-- **NO ACCESS TO UNRELATED FILES:** Do not read or analyze files (e.g., source code or design docs of other features) that are not directly related to the current phase or task.
-- **NO OUT-OF-BACKLOG EXECUTION:** Do not start any implementation or write code that is not explicitly registered in `docs/backlog.md` and approved by the user. If a technical solution is conceived during conversation, first guide the user to add it to the backlog.
+## 1. Universal Integrity Gates (CRITICAL)
+これらのルールは、他のいかなるスキルやワークフローの指示よりも優先される最上位の行動規範です。
 
-## Planning Mode Override (CRITICAL / ABSOLUTE)
-- **FORCE INTAKE PERSONA:** On every turn, if a user makes a request (starting with words like "直して", "いまいち", "どうにかして"), you MUST first act as the **Business Analyst (BA)**.
-- **NO "TRIVIALLY SIMPLE" IMPLEMENTATION:** You are strictly FORBIDDEN from making any code changes (.py, .css, etc.) or executing implementing plans during the intake phase, no matter how simple the request seems.
-- **MANDATORY LOGGING:** Your only allowed "action" for a request is updating `docs/backlog.md`.
-- **RESEARCH LOCK:** Do not use `view_file` or `grep_search` on any source code files during intake. ONLY refer to `docs/backlog.md` and `docs/architecture.md`.
+### 1-1. Draft Status & Approval Gate
+以下の条件に当てはまる成果物（設計書、UX仕様書、実装プラン）は「ドラフト（未承認）」とみなされます。
+- 内容に "質問", "Open Question", "未定", "TBD" 等が含まれている。
+- ユーザーからの明示的な「OK」「承認」「進めて」等の合意が履歴にない。
 
-## /dev Workflow Governance (CRITICAL)
-- **MANDATORY PHASED PLANNING:** When a `/dev` session is initiated, you are FORBIDDEN from creating a one-shot "Implementation Plan" that covers coding (Step 6) before finishing the Design Phase (Step 3-4).
-- **MILESTONE ENFORCEMENT:** Your `task.md` MUST use the exact step names and numbers from `.agents/workflows/dev.md` (e.g., `Step 3: Architect Design`).
-- **APPROVAL GATES:** You must treat Step 5 ("User Approval") as a physical block. You cannot proceed to Step 6 without a user's explicit "OK" on the design artifacts (`docs/designs/*.md`, `docs/ui_spec.md`).
-- **ROLE ANNOUNCEMENT:** At the start of every step, you must explicitly state your current role (e.g., `[Role: Architect]`).
+### 1-2. Mandatory Turn-End (One-Action Policy)
+- ドラフト状態の成果物を提示した際、または承認が必要なフェーズ（Step 5/Step 6のプラン提示等）では、**必ずそのターンの最後で処理を終了**しなければなりません。
+- 同一ターン内で、承認を前提としたツール（`run_command`, `task-tdd-implementation`等）を呼び出してはなりません。
 
-## Language of Artifacts (CRITICAL)
-- **IMPLEMENTATION PLANS MUST BE IN JAPANESE:** Any `implementation_plan.md` artifact created for user approval (Intake, Design review) MUST be written in **Japanese**.
-- **INTERNAL DOCUMENTS:** Tech specs like `docs/designs/xxx.md` or `docs/ui_spec.md` can remain in English for high technical precision unless otherwise requested.
+## 2. General Guardrails
+- **NO ACCESS TO UNRELATED FILES:** 現在の作業に直接関係のないコードや設計図（他機能のもの）を好奇心で読み込まない。
+- **NO OUT-OF-BACKLOG EXECUTION:** `backlog.md` に未登録、または未着手のタスクを勝手に実装しない。
+- **BA-FIRST INTAKE:** ユーザーの要望（「直して」「おかしい」等）に対して、いきなりコードを書き始めない。まず Business Analyst として状況を整理し、バックログを更新する。
 
-## Semantic Trigger Precedence
-- If a user's comment contains mix of "Usability requests" (e.g. "使いにくい") and "Error reports" (e.g. "エラーが出る"), **prioritize `hotfix-triage`** to address the defect (hearing and classifying) first.
+## 3. /dev Workflow Governance
+- **Milestone Enforcement:** `task.md` には `dev.md` の公式ステップ名（例：`Step 3: Architect Design`）をそのまま使用する。
+- **Role Announcement:** ロールを切り替えた直後、またはステップの開始時に `[Role: XXX]` を明示する。
+- **SSoT Integrity:** 実装が完了したら、必ず `docs/*.md`（仕様書）を最新の実装状態と同期させた上で、バックログを `done` にする。
 
-## Role Switching & Handoff Protocol
-- Before switching roles, immediately save the outputs of the current role to the `docs/` directory.
-- When switching a role, explicitly declare it (e.g., `[Role: Architect]`).
-- On handoff, the Dev Coordinator must update the `Current step` field in the backlog to prepare for potential interruption and resume.
+## 4. Language of Artifacts
+- **IMPLEMENTATION PLANS MUST BE IN JAPANESE:** ユーザー承認を仰ぐための `implementation_plan.md` は必ず**日本語**で作成すること。
+- **Internal Docs:** `docs/designs/*.md` や `docs/ui_spec.md` は、技術的正確性を期すため、指示がない限り英語で記述して良い。
 
-## Expected Shared State
-- `docs/backlog.md` is the single source of truth connecting all workflows.
+## 5. Context Optimization (Defrag Rule)
+- 複数のファイルに似た指示がある場合、常にこの `project-conventions` の定義を正とする。
+- アーキテクトは、冗長な指示を積極的に削除・統合し、指示の「密度と実行力」を維持しなければならない。
