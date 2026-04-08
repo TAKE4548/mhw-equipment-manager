@@ -17,6 +17,9 @@ Step 1: [Role: Dev Coordinator]
 - The user selects an item (PO decision).
 - Update the item's status to `in-progress` and `Current step` to `Step 1`.
 - Determine the starting step based on the item type (e.g., jump to Step 6 for a minor fix, or Step 3 for a new enhancement).
+- **Git Branching:** 
+  - Create and switch to a new feature branch: `git checkout -b <feat/fix>/REQ-XXX`.
+  - Confirm the branch is created before proceeding.
 
 Step 2: [Role: Dev Coordinator]
 - **Deliverables Verification Check:**
@@ -71,6 +74,10 @@ Step 8: [Role: Dev Coordinator]
   3. Update any stale documents NOW.
 - **Walkthrough Creation:** Create the walkthrough ONCE at this step only. Do NOT create or update walkthroughs before Step 8. Mid-session progress notes should go in `task.md` comments, not in `walkthrough.md`.
 - Handle the review outcome.
-- On success: Update `docs/backlog.md` status to `done`, append date, and set `Current step` to `none`.
+- On success: 
+  - **Git Committing:** 
+    - Commit all changes: `git add . && git commit -m "<type>: implement REQ-XXX - [Short Description]"`.
+    - Present the commit hash to the user.
+  - Update `docs/backlog.md` status to `done`, append date, and set `Current step` to `none`.
 - Update `docs/architecture.md` if the overarching structure has changed.
-- Present a final completion summary to the user.
+- Present a final completion summary to the user, including instructions on how to merge the branch.

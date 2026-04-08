@@ -4,8 +4,10 @@ import altair as alt
 from src.logic.equipment_box import load_equipment, ATTRIBUTE_COLORS
 from src.components.sidebar import render_shared_sidebar
 from src.logic.master import get_master_data
+from src.components.cards import inject_card_css
 
-st.set_page_config(page_title="分析ダッシュボード", page_icon="📊", layout="wide")
+st.set_page_config(page_title="分析統計", page_icon="📊", layout="wide")
+inject_card_css()
 
 # Sidebar & Handshake
 render_shared_sidebar()
@@ -14,7 +16,7 @@ if not st.session_state.get('mhw_ready') and not st.session_state.get('user'):
     st.info("⏳ データを読み込み中...")
     st.stop()
 
-st.title("所有アーティア分析ダッシュボード 📊")
+st.title("分析統計 📊")
 st.markdown("所持している武器の傾向を統計的に分析し、今後の厳選の参考にします。")
 
 df_raw = load_equipment()

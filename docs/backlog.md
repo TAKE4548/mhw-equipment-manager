@@ -101,7 +101,8 @@ This document is the Single Source of Truth for all feature requests, bug report
 - **Note**: アイコンアセットは着手時にユーザーより提供される。こちらで必要アセットのたたき台（仕様策定含む）を作成する場合がある。UX デザイナーとの連携も視野に入れる。
 
 ### REQ-009: ページ構成とナビゲーションの再設計 (UX Consultation)
-- **Status**: new
+- **Status**: in-progress
+- **Current Step**: Step 5
 - **Type**: enhancement
 - **Priority**: high
 - **Source**: "Homeをダッシュボードにしているが、ダッシュボードの使い道がそこまで重要ではないので、ページナビゲーションなどどのようなページ構成が使いやすいかUXデザイナーと相談して設定したい。"
