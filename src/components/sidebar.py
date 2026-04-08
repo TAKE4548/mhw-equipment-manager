@@ -23,11 +23,11 @@ def render_shared_sidebar():
 
         # --- Debug Display ---
         info = get_debug_info()
-        with st.expander("🔍 デバッグ情報", expanded=True):
+        with st.sidebar.expander("🔍 デバッグ情報", expanded=False):
             st.write(f"Cookie 書き込み済み: `{info['cookie_exists']}`")
             st.write(f"再保存リクエスト: `{info['needs_persist']}`")
             st.write(f"Cookie サイズ: `{info['cookie_size_bytes']} bytes`")
-            st.write(f"武器: `{info['weapons_count']}件 / 抽選: `{info['upgrades_count']}件` / トラッカー: `{info['trackers_count']}件`")
+            st.write(f"武器: `{info['weapons_count']}件` / 抽選: `{info['upgrades_count']}件` / トラッカー: `{info['trackers_count']}件`")
 
         render_auth_component()
         st.divider()

@@ -10,6 +10,7 @@ from src.components.sidebar import render_shared_sidebar
 from src.components.cards import inject_card_css, render_slim_card
 from src.components.auth import get_current_user_id
 from src.logic.history import undo_last_action, redo_last_action, get_history
+from src.components.common import render_lean_header, render_item_count
 
 st.set_page_config(page_title="鑑定護石管理", page_icon="📿", layout="wide")
 inject_card_css()
@@ -200,29 +201,16 @@ def edit_talisman_dialog(talisman_id: str, user_id: str):
                 st.error("保存に失敗しました。")
 
 # --- 4. Main App UI ---
-st.title("鑑定護石管理 📿")
-st.markdown("マカ錬金の「鑑定」で入手した護石を登録・管理します。")
+render_lean_header("鑑定護石管理", "マカ錬金で入手した護石の登録・検索・お気に入り管理を行います。", icon="📿")
  
 user_id = get_current_user_id()
-
-# History
-h1, h2, h3 = st.columns([1, 1, 6])
-u, r = get_history()
-with h1:
-    if st.button("Undo ↩️", disabled=not u, use_container_width=True):
-        if undo_last_action(): st.rerun()
-with h2:
-    if st.button("Redo ↪️", disabled=not r, use_container_width=True):
-        if redo_last_action(): st.rerun()
-
-st.divider()
 
 # Registration Form
 @st.fragment
 def render_registration_form(user_id):
-    with st.expander("➕ 新しい鑑定護石を登録する", expanded=True):
+    with st.expander("➕ 新しい鑑定護石を登録する", expanded=False):
         f = st.session_state["r_form"]
-        st.markdown("#### 1. レア度とスキル構成")
+        # st.markdown("**1. レア度とスキル構成**")
         
         # Rarity (The Root)
         opts = [None, 5, 6, 7, 8]
@@ -233,7 +221,7 @@ def render_registration_form(user_id):
             reset_from_rarity()
             st.rerun()
             
-        st.info("スキルを左から順に決定してください。上流を変更すると下流はリセットされます。")
+        # st.info("スキルを左から順に決定してください。上流を変更すると下流はリセットされます。")
         c1, c2, c3 = st.columns(3)
         
         def skill_btn(idx, disabled=False):
@@ -248,8 +236,7 @@ def render_registration_form(user_id):
         with c2: skill_btn(2, disabled=(f["rarity"] is None or f["s1_name"] == "なし"))
         with c3: skill_btn(3, disabled=(f["rarity"] is None or f["s2_name"] == "なし"))
 
-        st.divider()
-        st.markdown("#### 2. スロット構成")
+        # st.markdown("**2. スロット構成**")
         
         # Context for slots
         s_tuples = []
@@ -309,18 +296,15 @@ def render_registration_form(user_id):
 
 render_registration_form(user_id)
 
-st.divider()
-
 @st.fragment
 def render_talisman_list(user_id):
-    st.subheader("所持護石一覧")
     df = load_talismans(user_id)
     if df.empty:
         st.info("登録済みの護石はありません。")
         return
 
     # --- Filter & Sort UI ---
-    with st.expander("🔍 絞り込み・並べ替え"):
+    with st.expander("🔎 所持護石を絞り込む・並べ替え", expanded=False):
         c1, c2 = st.columns([1, 2])
         with c1:
             st.multiselect("レア度", [5, 6, 7, 8], key="f_rarity")
@@ -358,41 +342,46 @@ def render_talisman_list(user_id):
         st.warning("条件に一致する護石が見つかりませんでした。")
         return
 
-    st.caption(f"該当件数: {len(df)} 件")
+    # --- Main Results Table ---
+    render_item_count(len(df))
     
-    def sc(v, is_w=False):
-        if pd.isna(v) or v == 0: return "ー"
-        if is_w: return f"[{int(v)}]"
-        return {1:"①", 2:"②", 3:"③", 4:"④"}.get(int(v), "ー")
+    # Localize high-density layout to ONLY the list container
+    with st.container():
+        st.markdown('<div class="v12-dense-list" style="display:none"></div>', unsafe_allow_html=True)
+        # Grid of talismans
+        def sc(v, is_w=False):
+            if pd.isna(v) or v == 0: return "ー"
+            if is_w: return f"[{int(v)}]"
+            return {1:"①", 2:"②", 3:"③", 4:"④"}.get(int(v), "ー")
 
-    # --- Pre-calculate visual info (O(N) outside render loop) ---
-    def build_row_info(row):
-        s_txt = " / ".join([f"{row[f'skill_{i}_name']} Lv{row[f'skill_{i}_level']}" 
-                           for i in [1,2,3] if pd.notna(row[f'skill_{i}_name']) and row[f'skill_{i}_name'] != ""])
-        w_sl = sc(row.get('weapon_slot_level', 0), True) if row.get('weapon_slot_level', 0) > 0 else ""
-        a_sl = "".join([sc(row.get(f'armor_slot_{i}_level', 0)) for i in [1,2,3]])
-        sl_txt = f"Slot: {w_sl}{a_sl}"
-        bg = "#e74c3c" if row['rarity'] == 8 else "#9b59b6" if row['rarity'] == 7 else "#3498db"
-        badge = f'<div style="background:{bg}; color:white; padding:2px 6px; border-radius:4px; font-weight:bold; width:max-content;">R{row["rarity"]}</div>'
-        return s_txt, sl_txt, badge
+        # --- Pre-calculate visual info (O(N) outside render loop) ---
+        def build_row_info(row):
+            s_txt = " / ".join([f"{row[f'skill_{i}_name']} Lv{row[f'skill_{i}_level']}" 
+                               for i in [1,2,3] if pd.notna(row[f'skill_{i}_name']) and row[f'skill_{i}_name'] != ""])
+            w_sl = sc(row.get('weapon_slot_level', 0), True) if row.get('weapon_slot_level', 0) > 0 else ""
+            a_sl = "".join([sc(row.get(f'armor_slot_{i}_level', 0)) for i in [1,2,3]])
+            sl_txt = f"Slot: {w_sl}{a_sl}"
+            bg = "#e74c3c" if row['rarity'] == 8 else "#9b59b6" if row['rarity'] == 7 else "#3498db"
+            badge = f'<div style="background:{bg}; color:white; padding:2px 6px; border-radius:4px; font-weight:bold; width:max-content;">R{row["rarity"]}</div>'
+            return s_txt, sl_txt, badge
 
-    results = df.apply(build_row_info, axis=1)
-    df['disp_skill'], df['disp_slot'], df['disp_badge'] = zip(*results)
+        results = df.apply(build_row_info, axis=1)
+        df['disp_skill'], df['disp_slot'], df['disp_badge'] = zip(*results)
 
-    for _, row in df.iterrows():
-        from src.components.cards import CARD_ACTION_RATIO
-        c1, c2 = st.columns(CARD_ACTION_RATIO, vertical_alignment="center")
-        with c1:
-            render_slim_card(row['disp_badge'], row['disp_skill'], row['disp_slot'], "", mode="long-text")
-        with c2:
-            with st.popover("⋮", key=f"pop_t_{row['id']}"):
-                if st.button("⭐" if row.get('is_favorite', False) else "☆", key=f"f_{row['id']}", use_container_width=True):
-                    toggle_talisman_fav(row['id'], user_id=user_id)
-                    st.rerun()
-                if st.button("✏️", key=f"e_{row['id']}", use_container_width=True):
-                    edit_talisman_dialog(row['id'], user_id)
-                if st.button("🗑️", key=f"d_{row['id']}", type="primary", use_container_width=True):
-                    delete_talisman(row['id'], user_id=user_id)
-                    st.rerun()
+        for _, row in df.iterrows():
+            from src.components.cards import CARD_ACTION_RATIO
+            c1, c2 = st.columns(CARD_ACTION_RATIO, vertical_alignment="center")
+            with c1:
+                render_slim_card(row['disp_badge'], row['disp_skill'], row['disp_slot'], "", mode="long-text")
+            with c2:
+                with st.popover("⋮", key=f"pop_t_{row['id']}"):
+                    if st.button("⭐" if row.get('is_favorite', False) else "☆", key=f"f_{row['id']}", use_container_width=True):
+                        toggle_talisman_fav(row['id'], user_id=user_id)
+                        st.rerun()
+                    if st.button("✏️", key=f"e_{row['id']}", use_container_width=True):
+                        edit_talisman_dialog(row['id'], user_id)
+                    if st.button("🗑️", key=f"d_{row['id']}", type="primary", use_container_width=True):
+                        delete_talisman(row['id'], user_id=user_id)
+                        st.rerun()
 
 render_talisman_list(user_id)

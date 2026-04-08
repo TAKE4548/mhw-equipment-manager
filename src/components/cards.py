@@ -14,10 +14,40 @@ def inject_card_css():
     st.markdown("""
         <style>
         /* v14: CONTEXT-AWARE SMART HUD (Weapons & Talismans) */
+        
+        /* 0. Global Lean UI Adjustments */
+        [data-testid="stForm"] {
+            padding: 1rem !important;
+        }
+
+        /* Lean Separator */
+        .lean-sep {
+            border-top: 1px solid #333;
+            margin: 0.5rem 0;
+            width: 100%;
+        }
+
+        /* Heading Margin Compression (Polished for balance) */
+        h1, h2, h3, h4, h5 {
+            margin-top: 1.5rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+
+        /* Force standard gap for expanders to prevent cramped controls */
+        div[data-testid="stExpander"] div[data-testid="stVerticalBlock"] {
+            gap: 1rem !important;
+        }
 
         /* 0. List Container Setup */
-        div[data-testid="stVerticalBlock"]:has(.v12-marker) {
+        /* Only apply 2px gap to vertical blocks that are specifically intended for lists.
+           We place this AFTER the expander rule to ensure lists inside expanders can still be dense. */
+        div[data-testid="stVerticalBlock"]:has(> div > div > div > div > .v12-dense-list) {
             gap: 2px !important;
+        }
+
+        /* Ensure the main page block remains roomy (Streamlit standard) */
+        section.main > div > div > div > div[data-testid="stVerticalBlock"] {
+            gap: 1.5rem !important;
         }
         
         [data-testid="stHorizontalBlock"]:has(.v12-marker) {

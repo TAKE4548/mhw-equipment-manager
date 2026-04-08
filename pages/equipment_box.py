@@ -13,8 +13,9 @@ from src.components.sidebar import render_shared_sidebar
 from src.components.cards import inject_card_css, render_slim_card, get_badge_html
 from src.components.pickers import render_skill_picker
 from src.components.auth import get_current_user_id
+from src.components.common import render_lean_header, render_item_count, render_item_count
 
-st.set_page_config(page_title="所有巨戟アーティア一覧", page_icon="📦", layout="wide")
+st.set_page_config(page_title="所有武器台帳", page_icon="📦", layout="wide")
 inject_card_css()
 
 # Deleted render_skill_selector_with_toggle as it is replaced by render_skill_picker
@@ -106,7 +107,7 @@ def edit_equipment_dialog(row, user_id):
                 st.rerun()
             else: st.error("更新に失敗しました。")
 
-# Render shared sidebar (also performs browser boot handshake)
+# Render shared sidebar
 render_shared_sidebar()
 
 # Wait for localStorage data to be available
@@ -116,36 +117,16 @@ if not st.session_state.get('mhw_ready') and not st.session_state.get('user'):
 
 from src.logic.history import undo_last_action, redo_last_action, get_history
 
-st.title("所持武器台帳 🎒")
-st.markdown("武器を登録・管理し、強化状況をトラッキングします。")
+render_lean_header("所持武器台帳", "所持武器の登録・管理および強化状況の確認を行います。", icon="🎒")
  
 user_id = get_current_user_id()
 
-# History Controls
-h_col1, h_col2, h_col3 = st.columns([1, 1, 6])
-u_stack, r_stack = get_history()
-with h_col1:
-    if st.button("Undo ↩️", disabled=not u_stack, use_container_width=True):
-        if undo_last_action(): st.rerun()
-with h_col2:
-    if st.button("Redo ↪️", disabled=not r_stack, use_container_width=True):
-        if redo_last_action(): st.rerun()
-
-st.divider()
-
 @st.fragment
 def render_registration_section(master, user_id):
-    st.subheader("新しい武器を登録")
-    # Favorites for sorting
-    fav_series = get_favorite_list("series")
-    fav_groups = get_favorite_list("group")
-
-    p_bonus_opts = master.get("production_bonuses", [])
-    enhancement_opts = master.get("kyogeki_enhancements", [])
-
-    with st.expander("➕ 武器を新規登録する", expanded=False):
-        st.markdown("##### 基本情報")
-        weapon_name = st.text_input("武器の識別名 (任意)", placeholder="例: 火竜大剣用", key="reg_w_name")
+    exp_expanded = st.session_state.get("tracker_reg_w_id") is not None
+    
+    with st.expander("➕ 武器を新規登録する", expanded=exp_expanded):
+        weapon_name = st.text_input("識別名", placeholder="例: 火竜大剣用", key="reg_w_name")
         
         c1, c2, c3 = st.columns([2, 1, 1])
         with c1:
@@ -153,18 +134,18 @@ def render_registration_section(master, user_id):
         with c2:
             element = st.selectbox("Element", master.get("elements", []), key="reg_w_elem")
         with c3:
-            enhancement = st.selectbox("巨戟強化種別", enhancement_opts, key="reg_w_enh")
+            enhancement = st.selectbox("巨戟強化種別", master.get("kyogeki_enhancements", []), key="reg_w_enh")
 
-        st.markdown("##### 付与されているスキル (横並び表示)")
+        st.markdown("**付与されているスキル**")
         c_reg_s, c_reg_g = st.columns(2)
         with c_reg_s: current_series = render_skill_picker("シリーズスキル", master.get("series_skills", []), "series", "reg_s")
         with c_reg_g: current_group = render_skill_picker("グループスキル", master.get("group_skills", []), "group", "reg_g")
             
-        st.markdown("##### 生産ボーナス (必ず3枠設定)")
+        st.markdown("**生産ボーナス**")
         pc1, pc2, pc3 = st.columns(3)
-        with pc1: pb1 = st.selectbox("枠1", p_bonus_opts, key="reg_pb1")
-        with pc2: pb2 = st.selectbox("枠2", p_bonus_opts, key="reg_pb2")
-        with pc3: pb3 = st.selectbox("枠3", p_bonus_opts, key="reg_pb3")
+        with pc1: pb1 = st.selectbox("枠1", master.get("production_bonuses", []), key="reg_pb1")
+        with pc2: pb2 = st.selectbox("枠2", master.get("production_bonuses", []), key="reg_pb2")
+        with pc3: pb3 = st.selectbox("枠3", master.get("production_bonuses", []), key="reg_pb3")
         
         # Dynamic Restoration Options based on Weapon Type
         is_bow = ("弓" in w_type and "ボウガン" not in w_type)
@@ -183,7 +164,7 @@ def render_registration_section(master, user_id):
                 label = r_type if lv == "無印" else f"{r_type} [{lv}]"
                 dynamic_rest_options.append(label)
                 
-        st.markdown("##### 復元ボーナス (最大5枠)")
+        st.markdown("**復元ボーナス**")
         rc1, rc2, rc3, rc4, rc5 = st.columns(5)
         with rc1: rb1 = st.selectbox("枠1", dynamic_rest_options, key="reg_rb1")
         with rc2: rb2 = st.selectbox("枠2", dynamic_rest_options, key="reg_rb2")
@@ -217,18 +198,15 @@ def render_registration_section(master, user_id):
 master = get_master_data()
 render_registration_section(master, user_id)
 
-st.divider()
-
 @st.fragment
 def render_equipment_list(master, user_id):
-    st.subheader("検索とフィルタ 🔍")
     enhancement_opts = master.get("kyogeki_enhancements", [])
     p_bonus_opts = master.get("production_bonuses", [])
 
-    with st.expander("🔎 条件を指定して絞り込む", expanded=False):
+    with st.expander("🔎 条件を指定して絞り込む・並び替え", expanded=False):
         f_c1, f_c2, f_c3 = st.columns(3)
         with f_c1:
-            f_name = st.text_input("武器名で検索", placeholder="キーワード入力...", key="f_w_name_list")
+            f_name = st.text_input("武器名検索", placeholder="キーワード...", key="f_w_name_list")
             f_types = st.multiselect("武器種", master.get("weapon_types", []), key="f_w_types_list")
         with f_c2:
             f_elements = st.multiselect("属性", master.get("elements", []), key="f_w_elems_list")
@@ -242,7 +220,7 @@ def render_equipment_list(master, user_id):
         with sf_c2:
             f_groups = st.multiselect("グループスキル", [g['group_name'] for g in master.get("group_skills", []) if g['group_name'] != "なし"], key="f_w_grp_list")
 
-        st.markdown("##### ボーナスによる絞り込み")
+        st.markdown("**ボーナス絞り込み**")
         b_c1, b_c2 = st.columns(2)
         with b_c1:
             f_pbs = st.multiselect("生産ボーナス", p_bonus_opts, key="f_w_pbs_list")
@@ -253,47 +231,51 @@ def render_equipment_list(master, user_id):
                 for lv in lvs: f_rbs_opts.append(rt if lv == "無印" else f"{rt} [{lv}]")
             f_rbs = st.multiselect("復元ボーナス", f_rbs_opts, key="f_w_rbs_list")
 
-    st.subheader("所持武器一覧")
     df_raw = load_equipment(user_id)
     df = filter_equipment(df_raw, search_name=f_name, weapon_types=f_types, elements=f_elements, series_skills=f_series, group_skills=f_groups, enhancements=f_enhancements, production_bonuses=f_pbs, restoration_bonuses=f_rbs, sort_by=f_sort)
+
+    render_item_count(len(df))
 
     if df.empty:
         st.info("条件に一致する武器がありません。")
     else:
-        for index, row in df.iterrows():
-            elem = row['element']
-            bg = ATTRIBUTE_COLORS.get(elem, "#444")
-            txt_c = "black" if elem in ["氷", "雷", "無", "睡眠"] else "white"
-            badge_html = get_badge_html(elem, bgcolor=bg, color=txt_c)
-            
-            w_display = row['weapon_name'] if row['weapon_name'] and not str(row['weapon_name']).startswith("無銘の") else row['weapon_type']
-            
-            # Summary of bonuses
-            pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
-            rbs_with_lv = []
-            for i in range(1, 6):
-                rt, rl = row.get(f'rest_{i}_type', 'なし'), row.get(f'rest_{i}_level', 'なし')
-                if rt != 'なし': rbs_with_lv.append(f"{rt}{rl if rl and rl != '無印' else ''}")
-            
-            bonus_html = f"🛠️ {format_bonus_summary(pbs)} / ✨ {format_bonus_summary(rbs_with_lv)}"
-            sub_text = f"📋 {row['enhancement_type']} | 🛡️ {row['current_series_skill']} | 👥 {row['current_group_skill']}"
-            
-            from src.components.cards import CARD_ACTION_RATIO
-            col_card, col_act = st.columns(CARD_ACTION_RATIO, vertical_alignment="center")
-            with col_card:
-                render_slim_card(badge_html, w_display, sub_text, bonus_html, subtitle=row['weapon_type'])
+        # Localize high-density layout to ONLY the list container
+        with st.container():
+            st.markdown('<div class="v12-dense-list" style="display:none"></div>', unsafe_allow_html=True)
+            for index, row in df.iterrows():
+                elem = row['element']
+                bg = ATTRIBUTE_COLORS.get(elem, "#444")
+                txt_c = "black" if elem in ["氷", "雷", "無", "睡眠"] else "white"
+                badge_html = get_badge_html(elem, bgcolor=bg, color=txt_c)
                 
-            with col_act:
-                with st.popover("⋮", help="操作メニュー", use_container_width=True, key=f"pop_w_{row['id']}"):
-                    if st.button("✏️ 編集", key=f"edit_{row['id']}", use_container_width=True):
-                        edit_equipment_dialog(row, user_id)
-                    if st.button("🎯 強化厳選へ", key=f"tr_{row['id']}", use_container_width=True):
-                        st.session_state.tracker_reg_w_id = row['id']
-                        st.switch_page("pages/reinforcement_registration.py")
-                    st.divider()
-                    if st.button("🗑️ 削除", key=f"del_{row['id']}", type="primary", use_container_width=True):
-                        if delete_equipment(row['id'], user_id=user_id):
-                            st.toast("武器を削除しました。")
-                            st.rerun()
+                w_display = row['weapon_name'] if row['weapon_name'] and not str(row['weapon_name']).startswith("無銘の") else row['weapon_type']
+                
+                # Summary of bonuses
+                pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
+                rbs_with_lv = []
+                for i in range(1, 6):
+                    rt, rl = row.get(f'rest_{i}_type', 'なし'), row.get(f'rest_{i}_level', 'なし')
+                    if rt != 'なし': rbs_with_lv.append(f"{rt}{rl if rl and rl != '無印' else ''}")
+                
+                bonus_html = f"🛠️ {format_bonus_summary(pbs)} / ✨ {format_bonus_summary(rbs_with_lv)}"
+                sub_text = f"📋 {row['enhancement_type']} | 🛡️ {row['current_series_skill']} | 👥 {row['current_group_skill']}"
+                
+                from src.components.cards import CARD_ACTION_RATIO
+                col_card, col_act = st.columns(CARD_ACTION_RATIO, vertical_alignment="center")
+                with col_card:
+                    render_slim_card(badge_html, w_display, sub_text, bonus_html, subtitle=row['weapon_type'])
+                    
+                with col_act:
+                    with st.popover("⋮", help="操作メニュー", use_container_width=True, key=f"pop_w_{row['id']}"):
+                        if st.button("✏️ 編集", key=f"edit_{row['id']}", use_container_width=True):
+                            edit_equipment_dialog(row, user_id)
+                        if st.button("🎯 強化厳選へ", key=f"tr_{row['id']}", use_container_width=True):
+                            st.session_state.tracker_reg_w_id = row['id']
+                            st.switch_page("pages/reinforcement_registration.py")
+                        st.divider()
+                        if st.button("🗑️ 削除", key=f"del_{row['id']}", type="primary", use_container_width=True):
+                            if delete_equipment(row['id'], user_id=user_id):
+                                st.toast("武器を削除しました。")
+                                st.rerun()
 
 render_equipment_list(master, user_id)

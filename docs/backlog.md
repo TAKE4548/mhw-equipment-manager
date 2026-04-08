@@ -75,7 +75,8 @@ This document is the Single Source of Truth for all feature requests, bug report
     - リスト更新等の操作が、可能な限りページ全体ではなくフラグメント単位の再描画で完結している。
 
 ### REQ-007: UI のスリム化と視覚的密度の最適化 (Lean UI Design)
-- **Status**: new
+- **Status**: in-progress
+- **Current Step**: Step 5
 - **Type**: enhancement
 - **Priority**: high
 - **Source**: "ページレイアウト的にややスリム差に欠ける気がしている。Undo/Redoのボタンデザインとかセパレータが多すぎる感じとか"
@@ -241,3 +242,17 @@ This document is the Single Source of Truth for all feature requests, bug report
 - **Problem**: 不要なオーバーヘッドを発生させており、コーディング規約（PEP 8）にも反する。
 - **Acceptance Criteria**:
     - 描画パフォーマンスを最適化し、コードのクリーンさを保つ。
+ 
++### REQ-024: 復元強化厳選のページの登録時の武器選択UIの見直し
++- **Type**: enhancement
++- **Status**: new
++- **Current step**: none
++- **Priority**: P2
++- **Source**: "復元強化厳選のページの登録時の武器選択UIの見直し”としてバックログに記録はしておいて"
++- **Problem**: 現状の登録用武器選択 UI は、カードリストをエキスパンダー内に配置する形式をとっているが、対象武器が多い場合の選択コストや視認性に改善の余地がある。また、現在の「1カラム・リスト形式」では、多数の武器から一つを選ぶ際のスクロール量が多くなりがちである。
++- **Requirement**: 強化厳選作業のワークフローに最適化された、より効率的な武器選択 UI を検討・実装する。
++- **Acceptance criteria**:
++    - 登録対象の武器を素早く、かつ正確に特定・選択できる。
++    - 選択時の視覚的フィードバック（HUD システムとの整合性）が最適化されている。
++    - 画面占有率と操作ステップ数のバランスが改善されている（例：グリッド表示の検討、より洗練されたフィルターの導入等）。
++
