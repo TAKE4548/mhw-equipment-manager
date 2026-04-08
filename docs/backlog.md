@@ -270,7 +270,8 @@ This document is the Single Source of Truth for all feature requests, bug report
     - 文言の修正にあたり、各ページのロジックコードを直接編集する必要がなくなる。
 
 ### REQ-026: 抽選結果一覧における「回数」表示の垂直整列
-- **Status**: new
+- **Status**: done (2026-04-09)
+- **Current Step**: none
 - **Type**: enhancement
 - **Priority**: mid
 - **Source**: "抽選結果一覧系のページで、回数の表示位置を縦方向にきれいに揃えたい"

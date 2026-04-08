@@ -98,8 +98,11 @@ def inject_card_css():
 
         /* Column 2: Spec (HUD Icons or Long Text) */
         .v12-col-spec { display: flex; align-items: center; overflow: hidden; gap: 10px; margin-right: 10px; }
-        .v14-mode-hud .v12-col-spec { min-width: 320px; flex-shrink: 0; } /* Aligned HUD Icons */
+        .v14-mode-hud .v12-col-spec { flex: 1; min-width: 0; } /* Flexible skill area */
         .v14-mode-long .v12-col-spec { flex: 1; min-width: 0; } /* Expand skill text to all space */
+
+        /* Column 3: Metrics (NEW for REQ-026) */
+        .v12-col-metric { display: flex; align-items: center; width: 100px; flex-shrink: 0; overflow: hidden; font-size: 0.72rem; }
 
         .v12-sub-label { font-size: 0.65rem; color: #666; text-transform: uppercase; min-width: 60px; }
         .v12-skill-label { font-size: 0.72rem; color: #555; overflow: hidden; text-overflow: ellipsis; }
@@ -141,6 +144,7 @@ def _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle,
     # Mode-dependent identity (Weapon vs Talisman)
     if mode == "hud":
         html += f'<div class="v12-col-id">{badge_html}<div class="v12-main-label">{title_text}</div></div>'
+        html += f'<div class="v12-col-metric"><span class="v11-sep">|</span>{bonus_html}</div>'
         html += f'<div class="v12-col-spec"><div class="v12-sub-label">{subtitle or ""}</div><div class="v12-skill-label">{sub_text}</div></div>'
     else:
         # Long text mode for talismans - prioritizing skill list
@@ -148,8 +152,9 @@ def _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle,
         html += f'<div class="v12-col-spec"><div class="v12-skill-label" style="color:#aaa;">{title_text}</div></div>'
         # sub_text (slots) moved to bonus area for better balance in Talismans
         bonus_html = f"{sub_text} {bonus_html}"
-        
-    html += f'<span class="v11-sep">|</span><div class="v12-bonus-area">{bonus_html}</div></div></div>'
+        html += f'<span class="v11-sep">|</span><div class="v12-bonus-area">{bonus_html}</div>'
+
+    html += f'</div></div>'
     return html
 
 def render_slim_card(badge_html, title_text, sub_text, bonus_html, subtitle=None, is_selected=False, mode="hud"):
