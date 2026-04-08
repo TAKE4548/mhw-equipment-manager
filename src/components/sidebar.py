@@ -7,6 +7,7 @@ from src.database.storage_manager import (
     get_debug_info, 
     is_logged_in
 )
+from src.utils.i18n import t
 
 def render_shared_sidebar():
     """Renders the common sidebar and manages persistent sync."""
@@ -14,20 +15,23 @@ def render_shared_sidebar():
     boot_from_browser()
 
     with st.sidebar:
-        st.header("⚙️ ストレージ設定")
+        st.header(t("SIDEBAR.HEADER"))
 
         if is_logged_in():
-            st.info("🌐 **モード: クラウド同期**\n\nデータは Supabase に保存されています。")
+            st.info(t("SIDEBAR.MODE_CLOUD"))
         else:
-            st.success("💻 **モード: ローカル保存**\n\nデータはこのブラウザに保存されています。")
+            st.success(t("SIDEBAR.MODE_LOCAL"))
 
         # --- Debug Display ---
         info = get_debug_info()
-        with st.sidebar.expander("🔍 デバッグ情報", expanded=False):
-            st.write(f"Cookie 書き込み済み: `{info['cookie_exists']}`")
-            st.write(f"再保存リクエスト: `{info['needs_persist']}`")
-            st.write(f"Cookie サイズ: `{info['cookie_size_bytes']} bytes`")
-            st.write(f"武器: `{info['weapons_count']}件` / 抽選: `{info['upgrades_count']}件` / トラッカー: `{info['trackers_count']}件`")
+        with st.sidebar.expander(t("SIDEBAR.DEBUG_HEADER"), expanded=False):
+            st.write(f"{t('SIDEBAR.DEBUG_COOKIE_EXISTS')}: `{info['cookie_exists']}`")
+            st.write(f"{t('SIDEBAR.DEBUG_NEEDS_PERSIST')}: `{info['needs_persist']}`")
+            st.write(f"{t('SIDEBAR.DEBUG_COOKIE_SIZE')}: `{info['cookie_size_bytes']} bytes`")
+            st.write(t("SIDEBAR.DEBUG_COUNTS", 
+                       weapons=info['weapons_count'], 
+                       upgrades=info['upgrades_count'], 
+                       trackers=info['trackers_count']))
 
         render_auth_component()
         st.divider()

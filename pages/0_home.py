@@ -4,8 +4,9 @@ from src.logic.talismans import load_talismans
 from src.components.sidebar import render_shared_sidebar
 from src.components.cards import inject_card_css
 from src.components.auth import get_current_user_id
+from src.utils.i18n import t
 
-st.set_page_config(page_title="Home", page_icon="🏠", layout="wide")
+st.set_page_config(page_title=t("NAV.HOME"), page_icon="🏠", layout="wide")
 inject_card_css()
 
 # Safety First: Simplified Styling for st.button
@@ -44,19 +45,18 @@ render_shared_sidebar()
 
 # Wait for localStorage data to be available
 if not st.session_state.get('mhw_ready') and not st.session_state.get('user'):
-    st.info("⏳ データを読み込み中...")
+    st.info(t("HOME.LOADING"))
     st.stop()
 
 user_id = get_current_user_id()
 
 # --- Header Section ---
-# --- Header Section ---
-st.markdown("### MHW Equipment Manager 💎")
-st.markdown("<p style='font-size:0.9rem; color:#888; margin-top:-10px;'>巨戟アーティア武器・鑑定護石 統合管理ポータル</p>", unsafe_allow_html=True)
+st.markdown(f"### {t('HOME.HEADER')}")
+st.markdown(f"<p style='font-size:0.9rem; color:#888; margin-top:-10px;'>{t('HOME.DESC')}</p>", unsafe_allow_html=True)
 st.markdown('<div class="lean-sep"></div>', unsafe_allow_html=True)
 
 # --- Statistics Summary Section ---
-st.subheader("現在のステータス 📊")
+st.subheader(t("HOME.STATS_HEADER"))
 
 # Load data for stats
 eq_df = load_equipment(user_id)
@@ -65,30 +65,30 @@ tali_df = load_talismans(user_id)
 col_stat1, col_stat2, col_stat3 = st.columns(3)
 
 with col_stat1:
-    st.metric("所持武器合計", len(eq_df))
+    st.metric(t("HOME.STATS_WEAPONS"), len(eq_df))
 with col_stat2:
-    st.metric("登録護石合計", len(tali_df))
+    st.metric(t("HOME.STATS_TALISMANS"), len(tali_df))
 with col_stat3:
     fav_count = (tali_df['is_favorite'].sum() if not tali_df.empty else 0)
-    st.metric("お気に入り護石", fav_count)
+    st.metric(t("HOME.STATS_FAVORITES"), fav_count)
 
 st.markdown('<div class="lean-sep"></div>', unsafe_allow_html=True)
 
 # --- Quick Action Grid (Simplified for Stability) ---
-st.subheader("クイックアクション ⚡")
+st.subheader(t("HOME.QUICK_HEADER"))
 
 c1, c2, c3 = st.columns(3)
 
 with c1:
-    if st.button("📦 所持武器台帳", key="go_box", use_container_width=True):
+    if st.button(t("HOME.ACTION_BOX"), key="go_box", use_container_width=True):
         st.switch_page("pages/equipment_box.py")
 
 with c2:
-    if st.button("⚔️ スキル抽選管理", key="go_skill", use_container_width=True):
+    if st.button(t("HOME.ACTION_SKILL"), key="go_skill", use_container_width=True):
         st.switch_page("pages/0_skill_lottery.py")
 
 with c3:
-    if st.button("✨ 復元強化厳選", key="go_rein", use_container_width=True):
+    if st.button(t("HOME.ACTION_REIN"), key="go_rein", use_container_width=True):
         st.switch_page("pages/reinforcement_registration.py")
 
 st.markdown("<br>", unsafe_allow_html=True)
@@ -96,16 +96,16 @@ st.markdown("<br>", unsafe_allow_html=True)
 c4, c5, c6 = st.columns(3)
 
 with c4:
-    if st.button("📿 鑑定護石管理", key="go_tali", use_container_width=True):
+    if st.button(t("HOME.ACTION_TALI"), key="go_tali", use_container_width=True):
         st.switch_page("pages/5_talismans.py")
 
 with c5:
-    if st.button("📊 分析統計", key="go_dash", use_container_width=True):
+    if st.button(t("HOME.ACTION_DASH"), key="go_dash", use_container_width=True):
         st.switch_page("pages/4_analytics_dashboard.py")
 
 with c6:
     # Stylized as deactive via CSS (grayscale + opacity)
-    if st.button("⚙️ システム設定", key="go_set", use_container_width=True, disabled=True):
+    if st.button(t("HOME.ACTION_SETTINGS"), key="go_set", use_container_width=True, disabled=True):
         pass
 
 st.markdown('<div class="lean-sep"></div>', unsafe_allow_html=True)

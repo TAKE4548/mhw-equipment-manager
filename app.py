@@ -8,22 +8,23 @@ if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
 from src.utils.session import init_session_state
+from src.utils.i18n import t
 
 # Always initialize session at the entry point
 init_session_state()
 
 # Navigation setup (v1.55+)
-home_page = st.Page("pages/0_home.py", title="ホーム", icon="🏠", default=True)
-box_page = st.Page("pages/equipment_box.py", title="所持武器台帳", icon="📦")
-skill_page = st.Page("pages/0_skill_lottery.py", title="スキル抽選管理", icon="⚔️")
-rein_page = st.Page("pages/reinforcement_registration.py", title="復元強化厳選", icon="✨")
-talisman_page = st.Page("pages/5_talismans.py", title="鑑定護石管理", icon="📿")
-dashboard_page = st.Page("pages/4_analytics_dashboard.py", title="分析統計", icon="📊")
+home_page = st.Page("pages/0_home.py", title=t("NAV.HOME"), icon="🏠", default=True)
+box_page = st.Page("pages/equipment_box.py", title=t("NAV.BOX"), icon="📦")
+skill_page = st.Page("pages/0_skill_lottery.py", title=t("NAV.SKILL"), icon="⚔️")
+rein_page = st.Page("pages/reinforcement_registration.py", title=t("NAV.REIN"), icon="✨")
+talisman_page = st.Page("pages/5_talismans.py", title=t("NAV.TALI"), icon="📿")
+dashboard_page = st.Page("pages/4_analytics_dashboard.py", title=t("NAV.DASH"), icon="📊")
 
 pg = st.navigation({
-    "Portal": [home_page],
-    "装備管理": [box_page, talisman_page],
-    "強化・抽選": [skill_page, rein_page],
-    "その他": [dashboard_page]
+    t("NAV.GROUP.PORTAL"): [home_page],
+    t("NAV.GROUP.EQUIP"): [box_page, talisman_page],
+    t("NAV.GROUP.LOTTERY"): [skill_page, rein_page],
+    t("NAV.GROUP.OTHER"): [dashboard_page]
 })
 pg.run()
