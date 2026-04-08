@@ -89,17 +89,11 @@ def render_active_upgrades(df, user_id, eq_df_all):
                                 w_display = f"**{w['weapon_name']}**" if not w['weapon_name'].startswith("無銘") else f"**{w['weapon_type']}**"
                                 mc_c1.markdown(f"{w_display}<br><small>現在: {w['current_series_skill']} / {w['current_group_skill']}</small>", unsafe_allow_html=True)
                                 if mc_c2.button("🔨", key=f"assign_{row['id']}_{w['id']}", help="付与して進行"):
-                                    previous_states = df[['id', 'remaining_count']].to_dict('records')
-                                    st.session_state['undo_stack'].append({'action_type': 'EXECUTE_ALL', 'decrement': rem, 'previous_states': previous_states})
-                                    st.session_state['redo_stack'].clear()
                                     execute_upgrade(row['id'], rem, weapon_id=w['id'], user_id=user_id)
                                     st.rerun()
 
                     st.divider()
                     if st.button("割り当てずに進行 (-1回)", key=f"skip_{row['id']}", use_container_width=True):
-                        previous_states = df[['id', 'remaining_count']].to_dict('records')
-                        st.session_state['undo_stack'].append({'action_type': 'EXECUTE_ALL', 'decrement': rem, 'previous_states': previous_states})
-                        st.session_state['redo_stack'].clear()
                         execute_all_upgrades(rem, user_id=user_id)
                         st.rerun()
                 

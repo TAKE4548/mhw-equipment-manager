@@ -12,6 +12,10 @@ def get_history():
 
 def push_action(action_type: str, table: str, prev_df: pd.DataFrame, next_df: pd.DataFrame):
     """Records an action for Undo/Redo."""
+    if not isinstance(prev_df, pd.DataFrame) or not isinstance(next_df, pd.DataFrame):
+        # Fail gracefully if not a DataFrame (preventing future malformed pushes)
+        return
+
     undo_stack, redo_stack = get_history()
     undo_stack.append({
         'action_type': action_type,

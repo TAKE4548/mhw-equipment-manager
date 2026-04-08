@@ -2,6 +2,7 @@ import pandas as pd
 import uuid
 import streamlit as st
 from src.database.storage_manager import load_data, save_data
+from src.logic.history import push_action
 
 FAVORITES_TABLE = "favorites"
 FAVORITES_COLUMNS = ["id", "favorite_type", "skill_value"]
@@ -20,6 +21,7 @@ def add_favorite(fav_type: str, skill_val: str) -> bool:
     if not df.empty and not df[(df['favorite_type'] == fav_type) & (df['skill_value'] == skill_val)].empty:
         return True
     
+    prev_df = df.copy()
     new_row = {
         "id": str(uuid.uuid4()),
         "favorite_type": fav_type,
@@ -29,6 +31,7 @@ def add_favorite(fav_type: str, skill_val: str) -> bool:
     success = save_data(FAVORITES_TABLE, df)
     if success:
         get_favorites.clear()
+        push_action("ADD_FAVORITE", FAVORITES_TABLE, prev_df, df)
     return success
 
 def remove_favorite(fav_type: str, skill_val: str) -> bool:
@@ -38,11 +41,13 @@ def remove_favorite(fav_type: str, skill_val: str) -> bool:
     df = get_favorites(user_id)
     if df.empty: return True
     
+    prev_df = df.copy()
     # Filtering out the record
     df = df[~((df['favorite_type'] == fav_type) & (df['skill_value'] == skill_val))]
     success = save_data(FAVORITES_TABLE, df)
     if success:
         get_favorites.clear()
+        push_action("REMOVE_FAVORITE", FAVORITES_TABLE, prev_df, df)
     return success
 
 def is_favorite(fav_type: str, skill_val: str) -> bool:

@@ -50,8 +50,6 @@ def render_registration_form(master, user_id):
             else:
                 record_id = register_upgrade(w_type, element, series_skill, group_skill, count, user_id=user_id)
                 if record_id:
-                    st.session_state['undo_stack'].append({'action_type': 'REGISTER', 'target_id': record_id})
-                    st.session_state['redo_stack'].clear()
                     st.toast("抽選結果を登録しました！", icon="✅")
                     st.rerun()
                 else:

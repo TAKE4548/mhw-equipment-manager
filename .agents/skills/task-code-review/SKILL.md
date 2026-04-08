@@ -12,7 +12,9 @@ description: >
 - `docs/designs/{feature-name}.md` (Architect's design)
 - `docs/ui_spec.md` (UX Designer's spec)
 - Implementation code + test code
-- Test execution results (Unit + Browser)
+- Test execution results:
+    - **Unit Test Logs**: Proof of logic correctness.
+    - **Browser Debug Results**: Proof of UI interaction stability.
 
 ## Review Items
 1. **Design Conformity**: Does the logic/DB layer match the Architect's design? Does the visual layer match the UX Designer's specific instructions?
@@ -24,5 +26,5 @@ description: >
 5. **Regressions**: Are existing features unaffected?
 
 ## Output
-- **Passed**: Declare "Review Passed" and proceed to completion.
-- **Failed**: Output a clear list of deficiencies along with concrete correction proposals. Hand back to the Engineer.
+- **Passed**: Declare "Review Passed" as a standalone Verdict. Proceed only after this is stated.
+- **Failed**: Output a clear list of deficiencies along with concrete correction proposals. **Return to the Engineer.**

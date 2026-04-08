@@ -48,7 +48,8 @@ This document is the Single Source of Truth for all feature requests, bug report
     - 任意のリスト行で、カードと `⋮` ボタンの垂直中心線が視覚的に一致している。
 
 ### REQ-004: Undo/Redo 履歴管理の一貫性修正 (History Architecture Consistency)
-- **Status**: new
+- **Status**: done (2026-04-08)
+- **Current Step**: none
 - **Type**: bug
 - **Priority**: high
 - **Problem**: `0_skill_lottery.py` や `src/components/tables.py` で、共通の `push_action` ロジックを介さず Session State を直接操作しており、正常に Undo が動作しない、もしくはエラーになる可能性がある。

@@ -19,8 +19,11 @@ Step 1: [Role: Dev Coordinator]
 - Determine the starting step based on the item type (e.g., jump to Step 6 for a minor fix, or Step 3 for a new enhancement).
 
 Step 2: [Role: Dev Coordinator]
-- Confirm that previous phase deliverables are safely stored in `docs/`.
-- Update `Current step` to `Step 2`.
+- **Deliverables Verification Check:**
+  - [ ] `docs/backlog.md` is updated with the target requirement.
+  - [ ] The requirement has clear "Acceptance Criteria".
+  - [ ] The item status is `in-progress`.
+- If any item is missing, STOP and request a BA to refine the backlog.
 - Announce the role switch and hand off.
 
 Step 3: [Role: Architect]
@@ -36,8 +39,12 @@ Step 4: [Role: UX Designer]
 - Handoff complete.
 
 Step 5: [Role: Dev Coordinator]
+- **Phase Deliverables Check:**
+  - [ ] `docs/designs/{feature-name}.md` contains Architecture, Data Flow, and Testing Requirements.
+  - [ ] (If UI changes) `docs/ui_spec.md` is updated with specific interaction flows.
 - Present the Architect's technical design AND the UX Designer's UI spec to the user.
-- **STOP and wait for user approval.**
+- **MANDATORY STOP: Wait for user approval.**
+- **DO NOT proceed to Step 6** until the user provides an affirmative word (e.g., "approve", "OK", "進めて").
 - Update `Current step` to `Step 5`.
 - If the user rejects the logic -> return to Step 3. If they reject the UI -> return to Step 4.
 
@@ -49,9 +56,13 @@ Step 6: [Role: Engineer]
 - Signal "implementation complete" when ready.
 
 Step 7: [Role: Tester/Reviewer]
+- **Handoff Acceptance Check (MUST verify):**
+  - [ ] Engineer has provided Unit Test Logs.
+  - [ ] Engineer has provided Browser Debug Results (for UI tasks).
 - Execute `task-code-review`.
-- **IMPORTANT:** The Engineer MUST NOT self-review. Only the Tester/Reviewer role can issue a review verdict. "Self-review completed" is NOT a valid output for this step.
-- Output: Pass or Fail with details.
+- **IMPORTANT:** The Engineer MUST NOT self-review. Only the Tester/Reviewer role can issue a review verdict. 
+- **MANDATORY OUTPUT:** Output a standalone message with a clear **Review Verdict (Pass/Fail)** and specific evidence check results.
+- **DO NOT proceed to Step 8** without a "Pass" verdict.
 
 Step 8: [Role: Dev Coordinator]
 - **SSoT Integrity Gate (MANDATORY before "done"):**
