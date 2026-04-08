@@ -27,10 +27,6 @@ Step 2: [Role: Dev Coordinator]
   - [ ] The requirement has clear "Acceptance Criteria".
   - [ ] The item status is `in-progress`.
 - If any item is missing, STOP and request a BA to refine the backlog.
-- **Initialize `task.md`**: Create or update the task list with the following mandatory phase headers:
-    - `### [Phase: Design]`
-    - `### [Phase: Implementation]`
-    - `### [Phase: Cleanup / SSoT]`
 - Announce the role switch and hand off.
 
 Step 3: [Role: Architect]
@@ -86,11 +82,13 @@ Step 7: [Role: Tester/Reviewer]
 - **DO NOT proceed to Step 8** without a "Pass" verdict.
 
 Step 8: [Role: Dev Coordinator]
-- **Walkthrough Creation:** Create the walkthrough ONCE at this step only. Do NOT create or update walkthroughs before Step 8. 
-- **MANDATORY COMPLETION SEQUENCE:**
-  1. **Update `docs/backlog.md`**: Set status to `done`, append the completion date, and set `Current step` to `none`.
-  2. **SSoT Final Sync**: Ensure all `docs/` (designs, ui_spec, architecture) reflect the actual final code.
-  3. **Git Committing**: ONLY after the above are done, run `git add . && git commit -m "<type>: implement REQ-XXX - [Short Description]"`.
-- **Git Branching:** Present the commit hash and branch name to the user.
-- **Update `docs/architecture.md`** if the overarching structure has changed.
-- Present a final completion summary to the user, including instructions on how to merge the branch.
+- **SSoT Integrity Gate (MANDATORY before commit):**
+  1. Confirm `docs/ui_spec.md` matches the FINAL implemented state.
+  2. Confirm `docs/designs/*.md` is consistent with what was actually built.
+  3. **Update `docs/backlog.md`**: Change status to `done`, append the completion date, and set `Current step` to `none`. Update any other stale documents NOW.
+- **Walkthrough Creation:** Create the walkthrough ONCE at this step only.
+- **Git Committing (FINAL ACTION):** 
+  - Ensure all documentation updates (Backlog, Designs, Specs) are staged.
+  - Commit all changes: `git add . && git commit -m "<type>: implement REQ-XXX - [Short Description]"`.
+  - Present the commit hash to the user.
+- Present a final completion summary to the user (including instruction on how to merge the branch).
