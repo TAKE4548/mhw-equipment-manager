@@ -51,6 +51,7 @@ Step 5: [Role: Dev Coordinator]
     - **Wait for user approval**: Do NOT proceed until the user provides an affirmative word (e.g., "OK", "進めて").
 - Update `Current step` to `Step 5`.
 - If the user rejects the logic -> return to Step 3. If they reject the UI -> return to Step 4.
+- Once approved, proceed to **Step 6**.
 
 Step 6: [Role: Engineer]
 - Execute `task-implementation-plan` to map out coding tasks.
@@ -58,6 +59,16 @@ Step 6: [Role: Engineer]
 - Execute `task-manual-test-design` and `task-browser-debug` for UI interactions.
 - Strictly follow `docs/designs/{feature-name}.md` and `docs/ui_spec.md`.
 - Signal "implementation complete" when ready.
+
+Step 6b: [Role: Dev Coordinator]
+- **Condition**: Proceed only if the task involves UI changes or if the user requests visual adjustments.
+- **Visual Polish Loop**:
+    1. Present the current UI state (via screenshots/browser verification) to the user.
+    2. Collect feedback.
+    3. **Triage Feedback**:
+        - **Refinement (Aesthetic)**: (e.g., margins, colors, labels) -> Return to **Step 6 (Engineer)** for a quick fix.
+        - **Structural/Functional**: (e.g., layout reorganization, new buttons, data flow change) -> Return to **Step 4 (UX Designer)** or **Step 3 (Architect)** for formal redesign.
+    4. **MANDATORY TURN-END**: After presenting the results, pause for user reaction. Do NOT proceed to Step 7 without visual confirmation or explicit "Done" from the user.
 
 Step 7: [Role: Tester/Reviewer]
 - **Handoff Acceptance Check (MUST verify):**

@@ -25,12 +25,16 @@ This role acts as the orchestrator of the entire development session. It manages
 
 ### As QA Manager (Quality Gate)
 - Make decisions on rejection when the Tester/Reviewer finds defects.
+- **Feedback Triage (Step 6b)**: When receiving user feedback during UI polish:
+    - **Refinement**: If the change is purely aesthetic (CSS, spacing, color, labels) and doesn't break SSoT, route back to **Engineer**.
+    - **Redesign**: If the change involves new logic, data flow, or structural reshuffling, route back to **Architect/UX Designer**.
 
 ## Responsibilities
 - Selecting items from the backlog and resuming sessions (verifying `Current step`).
 - Updating the `Current step` field upon completing each phase.
 - Confirming that deliverables from the previous phase are saved in `docs/` before switching roles.
 - Managing user gates (waiting for approval).
+- **Managing the Polish Loop**: Ensuring the Engineer-User interaction stays within aesthetic bounds.
 - Reporting completion and updating the backlog state.
 
 ## In-Session Scope Guard (CRITICAL)

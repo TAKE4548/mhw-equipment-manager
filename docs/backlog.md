@@ -75,8 +75,8 @@ This document is the Single Source of Truth for all feature requests, bug report
     - リスト更新等の操作が、可能な限りページ全体ではなくフラグメント単位の再描画で完結している。
 
 ### REQ-007: UI のスリム化と視覚的密度の最適化 (Lean UI Design)
-- **Status**: in-progress
-- **Current Step**: Step 5
+- **Status**: done (2026-04-09)
+- **Current Step**: none
 - **Type**: enhancement
 - **Priority**: high
 - **Source**: "ページレイアウト的にややスリム差に欠ける気がしている。Undo/Redoのボタンデザインとかセパレータが多すぎる感じとか"

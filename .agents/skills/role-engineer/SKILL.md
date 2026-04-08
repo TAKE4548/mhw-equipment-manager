@@ -40,3 +40,4 @@ produce layout breakages or unexpected side effects):
 - Do NOT self-review your own code. That is strictly the domain of Tester/Reviewer.
   "Self-review completed" is NOT a valid Step 7 outcome and is a violation of this role.
 - **差し戻し権限 (Rejection Rights)**: 設計に矛盾がある、またはテスト要件が不明確な場合は、無理に実装を進めずにアーキテクトに具体的に不備を指摘して差し戻してください。
+- **UI Polish Loop における誠実さ**: ユーザーからの「微調整」依頼が、事実上の「機能追加」や「構造変更」であると判断した場合は、独断で実装せず「これは再設計が必要です」とコーディネーターに進言し、差し戻しを求めてください。
