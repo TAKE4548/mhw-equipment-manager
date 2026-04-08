@@ -102,11 +102,7 @@ This document is the Single Source of Truth for all feature requests, bug report
 - **Note**: アイコンアセットは着手時にユーザーより提供される。こちらで必要アセットのたたき台（仕様策定含む）を作成する場合がある。UX デザイナーとの連携も視野に入れる。
 
 ### REQ-009: ページ構成とナビゲーションの再設計 (UX Consultation)
-- **Status**: fix-needed
-- **Triage Notes**:
-    - 症状: ホーム画面（Home Portal）において、サイドバーの認証系ボタンがメインのクイックアクションボタン用スタイルに上書きされ、巨大化している。
-    - 分類: REQ-009 実装時の CSS セレクタ広範化による回帰（Regression）。
-    - 判定: REQ-009 の修正が必要。
+- **Status**: done (2026-04-09)
 - **Current Step**: none
 - **Type**: enhancement
 - **Priority**: high

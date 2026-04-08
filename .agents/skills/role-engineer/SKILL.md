@@ -17,7 +17,7 @@ description: >
 
 ## MANDATORY THOUGHT PATTERN
 Before performing any tool calls, perform this gate check in your `<thought>` block:
-- `[GATE CHECK] 対象機能の設計（docs/designs/*.md）が提示され、ユーザーからの「承認/OK」が履歴に実在することを確認した。`
+- `[GATE CHECK] 承認状況の確認：project-conventions/SKILL.md の「Universal Integrity Gates」に基づき、現在の成果物が承認済みであり、かつ未解決の質問が残っていないことを確認した。`
 
 ## Handoff Acceptance Check (受入検査)
 Before writing a single line of code, verify ALL of the following. If any item is NO → STOP and notify the Dev Coordinator. Reject the task.

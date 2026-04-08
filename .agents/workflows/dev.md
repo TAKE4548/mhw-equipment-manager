@@ -16,7 +16,10 @@ Step 1: [Role: Dev Coordinator]
 - Present actionable items (new, ready, fix-needed) to the user.
 - The user selects an item (PO decision).
 - Update the item's status to `in-progress` and `Current step` to `Step 1`.
-- Determine the starting step based on the item type (e.g., jump to Step 6 for a minor fix, or Step 3 for a new enhancement).
+- **Starting Step Assignment Logic**:
+  - If the item is a NEW enhancement or major redesign -> Step 3 (Architect).
+  - If it is a fix or minor change involving **ANY UI adjustment** or UI specification update -> **Step 4 (UX Designer)**.
+  - If it is a PURE logic fix with **NO UI changes** and no design impact -> Step 6 (Engineer).
 - **Git Branching:** 
   - Create and switch to a new feature branch: `git checkout -b <feat/fix>/REQ-XXX`.
   - Confirm the branch is created before proceeding.

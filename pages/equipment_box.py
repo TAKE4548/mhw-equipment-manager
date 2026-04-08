@@ -13,9 +13,9 @@ from src.components.sidebar import render_shared_sidebar
 from src.components.cards import inject_card_css, render_slim_card, get_badge_html
 from src.components.pickers import render_skill_picker
 from src.components.auth import get_current_user_id
-from src.components.common import render_lean_header, render_item_count, render_item_count
+from src.components.common import render_lean_header, render_item_count
 
-st.set_page_config(page_title="所有武器台帳", page_icon="📦", layout="wide")
+st.set_page_config(page_title="所持武器台帳", page_icon="📦", layout="wide")
 inject_card_css()
 
 # Deleted render_skill_selector_with_toggle as it is replaced by render_skill_picker

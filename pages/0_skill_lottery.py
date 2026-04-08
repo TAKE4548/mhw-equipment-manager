@@ -11,7 +11,7 @@ from src.logic.favorites import add_favorite, remove_favorite, get_favorite_list
 from src.components.pickers import render_skill_picker
 from src.components.common import render_lean_header, render_item_count
 
-st.set_page_config(page_title="スキル抽選結果", page_icon="⚔️", layout="wide")
+st.set_page_config(page_title="スキル抽選管理", page_icon="⚔️", layout="wide")
 
 # Render shared sidebar
 render_shared_sidebar()
