@@ -33,30 +33,15 @@ def inject_card_css():
             margin-bottom: 0.5rem !important;
         }
 
-        /* Force standard gap for expanders to prevent cramped controls */
-        div[data-testid="stExpander"] div[data-testid="stVerticalBlock"] {
-            gap: 1rem !important;
-        }
-
-        /* 0. List Container Setup */
-        /* Only apply 2px gap to vertical blocks that are specifically intended for lists.
-           We place this AFTER the expander rule to ensure lists inside expanders can still be dense. */
-        div[data-testid="stVerticalBlock"]:has(> div > div > div > div > .v12-dense-list) {
-            gap: 2px !important;
-        }
-
-        /* Ensure the main page block remains roomy (Streamlit standard) */
-        section.main > div > div > div > div[data-testid="stVerticalBlock"] {
-            gap: 1.5rem !important;
-        }
-        
-        [data-testid="stHorizontalBlock"]:has(.v12-marker) {
+        /* 0. List Item Spacing - Direct margin for reliability */
+        [data-testid="stHorizontalBlock"]:has(.v12-marker),
+        [data-testid="stHorizontalBlock"]:has(.v15-marker) {
             align-items: center !important;
-            margin-bottom: 2px !important;
+            margin-bottom: 8px !important;
             gap: 12px !important;
         }
 
-        /* 1. The Card - 40px High Tag */
+        /* 1. The Card - v15 Multi-line (64px) / v14 Slim (40px) */
         .v12-tag-card {
             display: flex;
             align-items: center;
@@ -68,6 +53,11 @@ def inject_card_css():
             box-sizing: border-box !important;
             width: 100%;
             overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        .v12-tag-card.v15-mode {
+            height: 64px !important;
+            padding: 8px 16px;
         }
 
         /* 2. Unified Button Height & Style */
@@ -81,54 +71,105 @@ def inject_card_css():
             align-items: center !important;
             justify-content: center !important;
         }
+        /* v15 Button Sync */
+        [data-testid="stHorizontalBlock"]:has(.v15-marker) div[data-testid="stButton"] button {
+            height: 64px !important;
+        }
 
         /* Selection */
         .v12-tag-card.v12-selected { border: 1px solid #f1c40f !important; background: #222 !important; }
         [data-testid="stHorizontalBlock"]:has(.v12-unit-selected) button { background: #f1c40f !important; border: 1px solid #f1c40f !important; color: #000 !important; }
 
         /* HUD STREAMS & ALIGNMENT */
-        .v12-stream { display: flex; align-items: center; width: 100%; white-space: nowrap; overflow: hidden; }
+        .v12-stream { display: flex; align-items: center; width: 100%; white-space: nowrap; overflow: hidden; height: 100%; }
+        .v15-mode .v12-stream { white-space: normal; }
         
-        /* Column 1: Identity (Weapon Name / Badge) */
-        .v12-col-id { display: flex; align-items: center; flex-shrink: 0; overflow: hidden; }
-        .v14-mode-hud .v12-col-id { width: 180px; } /* Weapon fixed width name */
-        .v14-mode-long .v12-col-id { width: auto; max-width: 60px; margin-right: 12px; } /* Talisman badge-only id */
+        /* v15 ID Cluster (Stacked) */
+        .v15-id-stack {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            width: 140px;
+            flex-shrink: 0;
+            overflow: hidden;
+            margin-right: 12px;
+        }
+        .v15-type-label { font-size: 0.85rem; font-weight: 700; color: #fff; text-transform: uppercase; line-height: 1.2; }
+        .v15-name-label { font-size: 0.7rem; color: #888; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+
+        /* v15 Attribute/Enhancement (Center) - Refined: Stacked */
+        .v15-col-center {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            width: 140px;
+            flex-shrink: 0;
+            overflow: hidden;
+            margin-right: 8px;
+        }
+        .v15-enh-label { font-size: 0.72rem; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .v15-attr-label { font-size: 0.65rem; color: #666; text-transform: uppercase; }
+
+        /* v15 Spec/Bonus stacks */
+        .v15-stack {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 2px;
+            overflow: hidden;
+        }
+        .v15-col-skills { flex: 1; min-width: 0; }
+        .v15-col-bonuses { width: 280px; flex-shrink: 0; align-items: flex-start; } /* Expanded to prevent 5-slot clipping */
+        
+        .v15-row {
+            font-size: 0.72rem;
+            color: #ccc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .v15-row.muted { color: #888; font-size: 0.68rem; }
+
+        /* Legacy HUD Alignment (for Talismans/Slim) */
+        .v12-col-id { display: flex; align-items: center; flex-shrink: 0; overflow: hidden; height: 40px; }
+        .v14-mode-hud .v12-col-id { width: 180px; } 
+        .v14-mode-long .v12-col-id { width: auto; max-width: 60px; margin-right: 12px; }
+
+        /* v12-col-spec: Base spec area */
+        .v12-col-spec { display: flex; align-items: center; flex-shrink: 0; overflow: hidden; height: 40px; }
+        .v14-mode-long .v12-col-spec { width: 260px; } /* Adjusted width for X-axis alignment */
 
         .v12-main-label { font-weight: 600; font-size: 0.9rem; color: #fff; overflow: hidden; text-overflow: ellipsis; }
-
-        /* Column 2: Spec (HUD Icons or Long Text) */
-        .v12-col-spec { display: flex; align-items: center; overflow: hidden; gap: 10px; margin-right: 10px; }
-        .v14-mode-hud .v12-col-spec { flex: 1; min-width: 0; } /* Flexible skill area */
-        .v14-mode-long .v12-col-spec { flex: 1; min-width: 0; } /* Expand skill text to all space */
-
-        /* Column 3: Metrics (REQ-026) */
         .v12-col-metric { display: flex; align-items: center; width: 100px; flex-shrink: 0; overflow: hidden; font-size: 0.75rem; justify-content: center; }
-
-        .v12-sub-label { font-size: 0.65rem; color: #666; text-transform: uppercase; min-width: 60px; flex-shrink: 0; }
-        .v12-skill-label { font-size: 0.72rem; color: #888; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .v14-mode-long .v12-skill-label { font-size: 0.85rem; color: #888; } /* Larger skill text for Talismans */
-
+        .v12-skill-label { font-size: 0.85rem; color: #eee; display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; white-space: nowrap; overflow: hidden; line-height: 40px; }
+        .v14-mode-long .v12-skill-label { font-size: 0.85rem; color: #eee; }
         .v11-sep { color: #333; margin: 0 8px; font-weight: 300; flex-shrink: 0; }
         .v12-bonus-area { font-size: 0.76rem; color: #888; flex: 1; overflow: hidden; text-overflow: ellipsis; }
+        .v12-sub-label { font-size: 0.65rem; color: #666; text-transform: uppercase; min-width: 60px; flex-shrink: 0; }
+        
+        /* v12-col-slots: Specialized fixed-width column for X-axis alignment in slim cards */
+        .v12-col-slots {
+            width: 120px;
+            flex-shrink: 0;
+            font-size: 0.75rem;
+            color: #888;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
 
-        /* 3. Collapse Streamlit's internal wrapper padding around markdown cards
-              so card column height == button column height == 40px exactly */
-        [data-testid="stHorizontalBlock"]:has(.v12-marker) [data-testid="stMarkdownContainer"] {
-            line-height: 0 !important;
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-        /* Also flatten the column elements themselves */
-        [data-testid="stHorizontalBlock"]:has(.v12-marker) > div {
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-        /* Popover button height sync */
+        /* Sync container heights - NO line-height:0 as it squashes text */
+        [data-testid="stHorizontalBlock"]:has(.v12-marker) [data-testid="stMarkdownContainer"] { padding: 0 !important; margin: 0 !important; }
+        [data-testid="stHorizontalBlock"]:has(.v12-marker) > div { padding: 0 !important; margin: 0 !important; }
         [data-testid="stHorizontalBlock"]:has(.v12-marker) div[data-testid="stPopover"] button,
-        [data-testid="stHorizontalBlock"]:has(.v12-marker) div[data-testid="stPopover"] {
-            height: 40px !important;
-            min-height: 40px !important;
-        }
+        [data-testid="stHorizontalBlock"]:has(.v12-marker) div[data-testid="stPopover"] { height: 40px !important; min-height: 40px !important; }
+
+        /* v15 Height Sync */
+        [data-testid="stHorizontalBlock"]:has(.v15-marker) div[data-testid="stPopover"] button,
+        [data-testid="stHorizontalBlock"]:has(.v15-marker) div[data-testid="stPopover"] { height: 64px !important; min-height: 64px !important; }
 
         /* v14 Responsive Grid Container */
         .v14-grid-container {
@@ -139,41 +180,114 @@ def inject_card_css():
             margin-top: 0.5rem;
         }
 
-        /* Adjust internal column blocks specifically when inside grid to prevent overflow */
-        .v14-grid-container [data-testid="stHorizontalBlock"] {
-            margin-bottom: 0 !important;
-        }
-
-        @media (max-width: 900px) { .v12-col-spec { display: none; } }
+        @media (max-width: 1000px) { .v15-col-center { display: none; } }
+        @media (max-width: 800px) { .v15-col-skills { display: none; } }
         </style>
     """, unsafe_allow_html=True)
 
 def _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle, is_selected, mode):
-    """v14: Smart HUD Layout (Supports 'hud' and 'long-text' modes)."""
+    """v15: Unified Multi-line Card (Supports 'hud', 'long', and 'reinforcement')."""
     selected_cls = "v12-selected" if is_selected else ""
-    mode_cls = "v14-mode-hud" if mode == "hud" else "v14-mode-long"
+    is_long = mode.startswith("long")
+    v15_cls = "v15-mode" if not is_long else ""
+    card_mode_cls = "v14-mode-long" if is_long else ""
     
-    html = f'<div class="v12-tag-card {selected_cls} {mode_cls}"><div class="v12-stream">'
+    html = f'<div class="v12-tag-card {selected_cls} {v15_cls} {card_mode_cls}"><div class="v12-stream">'
     
-    # Mode-dependent identity (Weapon vs Talisman)
-    if mode == "hud":
-        html += f'<div class="v12-col-id">{badge_html}<div class="v12-main-label">{title_text}</div></div>'
-        html += f'<div class="v12-col-metric"><span class="v11-sep">|</span>{bonus_html}</div>'
-        html += f'<div class="v12-col-spec"><span class="v11-sep">|</span>'
-        html += f'<div class="v12-sub-label">{subtitle or ""}</div><div class="v12-skill-label">{sub_text}</div></div>'
-    else:
-        # Long text mode for talismans - prioritizing skill list
+    if is_long:
+        # Legacy/Talisman Long mode (Stay 40px)
         html += f'<div class="v12-col-id">{badge_html}</div>'
         html += f'<div class="v12-col-spec"><div class="v12-skill-label" style="color:#aaa;">{title_text}</div></div>'
-        # sub_text (slots) moved to bonus area for better balance in Talismans
-        bonus_html = f"{sub_text} {bonus_html}"
+        html += f'<span class="v11-sep">|</span><div class="v12-col-slots">{sub_text}</div>'
         html += f'<span class="v11-sep">|</span><div class="v12-bonus-area">{bonus_html}</div>'
+    
+    elif mode == "hud":
+        # Standard V15 (Used in Equipment Box / Lottery)
+        # 0. Attribute Icon (Badge)
+        html += f'<div style="flex-shrink:0; margin-right:8px;">{badge_html}</div>'
+
+        # 1. ID Cluster (Type above Name)
+        html += f'<div class="v15-id-stack"><div class="v15-type-label">{subtitle or "UNKNOWN"}</div><div class="v15-name-label">{title_text}</div></div>'
+        
+        # 2. Center: Enhancement (Top) + Attribute Name (Bottom)
+        enh_type = ""
+        skills_raw = sub_text
+        if "📋" in sub_text:
+            parts = sub_text.split("|", 1)
+            enh_type = parts[0].strip()
+            skills_raw = parts[1].strip() if len(parts) > 1 else ""
+        
+        # Extract Attribute Name from badge_html
+        import re
+        attr_match = re.search(r'>(.*?)</span>', badge_html)
+        attr_name = attr_match.group(1) if attr_match else ""
+        
+        html += f'<div class="v15-col-center"><div class="v15-enh-label">{enh_type}</div><div class="v15-attr-label">{attr_name}属性</div></div>'
+        
+        # 3. Skills Stack
+        s_parts = skills_raw.split("|")
+        s1 = s_parts[0].strip() if len(s_parts) > 0 else ""
+        s2 = s_parts[1].strip() if len(s_parts) > 1 else ""
+        html += f'<div class="v15-stack v15-col-skills"><div class="v15-row">{s1}</div><div class="v15-row">{s2}</div></div>'
+        
+        # 4. Bonuses Stack
+        b_parts = bonus_html.split("||")
+        b1 = b_parts[0].strip() if len(b_parts) > 0 else ""
+        b2 = b_parts[1].strip() if len(b_parts) > 1 else ""
+        html += f'<div class="v15-stack v15-col-bonuses"><div class="v15-row">{b1}</div><div class="v15-row">{b2}</div></div>'
+
+    elif mode == "reinforcement":
+        # Special Reinforcement comparison mode
+        # 0. Badge
+        html += f'<div style="flex-shrink:0; margin-right:8px;">{badge_html}</div>'
+
+        # 1. ID Cluster
+        html += f'<div class="v15-id-stack" style="width:120px;"><div class="v15-type-label">{subtitle or "UNKNOWN"}</div><div class="v15-name-label">{title_text}</div></div>'
+        
+        # 2. Center Cluster: Attribute Name stack
+        import re
+        attr_match = re.search(r'>(.*?)</span>', badge_html)
+        attr_name = attr_match.group(1) if attr_match else ""
+        html += f'<div class="v15-col-center" style="width:70px;"><div class="v15-attr-label">{attr_name}属性</div></div>'
+        
+        # 3. Info Cluster (Prod Bonus + Enh Type)
+        prod_bonus = ""
+        enh_type = ""
+        if "📋" in sub_text:
+            parts = sub_text.split("📋")
+            if len(parts) > 1:
+                sub_parts = parts[1].split("|")
+                enh_type = f"📋 {sub_parts[0].strip()}"
+                if len(sub_parts) > 1: prod_bonus = sub_parts[1].strip()
+        
+        if not prod_bonus and "🛠️" in sub_text:
+            p_parts = sub_text.split("🛠️")
+            prod_bonus = f"🛠️ {p_parts[1].strip()}"
+            
+        html += f'<div class="v15-stack" style="width:160px; margin-right:12px;">'
+        html += f'<div class="v15-row">{prod_bonus}</div><div class="v15-row muted">{enh_type}</div></div>'
+        
+        # 4. Comparison Area (Before/After Restoration)
+        # We wrap it in its own stream to treat it as a block
+        clean_bonus = re.sub(r'<div.*?残り.*?回.*?</div>', '', bonus_html)
+        html += f'<div class="v15-stack v15-col-bonuses" style="flex:1;">{clean_bonus}</div>'
+
+        # 5. Remaining Count (Right End)
+        count_html = ""
+        # Match "残り X 回" with or without space/stars
+        c_match = re.search(r'残り\s*(\d+)\s*回', bonus_html)
+        if c_match:
+            c_val = c_match.group(1)
+            count_html = f'<div class="v15-stack" style="width:100px; align-items:flex-end;"><div class="v15-row" style="color:#ff4b4b; font-weight:bold;">残り {c_val} 回</div></div>'
+        html += count_html
 
     html += f'</div></div>'
     return html
 
 def render_slim_card(badge_html, title_text, sub_text, bonus_html, subtitle=None, is_selected=False, mode="hud"):
     """Displays the v14 context-aware tag without button."""
+    marker_cls = "v15-marker" if not mode.startswith("long") else "v12-marker"
+    st.markdown(f'<div class="{marker_cls}" style="display:none"></div>', unsafe_allow_html=True)
     html = _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle, is_selected, mode)
     st.markdown(html, unsafe_allow_html=True)
 
@@ -182,8 +296,10 @@ def render_selectable_card(badge_html, title_text, sub_text, bonus_html, key, su
     selected_cls = "v12-unit-selected" if is_selected else ""
     icon = "✔" if is_selected else "❯"
     
+    marker_cls = "v15-marker" if mode != "long" else "v12-marker"
+    
     with st.container():
-        st.markdown(f'<div class="v12-marker {selected_cls}" style="display:none"></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="{marker_cls} {selected_cls}" style="display:none"></div>', unsafe_allow_html=True)
         # Always use the unified ratio defined in v14
         c_tag, c_btn = st.columns(CARD_ACTION_RATIO, gap="small")
         

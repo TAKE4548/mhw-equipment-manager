@@ -10,26 +10,23 @@ def render_weapon_attribute_badge(element):
 
 def build_visual_comparison_bar(before_labels, after_labels):
     """
-    v14: 強化前後の比較バー(HTML)を構築する。
-    差分がある箇所を強調表示する。
+    v15: 強化前後の比較バー(HTML)を構築する。
+    2段構成（Row1: Before, Row2: After）を返す。
     """
-    # Before labels: 控えめな色で表示
-    bc = " ".join([f'<span style="color:#666; font-size:0.78rem; margin-right:4px;">{s}</span>' for s in before_labels])
+    # Build Before Row
+    bc_html = "".join([f'<span style="color:#666; font-size:0.75rem; margin-right:4px;">{s}</span>' for s in before_labels])
+    row1 = f'<div class="v15-row">✨ {bc_html}</div>'
     
-    # After labels: 変更箇所を強調（黄色/太字）
-    ac = []
+    # Build After Row
+    ac_html = []
     for i, s in enumerate(after_labels):
         is_changed = (s != before_labels[i])
         clr = "#f1c40f" if is_changed else "#ccc"
         fw = "bold" if is_changed else "normal"
-        ac.append(f'<span style="color:{clr}; font-weight:{fw}; font-size:0.9rem; margin-right:8px; display:inline-block;">{s}</span>')
+        ac_html.append(f'<span style="color:{clr}; font-weight:{fw}; font-size:0.8rem; margin-right:4px;">{s}</span>')
+    row2 = f'<div class="v15-row">➡️ {"".join(ac_html)}</div>'
     
-    h = '<div style="display:flex; align-items:center; gap:10px; white-space:nowrap;">'
-    h += f'<div style="display:flex; align-items:center; opacity:0.7;">{bc}</div>'
-    h += '<span style="color:#ffd700; font-size:0.85rem; flex-shrink:0;">❯❯</span>'
-    h += f'<div style="display:flex; align-items:center;">{" ".join(ac)}</div>'
-    h += '</div>'
-    return h
+    return f"{row1}{row2}"
 
 def get_restoration_labels(row, prefix=""):
     """

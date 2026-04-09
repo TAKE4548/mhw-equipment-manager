@@ -17,6 +17,12 @@ description: "Project conventions. ALL IMPLEMENTATION PLANS MUST BE IN JAPANESE.
 - ドラフト状態の成果物を提示した際、または承認が必要なフェーズ（Step 5/Step 6のプラン提示等）では、**必ずそのターンの最後で処理を終了**しなければなりません。
 - 同一ターン内で、承認を前提としたツール（`run_command`, `task-tdd-implementation`等）を呼び出してはなりません。
 
+### 1-3. Role Boundary (BA vs. Design Gate)
+- **BA Role (Requirement Analysis)**: 職務は「課題の特定」と「目的レベルの要求定義」に限定されます。
+    - **禁止事項**: `backlog.md` 以外の既存ドキュメント（`design_system.md`, `architecture.md`, `ui_spec.md` 等）やソースコードを更新することは厳禁です。
+    - **禁止事項**: 具体的な実装手段（「この関数を変える」「この CSS を足す」等）をプランに含めてはなりません。
+- **Ready 状態の定義**: 「何を作るか（What）」が確定し、「どう作るか（How）」の設計フェーズを開始できる状態を指します。設計が完了している必要はありません。
+
 ## 2. General Guardrails
 - **NO ACCESS TO UNRELATED FILES:** 現在の作業に直接関係のないコードや設計図（他機能のもの）を好奇心で読み込まない。
 - **NO OUT-OF-BACKLOG EXECUTION:** `backlog.md` に未登録、または未着手のタスクを勝手に実装しない。

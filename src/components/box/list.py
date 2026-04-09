@@ -52,24 +52,28 @@ def render_equipment_list(master, user_id):
         st.info("条件に一致する武器がありません。")
     else:
         with st.container():
-            st.markdown('<div class="v12-dense-list" style="display:none"></div>', unsafe_allow_html=True)
             for index, row in df.iterrows():
                 badge_html = render_weapon_badge(row['element'])
                 w_display = row['weapon_name'] if row['weapon_name'] and not str(row['weapon_name']).startswith("無銘の") else row['weapon_type']
                 
                 # Bonus Formatting
                 pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
+                prod_bonus_text = f"🛠️ {format_bonus_summary(pbs)}"
+                
+                # Restoration Bonuses
                 rbs_with_lv = []
                 for i in range(1, 6):
                     rt, rl = row.get(f'rest_{i}_type', 'なし'), row.get(f'rest_{i}_level', 'なし')
                     if rt != 'なし': rbs_with_lv.append(f"{rt}{rl if rl and rl != '無印' else ''}")
+                rest_bonus_text = f"✨ {format_bonus_summary(rbs_with_lv)}"
                 
-                bonus_html = f"🛠️ {format_bonus_summary(pbs)} / ✨ {format_bonus_summary(rbs_with_lv)}"
+                # Combined strings for v15 parser
+                bonus_html = f"{prod_bonus_text} || {rest_bonus_text}"
                 sub_text = f"📋 {row['enhancement_type']} | 🛡️ {row['current_series_skill']} | 👥 {row['current_group_skill']}"
                 
                 col_card, col_act = st.columns(CARD_ACTION_RATIO, vertical_alignment="center")
                 with col_card:
-                    render_slim_card(badge_html, w_display, sub_text, bonus_html, subtitle=row['weapon_type'])
+                    render_slim_card(badge_html, w_display, sub_text, bonus_html, subtitle=row['weapon_type'], mode="hud")
                     
                 with col_act:
                     with st.popover("⋮", help="操作メニュー", use_container_width=True, key=f"pop_w_{row['id']}"):

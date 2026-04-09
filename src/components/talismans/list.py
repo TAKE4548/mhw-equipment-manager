@@ -59,7 +59,6 @@ def render_talisman_list(user_id):
     render_item_count(len(df))
     
     with st.container():
-        st.markdown('<div class="v12-dense-list" style="display:none"></div>', unsafe_allow_html=True)
 
         # Pre-calculate visual info using atom component
         results = df.apply(build_talisman_visual_info, axis=1)

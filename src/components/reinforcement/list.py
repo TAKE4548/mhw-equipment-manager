@@ -84,12 +84,21 @@ def render_active_tracker_list(master, eq_df, user_id):
             w_display = row['weapon_name'] if row['weapon_name'] and not str(row['weapon_name']).startswith("無銘の") else row['weapon_type']
             
             col_c = "#ff4b4b" if rem <= 1 else ("#f39c12" if rem < 5 else "#27ae60")
-            sub_text = f"<span style='opacity:0.8; margin-right:12px;'>{row['current_series_skill']} / {row['current_group_skill']}</span> {comp_html}"
-            metric_html = f"<b style='color:{col_c};'>あと{rem}回</b>"
+            
+            # Re-format sub_text for reinforcement mode: "Skills 📋 Enh | 🛠️ Prod"
+            pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
+            from src.logic.equipment_box import format_bonus_summary
+            prod_bonus_text = f"🛠️ {format_bonus_summary(pbs)}"
+            
+            skills_html = f"🛡️ {row['current_series_skill']} / 👥 {row['current_group_skill']}"
+            sub_text = f"{skills_html} 📋 {row['enhancement_type']} | {prod_bonus_text}"
+            
+            # metric_html: wrap remaining count and comparison bars
+            metric_html = f"<div class='v15-row' style='justify-content:flex-end; color:{col_c}; font-weight:bold;'>残り {rem} 回</div>{comp_html}"
             
             col_card, col_act = st.columns(CARD_ACTION_RATIO, vertical_alignment="center")
             with col_card:
-                render_slim_card(badge_html, w_display, sub_text, metric_html, subtitle=row['weapon_type'], mode="hud")
+                render_slim_card(badge_html, w_display, sub_text, metric_html, subtitle=row['weapon_type'], mode="reinforcement")
             with col_act:
                 with st.popover("⋮", use_container_width=True, key=f"pop_{row['id']}"):
                     if st.button("🔨 進行/適用", key=f"ap_{row['id']}", use_container_width=True):

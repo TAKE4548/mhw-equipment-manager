@@ -8,27 +8,30 @@ description: >
 
 # Backlog Management Task
 
-## Backlog Item Format
+## 1. Compliance (Universal Integrity Gates)
+- You MUST strictly follow **Gate 1-3: Role Boundary (BA vs. Design Gate)** in `project-conventions/SKILL.md`.
 
-Each item in `docs/backlog.md` must follow this structure:
-
-### REQ-{sequential-number}: {title}
+## 2. Backlog Item Format
+### REQ-{n}: {title}
 - **Type**: enhancement | defect
-- **Status**: new | ready | in-progress | done | fix-needed | needs-investigation
+- **Status**: 
   - `new`: BAが登録したが、Root Cause の掘り下げが不十分な状態。
-  - `ready`: Root Cause が特定され、目的レベルの要求（Requirement）が確定した開発可能状態。
-- **Current step**: {Step 1-8 | none}
+  - `ready`: 要件と受入条件が特定され、**設計フェーズ（Step 3/4）を開始できる状態**。
+  - `in-progress` | `done` | `fix-needed` | `needs-investigation`
+- **Current step**: {Step 1-8 | none} (Updated by Dev Coordinator)
 - **Priority**: unset | P1 | P2 | P3
-- **Surface**: {original user quote / raw statement}
-- **Symptom**: {observed undesirable behavior or user frustration}
-- **Root Cause**: {why it happens / core issue - UX categorized if possible}
-- **Requirement**: {the goal state / what needs to be true (ends-level, not means-level)}
-- **Acceptance criteria**: {testable conditions, focused on ends}
+- **Surface**: {original statement}
+- **Root Cause**: {core issue - ends level}
+- **Requirement**: {goal state - ends level}
+- **Acceptance criteria**: {testable conditions, NO implementation details}
 - **Design doc**: {path or "none"}
-- **Triage notes**: {hotfix-triager classification result, if applicable}
 
-## Rules
+## 3. Instructions
+- **BA Role**: Register/Detail requirements. Ensure `Acceptance criteria` do not contain implementation solutions.
+- **Architect Role**: Check if requirement is `ready` for Step 3 design.
+
+## 4. Rules
 - Allocate sequential REQ numbers (e.g. REQ-001) and do not reuse them.
 - Do NOT delete items. Only update their status and fields.
-- `Current step` field must be updated by the Dev Coordinator at the end of every active step during the `/dev` session.
-- When moving to `done`, append the completion date and set `Current step` to `none`.
+- `Current step`: Must be updated at the end of every active step in `/dev`.
+- `done`: Append completion date and set `Current step` to `none`.
