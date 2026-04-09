@@ -92,73 +92,93 @@ master = get_master_data()
 
 @st.fragment
 def render_registration_section(master, eq_df):
-    exp_expanded = st.session_state.get("tracker_reg_w_id") is not None
-    with st.expander("➕ 新しい強化抽選結果を追加登録", expanded=exp_expanded):
-        with st.expander("🔎 武器を検索・選択", expanded=False):
-            f_c1, f_c2, f_c3 = st.columns(3)
-            with f_c1:
-                f_name = st.text_input("武器名で検索", placeholder="キーワード入力...", key="tr_f_name")
-                f_types = st.multiselect("武器種", master.get("weapon_types", []), key="tr_f_types")
-                f_elements = st.multiselect("属性", master.get("elements", []), key="tr_f_elems")
-            with f_c2:
-                f_enhancements = st.multiselect("巨戟強化", master.get("kyogeki_enhancements", []), key="tr_f_enhs")
-                s_skills = [s['skill_parts'] for s in master.get("series_skills", []) if s['skill_parts'] != "なし"]
-                f_series = st.multiselect("シリーズスキル", sorted(s_skills), key="tr_f_series")
-                g_skills = [g['group_name'] for g in master.get("group_skills", []) if g['group_name'] != "なし"]
-                f_groups = st.multiselect("グループスキル", sorted(g_skills), key="tr_f_groups")
-            with f_c3:
-                p_bonus_opts = master.get("production_bonuses", [])
-                f_pbs = st.multiselect("生産ボーナス", p_bonus_opts, key="tr_f_pbs")
-                
-                all_rb_options = []
-                for rt, lvs in master.get("restoration_bonuses", {}).items():
-                    if rt == "なし": continue
-                    for lv in lvs:
-                        all_rb_options.append(rt if lv == "無印" else f"{rt} [{lv}]")
-                f_rbs = st.multiselect("復元ボーナス (AND検索)", sorted(all_rb_options), key="tr_f_rbs", help="選択したすべてのボーナスを復元枠内に含む武器を抽出します。")
-                f_sort = st.selectbox("並び替え", ["武器種順", "属性順", "新着順"], index=0, key="tr_f_sort")
-                
-        eq_df_filtered = filter_equipment(
-            eq_df, 
-            search_name=f_name, 
-            weapon_types=f_types, 
-            elements=f_elements, 
-            enhancements=f_enhancements,
-            series_skills=f_series,
-            group_skills=f_groups,
-            production_bonuses=f_pbs,
-            restoration_bonuses=f_rbs,
-            sort_by=f_sort
-        )
+    """v14 Visual Selector: Hierarchical Filtering + Responsive Grid Selection."""
+    st.markdown("### 1. 武器を選択")
+    
+    # --- Hierarchical Filters (4-step) ---
+    f_c1, f_c2, f_c3, f_c4 = st.columns(4)
+    
+    # Prepare filtered data for options
+    cur_df = eq_df.copy()
+    
+    with f_c1:
+        w_types = ["すべて"] + sorted(cur_df['weapon_type'].unique().tolist())
+        sel_type = st.selectbox("武器種", w_types, key="h_f_type")
+        if sel_type != "すべて": cur_df = cur_df[cur_df['weapon_type'] == sel_type]
         
-        # Localize high-density layout to ONLY the weapon selection list
+    with f_c2:
+        elems = ["すべて"] + sorted(cur_df['element'].unique().tolist())
+        sel_elem = st.selectbox("属性", elems, key="h_f_elem", disabled=len(elems) <= 1)
+        if sel_elem != "すべて": cur_df = cur_df[cur_df['element'] == sel_elem]
+        
+    with f_c3:
+        # Combine Series and Group skills for a unified "Focus Skill" filter
+        available_skills = set()
+        for idx, r in cur_df.iterrows():
+            if r['current_series_skill'] != "なし": available_skills.add(r['current_series_skill'])
+            if r['current_group_skill'] != "なし": available_skills.add(r['current_group_skill'])
+        
+        skill_opts = ["すべて"] + sorted(list(available_skills))
+        sel_skill = st.selectbox("スキル中心絞り込み", skill_opts, key="h_f_skill", disabled=len(skill_opts) <= 1)
+        if sel_skill != "すべて":
+            cur_df = cur_df[(cur_df['current_series_skill'] == sel_skill) | (cur_df['current_group_skill'] == sel_skill)]
+            
+    with f_c4:
+        # Bonuses - pooling p_bonus and restoration bonus types for terminal filtering
+        available_bonuses = set()
+        for idx, r in cur_df.iterrows():
+            # Check p_bonuses
+            for i in range(1, 4):
+                if r[f'p_bonus_{i}'] != "なし": available_bonuses.add(r[f'p_bonus_{i}'])
+            # Check current restoration bonuses
+            for i in range(1, 6):
+                if r[f'rest_{i}_type'] != "なし": available_bonuses.add(r[f'rest_{i}_type'])
+        
+        bonus_opts = ["すべて"] + sorted(list(available_bonuses))
+        sel_bonus = st.selectbox("ボーナス成分で検索", bonus_opts, key="h_f_bonus", disabled=len(bonus_opts) <= 1)
+        if sel_bonus != "すべて":
+            def check_bonus_exists(row):
+                for i in range(1, 4):
+                    if row[f'p_bonus_{i}'] == sel_bonus: return True
+                for i in range(1, 6):
+                    if row[f'rest_{i}_type'] == sel_bonus: return True
+                return False
+            cur_df = cur_df[cur_df.apply(check_bonus_exists, axis=1)]
+
+    # Sorting
+    cur_df = cur_df.sort_values(by=["weapon_type", "element", "weapon_name"])
+
+    # --- Render Results in Native Grid (3-column on desktop) ---
+    if cur_df.empty:
+        st.info("条件に一致する武器が見つかりません。")
+    else:
+        st.markdown(f"**候補: {len(cur_df)} 件**")
+        
+        # Streamlit-native list (1-column for maximum visibility)
         with st.container():
             st.markdown('<div class="v12-dense-list" style="display:none"></div>', unsafe_allow_html=True)
-            for idx, w_row in eq_df_filtered.iterrows():
+            for idx, w_row in cur_df.iterrows():
                 is_selected = (st.session_state.get("tracker_reg_w_id") == w_row['id'])
                 elem = w_row['element']
                 bg = ATTRIBUTE_COLORS.get(elem, "#444")
                 txt_c = "black" if elem in ["氷", "雷", "無", "睡眠"] else "white"
                 badge_html = get_badge_html(elem, bgcolor=bg, color=txt_c)
-                w_display = w_row['weapon_name'] if w_row['weapon_name'] and not w_row['weapon_name'].startswith("無銘の") else w_row['weapon_type']
+                w_display = w_row['weapon_name'] if w_row['weapon_name'] and not str(w_row['weapon_name']).startswith("無銘の") else w_row['weapon_type']
                 
-                # Render Selection Card (Unified Clickable Interface)
-                curr_rbs = []
-                for i in range(1, 6):
-                    rt, rl = w_row[f'rest_{i}_type'], w_row[f'rest_{i}_level']
-                    curr_rbs.append(f"{rt}{rl if rl != '無印' else ''}" if rt != "なし" else "なし")
+                # Preparation for display
+                p_bonuses = [w_row[f'p_bonus_{i}'] for i in range(1, 4) if w_row[f'p_bonus_{i}'] != "なし"]
+                r_bonuses = [f"{w_row[f'rest_{i}_type']}{w_row[f'rest_{i}_level'] if w_row[f'rest_{i}_level'] != '無印' else ''}" for i in range(1, 6) if w_row[f'rest_{i}_type'] != "なし"]
                 
-                p_bonuses_list = [w_row[f'p_bonus_{i}'] for i in range(1, 4) if w_row[f'p_bonus_{i}'] != "なし"]
-                p_bonus_text = f"🛠️ {format_bonus_summary(p_bonuses_list)}" if p_bonuses_list else ""
-                r_bonus_text = f"✨ {format_bonus_list(curr_rbs)}"
-                bonus_html = f"{p_bonus_text}{'<br>' if p_bonus_text else ''}{r_bonus_text}"
+                p_bonus_text = f"🛠️ {format_bonus_summary(p_bonuses)}" if p_bonuses else ""
+                r_bonus_text = f"✨ {format_bonus_list(r_bonuses)}"
                 
-                sub_text = f"📋 {w_row['enhancement_type']} | 🛡️ {w_row['current_series_skill']} | 👥 {w_row['current_group_skill']} | {bonus_html}"
+                # Sub-text with maximum-contrast color for visibility
+                desc = f"<div style='margin-bottom:4px; color:#ddd;'>📋 {w_row['current_series_skill']} / {w_row['current_group_skill']}</div>"
+                desc += f"<div style='font-size:0.75rem; opacity:1.0; color:#bbb; line-height:1.2;'>{p_bonus_text}{'<br>' if p_bonus_text else ''}{r_bonus_text}</div>"
                 
-                from src.components.cards import render_selectable_card
                 if render_selectable_card(
-                    badge_html, w_display, sub_text, "", # Metric area empty for weapon selection
-                    key=f"sel_{w_row['id']}", 
+                    badge_html, w_display, desc, "", 
+                    key=f"hsel_{w_row['id']}", 
                     subtitle=w_row['weapon_type'], 
                     is_selected=is_selected,
                     mode="hud"
@@ -166,44 +186,52 @@ def render_registration_section(master, eq_df):
                     st.session_state.tracker_reg_w_id = w_row['id']
                     st.rerun()
 
-        if st.session_state.get("tracker_reg_w_id"):
-            sel_row = eq_df[eq_df['id'] == st.session_state.tracker_reg_w_id].iloc[0]
-            st.markdown(f"**「{sel_row['weapon_name']}」の抽選結果を入力**")
-            sel_w_type, sel_element = sel_row['weapon_type'], sel_row['element']
-            is_bow = ("弓" in sel_w_type and "ボウガン" not in sel_w_type)
-            is_bowgun = ("ボウガン" in sel_w_type)
-            
-            dynamic_rest_options = ["なし"]
-            for r_type, levels in master.get("restoration_bonuses", {}).items():
-                if r_type == "なし": continue
-                if r_type == "切れ味強化" and (is_bow or is_bowgun): continue
-                if r_type == "装填強化" and not is_bowgun: continue
-                if r_type == "属性強化" and (sel_element == "無" or (is_bow and sel_element in ["毒", "麻痺", "睡眠", "爆破"])): continue
-                for lv in levels: dynamic_rest_options.append(r_type if lv == "無印" else f"{r_type} [{lv}]")
-                    
-            rc1, rc2, rc3, rc4, rc5 = st.columns(5)
-            tb1 = rc1.selectbox("枠1", dynamic_rest_options, key="tb1")
-            tb2 = rc2.selectbox("枠2", dynamic_rest_options, key="tb2")
-            tb3 = rc3.selectbox("枠3", dynamic_rest_options, key="tb3")
-            tb4 = rc4.selectbox("枠4", dynamic_rest_options, key="tb4")
-            tb5 = rc5.selectbox("枠5", dynamic_rest_options, key="tb5")
-            
-            count_val = st.number_input("残り回数", min_value=1, value=1, step=1, key="tr_count")
-            if st.button("トラッキングに追加", type="primary", use_container_width=True):
-                parsed_rbs = []
-                for rb in [tb1, tb2, tb3, tb4, tb5]:
-                    if rb == "なし": parsed_rbs.append({"type": "なし", "level": "なし"})
-                    elif " [" in rb:
-                        parts = rb.split(" [")
-                        parsed_rbs.append({"type": parts[0], "level": parts[1][:-1]})
-                    else: parsed_rbs.append({"type": rb, "level": "無印"})
-                if register_tracker(st.session_state.tracker_reg_w_id, count_val, parsed_rbs, user_id=user_id):
-                    st.session_state.tracker_reg_w_id = None
-                    st.toast("追加しました", icon="📋")
-                    st.rerun()
-                else: st.error("保存に失敗しました")
-
-render_registration_section(master, eq_df)
+    # --- Step 2: Registration Form (Visible when weapon selected) ---
+    if st.session_state.get("tracker_reg_w_id"):
+        st.markdown("---")
+        st.markdown("### 2. 抽選結果を入力")
+        sel_row = eq_df[eq_df['id'] == st.session_state.tracker_reg_w_id].iloc[0]
+        st.info(f"選択中: **{sel_row['weapon_name']}** ({sel_row['weapon_type']})")
+        
+        sel_w_type, sel_element = sel_row['weapon_type'], sel_row['element']
+        is_bow = ("弓" in sel_w_type and "ボウガン" not in sel_w_type)
+        is_bowgun = ("ボウガン" in sel_w_type)
+        
+        dynamic_rest_options = ["なし"]
+        for r_type, levels in master.get("restoration_bonuses", {}).items():
+            if r_type == "なし": continue
+            if r_type == "切れ味強化" and (is_bow or is_bowgun): continue
+            if r_type == "装填強化" and not is_bowgun: continue
+            if r_type == "属性強化" and (sel_element == "無" or (is_bow and sel_element in ["毒", "麻痺", "睡眠", "爆破"])): continue
+            for lv in levels: dynamic_rest_options.append(r_type if lv == "無印" else f"{r_type} [{lv}]")
+                
+        rc1, rc2, rc3, rc4, rc5 = st.columns(5)
+        tb1 = rc1.selectbox("枠1", dynamic_rest_options, key="tb1")
+        tb2 = rc2.selectbox("枠2", dynamic_rest_options, key="tb2")
+        tb3 = rc3.selectbox("枠3", dynamic_rest_options, key="tb3")
+        tb4 = rc4.selectbox("枠4", dynamic_rest_options, key="tb4")
+        tb5 = rc5.selectbox("枠5", dynamic_rest_options, key="tb5")
+        
+        count_val = st.number_input("残り回数 (目標までのスキップ数)", min_value=1, value=1, step=1, key="tr_count")
+        
+        b_c1, b_c2 = st.columns([7, 3])
+        if b_c1.button("トラッキングに追加", type="primary", use_container_width=True):
+            parsed_rbs = []
+            for rb in [tb1, tb2, tb3, tb4, tb5]:
+                if rb == "なし": parsed_rbs.append({"type": "なし", "level": "なし"})
+                elif " [" in rb:
+                    parts = rb.split(" [")
+                    parsed_rbs.append({"type": parts[0], "level": parts[1][:-1]})
+                else: parsed_rbs.append({"type": rb, "level": "無印"})
+            if register_tracker(st.session_state.tracker_reg_w_id, count_val, parsed_rbs, user_id=user_id):
+                st.session_state.tracker_reg_w_id = None
+                st.toast("トラッキングに追加しました", icon="📋")
+                st.rerun()
+            else: st.error("保存に失敗しました")
+        
+        if b_c2.button("キャンセル", use_container_width=True):
+            st.session_state.tracker_reg_w_id = None
+            st.rerun()
 
 # --- Tracking List Toolbar ---
 @st.fragment
@@ -312,7 +340,6 @@ def render_active_tracker_list(master, eq_df, user_id):
             col_c = "#ff4b4b" if rem <= 1 else ("#f39c12" if rem < 5 else "#27ae60")
             
             # REQ-026: Unify count position (Metric) and Comparison Bar position (Spec)
-            # Improved opacity for visibility and removed redundant separator
             sub_text = f"<span style='opacity:0.8; margin-right:12px;'>{row['current_series_skill']} / {row['current_group_skill']}</span> {comp_html}"
             metric_html = f"<b style='color:{col_c};'>あと{rem}回</b>"
             
@@ -329,5 +356,9 @@ def render_active_tracker_list(master, eq_df, user_id):
                     st.divider()
                     if st.button("🗑️ 削除", key=f"dl_{row['id']}", type="primary", use_container_width=True):
                         if delete_tracker(row['id'], user_id=user_id): st.rerun()
+
+# --- Content Flow ---
+with st.expander("✨ 新しい強化抽選を登録する", expanded=st.session_state.get("tracker_reg_w_id") is not None):
+    render_registration_section(master, eq_df)
 
 render_active_tracker_list(master, eq_df, user_id)

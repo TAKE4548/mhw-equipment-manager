@@ -61,7 +61,7 @@ def inject_card_css():
             display: flex;
             align-items: center;
             padding: 0 16px;
-            background: #1a1a1a;
+            background: #222;
             border: 1px solid #333;
             border-radius: 6px;
             height: 40px !important;
@@ -94,7 +94,7 @@ def inject_card_css():
         .v14-mode-hud .v12-col-id { width: 180px; } /* Weapon fixed width name */
         .v14-mode-long .v12-col-id { width: auto; max-width: 60px; margin-right: 12px; } /* Talisman badge-only id */
 
-        .v12-main-label { font-weight: 600; font-size: 0.9rem; color: #eee; overflow: hidden; text-overflow: ellipsis; }
+        .v12-main-label { font-weight: 600; font-size: 0.9rem; color: #fff; overflow: hidden; text-overflow: ellipsis; }
 
         /* Column 2: Spec (HUD Icons or Long Text) */
         .v12-col-spec { display: flex; align-items: center; overflow: hidden; gap: 10px; margin-right: 10px; }
@@ -128,6 +128,20 @@ def inject_card_css():
         [data-testid="stHorizontalBlock"]:has(.v12-marker) div[data-testid="stPopover"] {
             height: 40px !important;
             min-height: 40px !important;
+        }
+
+        /* v14 Responsive Grid Container */
+        .v14-grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 8px;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        /* Adjust internal column blocks specifically when inside grid to prevent overflow */
+        .v14-grid-container [data-testid="stHorizontalBlock"] {
+            margin-bottom: 0 !important;
         }
 
         @media (max-width: 900px) { .v12-col-spec { display: none; } }

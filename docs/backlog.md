@@ -3,12 +3,12 @@
 This document is the Single Source of Truth for all feature requests, bug reports, and ongoing development tasks.
 
 ## Status Definitions
-- **new**: Just added, prioritized but not elaborated.
-- **ready**: Requirements are structured and ready for development.
-- **in-progress**: Currently being worked on in a `/dev` session.
-- **fix-needed**: A recent regression was found, needs immediate attention.
-- **needs-investigation**: Cannot be replicated or understood without further research.
-- **done**: Successfully reviewed and merged.
+- **new**: BAが登録済み。掘り下げ（真の課題の特定）が未完了の状態。
+- **ready**: 掘り下げが完了し、目的レベルの要求（Requirement）と受入基準が確定。開発着手可能。
+- **in-progress**: 現在 `/dev` セッションで開発中。
+- **fix-needed**: デグレード等が発見され、修正が必要な状態。
+- **needs-investigation**: 現象の再現や詳細な調査が必要な状態。
+- **done**: 開発・レビューが完了し、マージ済み。
 
 ---
 ## Backlog Items
@@ -243,18 +243,25 @@ This document is the Single Source of Truth for all feature requests, bug report
 - **Acceptance Criteria**:
     - 描画パフォーマンスを最適化し、コードのクリーンさを保つ。
  
-+### REQ-024: 復元強化厳選のページの登録時の武器選択UIの見直し
-+- **Type**: enhancement
-+- **Status**: new
-+- **Current step**: none
-+- **Priority**: P2
-+- **Source**: "復元強化厳選のページの登録時の武器選択UIの見直し”としてバックログに記録はしておいて"
-+- **Problem**: 現状の登録用武器選択 UI は、カードリストをエキスパンダー内に配置する形式をとっているが、対象武器が多い場合の選択コストや視認性に改善の余地がある。また、現在の「1カラム・リスト形式」では、多数の武器から一つを選ぶ際のスクロール量が多くなりがちである。
-+- **Requirement**: 強化厳選作業のワークフローに最適化された、より効率的な武器選択 UI を検討・実装する。
-+- **Acceptance criteria**:
-+    - 登録対象の武器を素早く、かつ正確に特定・選択できる。
-+    - 選択時の視覚的フィードバック（HUD システムとの整合性）が最適化されている。
-+    - 画面占有率と操作ステップ数のバランスが改善されている（例：グリッド表示の検討、より洗練されたフィルターの導入等）。
+### REQ-024: 復元強化厳選のページの登録時の武器選択UIの見直し
+- **Status**: done
+- **Current step**: Complete
+- **Type**: enhancement
+- **Priority**: P2
+- **Surface**: "復元強化厳選のページの登録時の武器選択UIの見直し"
+- **Symptom**: 抽選結果を登録する際、対象の1本を膨大なリストから探し出すのが困難。エキスパンダーによる操作ラグと、1カラムリストによる極端なスクロール量が負担となっている。
+- **Root Cause**: 
+    - **情報設計**: 武器種 ⇒ 属性 ⇒ スキル ⇒ ボーナスという、ユーザーの探索メンタルモデルに対応した階層的なフィルタリング手段が欠如している。
+    - **インタラクション**: フィルタ操作がリストに即時（リアルタイム）反映されないため、試行錯誤のコストが高い。
+    - **視覚**: 単一カラムのリスト表示では一度に表示できる武器数が少なく、比較・特定に適さない。
+- **Requirement**: ユーザーの探索順序に基づいた多段階フィルタ（Weapons > Elements > Skills > Bonuses）を備え、リアルタイムに絞り込まれる高密度グリッド（3カラム等）形式の武器選択UIを実装し、特定武器の登録フローを大幅に効率化する。
+- **Acceptance criteria**:
+    - [ ] 「武器種」「属性」「スキル」「ボーナス」の順で条件を指定できる階層フィルタが提供されている。
+    - [ ] フィルタの変更が、ページ遷移なしで武器リストに即時（リアルタイム）反映される。
+    - [ ] 武器リストが、従来の1カラム形式からグリッド形式（3カラム推奨）に変更され、一覧性が向上している。
+    - [ ] 各武器カードに「選択/決定」のアクション（HUD v14準拠）が統合されている。
+    - [ ] 武器を選択した際、即座に登録フォームへのデータ反映が行われる。
+
 
 ### REQ-025: UI 文言の一元管理化 (Centralized String Management)
 - **Status**: done (2026-04-09)
@@ -280,14 +287,15 @@ This document is the Single Source of Truth for all feature requests, bug report
 - **Acceptance Criteria**:
     - 全ての抽選結果リスト行において、「回数」の表示開始位置（または中心位置）が垂直に整列している。
     - コンテンツ（スキル名等）が長くても、回数表示の位置がズレない。
-### REQ-027: カードデザインの2行表示対応による視認性向上と整列の安定化
+
+### REQ-027: リストカードの2行表示対応による視認性向上とデザイン刷新
 - **Status**: new
 - **Type**: enhancement
 - **Priority**: mid
 - **Source**: "武器一覧で長いスキル名が見えないのと、スキル名による位置ずれが大きいので、カードへの2行表記を許容する方針でデザインを見直そう"
-- **Problem**: 現在の1行固定デザインでは、長いスキル名が収まりきらず、また無理に収めようとすると他の要素（回数表示など）との位置関係に影響を与え、視覚的な一貫性が損なわれる。
-- **Requirement**: デザインシステム（HUD v14）を拡張し、必要に応じて情報を2行に展開できる柔軟なカードレイアウトを設計・実装する。これにより、情報の網羅性と整列の安定性を両立する。
+- **Problem**: 現状の Lean UI (HUD v14) は 1 行表示を前提としているが、複雑なスキル構成や比較情報を表示する際に文字が溢れて省略（...）されたり、逆に非表示にせざるを得ない情報が発生している。また、無理に 1 行に納めようとすることで各列の整列（垂直ライン）を維持するのが難しくなっている。
+- **Requirement**: カードの 2 行（マルチライン）表示を許容する新しいデザインシステムを策定・実装する。情報の密度を保ちつつ、長いスキル名が完全に見えるようにし、同時に垂直方向の整列（Metric カラム等）の安定性をさらに高める。
 - **Acceptance Criteria**:
-    - 長いスキル名や複数のボーナス情報がある場合、カードの高さを必要最小限拡張し、2行での表示をサポートする。
-    - 2行表示時も、「残り回数」などの主要メトリクスの垂直方向の基準線（baseline）が維持または整理されている。
-    - 1行で収まる場合は高さを抑制し、一覧性を保つ（動的レイアウト）。
+    - 長いスキル名や詳細情報が省略されずに表示される。
+    - カードの高さが増加しても、垂直方向の整列（Identity, Metric カラムの位置関係など）が全行で一貫している。
+    - 「スリムさ」と「情報量」の最適なバランスが取れたビジュアルになっている。
