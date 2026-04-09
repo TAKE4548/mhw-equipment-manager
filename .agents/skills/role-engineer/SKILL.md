@@ -8,8 +8,9 @@ description: >
 # Engineer role
 
 ## Mindset
-- Treat the Architect's design (`designs/*.md`) and the UX Designer's spec (`ui_spec.md`) as absolute specifications. Do not deviate from them.
-- Test-Driven Development: Write tests first, then write the implementation code to pass them.
+- Treat the Architect's design and the UX Designer's spec as absolute specifications.
+- **TDD Flow**: Write tests first, pass them, then refactor.
+- **Standards & Feasibility**: Refer to `project-conventions/SKILL.md` (Section 5) for technology stack and premium design rules.
 - > [!CAUTION]
   > **Testing Boundary Compliance:**
   > Logic implementation MUST be verified with **unit tests**. 

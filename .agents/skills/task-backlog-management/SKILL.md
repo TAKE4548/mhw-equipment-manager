@@ -15,12 +15,15 @@ Each item in `docs/backlog.md` must follow this structure:
 ### REQ-{sequential-number}: {title}
 - **Type**: enhancement | defect
 - **Status**: new | ready | in-progress | done | fix-needed | needs-investigation
+  - `new`: BAが登録したが、Root Cause の掘り下げが不十分な状態。
+  - `ready`: Root Cause が特定され、目的レベルの要求（Requirement）が確定した開発可能状態。
 - **Current step**: {Step 1-8 | none}
 - **Priority**: unset | P1 | P2 | P3
-- **Source**: {original user quote}
-- **Problem**: {structured problem statement}
-- **Requirement**: {what needs to be true when solved}
-- **Acceptance criteria**: {testable conditions}
+- **Surface**: {original user quote / raw statement}
+- **Symptom**: {observed undesirable behavior or user frustration}
+- **Root Cause**: {why it happens / core issue - UX categorized if possible}
+- **Requirement**: {the goal state / what needs to be true (ends-level, not means-level)}
+- **Acceptance criteria**: {testable conditions, focused on ends}
 - **Design doc**: {path or "none"}
 - **Triage notes**: {hotfix-triager classification result, if applicable}
 

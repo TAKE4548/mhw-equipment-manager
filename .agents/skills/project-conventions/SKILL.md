@@ -31,6 +31,27 @@ description: "Project conventions. ALL IMPLEMENTATION PLANS MUST BE IN JAPANESE.
 - **IMPLEMENTATION PLANS MUST BE IN JAPANESE:** ユーザー承認を仰ぐための `implementation_plan.md` は必ず**日本語**で作成すること。
 - **Internal Docs:** `docs/designs/*.md` や `docs/ui_spec.md` は、技術的正確性を期すため、指示がない限り英語で記述して良い。
 
-## 5. Context Optimization (Defrag Rule)
+## 5. Technology Stack & Design Standards (Static Base)
+
+### 5-1. Technology Stack
+1. **Core**: HTML for structure, Javascript for logic.
+2. **Styling**: Vanilla CSS. No TailwindCSS unless explicitly requested and version-confirmed.
+3. **Frameworks**: Next.js or Vite only if "Web App" is explicitly requested.
+4. **Local Dev**: Use `npm run dev`. Build only for validation or on request.
+
+### 5-2. Premium Design Aesthetics
+1. **Rich Aesthetics**: Vibrant colors, sleek dark modes, glassmorphism, dynamic animations.
+2. **Visual Excellence**:
+   - Curated, harmonious color palettes (HSL).
+   - Modern typography (Inter, Roboto, Outfit).
+   - Smooth gradients and micro-animations.
+3. **Dynamic Design**: Hover effects and interactive elements to make the UI feel alive.
+4. **No Placeholders**: Use `generate_image` for demonstration assets.
+
+### 5-3. Monster Hunter Domain Knowledge
+- **Terminology**: Rarity (Ⅰ-Ⅷ), Slots (Lv1-4), Talismans, Augmentation, Skill Lottery.
+- **Visuals**: Use established MHW icons/colors for elements (Fire: Red, Ice: Light Blue, etc.).
+
+## 6. Context Optimization (Defrag Rule)
 - 複数のファイルに似た指示がある場合、常にこの `project-conventions` の定義を正とする。
 - アーキテクトは、冗長な指示を積極的に削除・統合し、指示の「密度と実行力」を維持しなければならない。

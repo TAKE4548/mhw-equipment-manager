@@ -40,13 +40,15 @@
 - `is_favorite` (BOOLEAN): お気に入り（錬金・売却保護フラグ）
 
 ## Application State (Session State)
-アプリ全体の安定稼働のため、`app.py` および各ページにて以下を管理します。
-- `user`: Supabase Auth ログインユーザー情報
-- `storage`: 統合ストレージインスタンス (`StorageManager`)
-- `undo_stack` / `redo_stack`: アプリ全体のデータ操作履歴（Undo/Redo用）
-- `r_form`: 鑑定護石登録フォームの入力バッファ（カスケード制御用）
-- `active_dialog`: 現在開いているスキル選択ダイアログのターゲット情報
-- `tracker_reg_w_id`: 画面間をまたぐ武器選択状態
+アプリ全体の安定稼働のため、以下の管理方針を採用する。
+
+- **Global State**: `app.py` および共通コンポーネントで管理。
+  - `user`: Supabase Auth ログインユーザー情報。
+  - `storage`: 統合ストレージインスタンス (`StorageManager`)。
+  - `undo_stack` / `redo_stack`: アプリ全体のデータ操作履歴（Undo/Redo用）。
+- **Page-specific State**: 各ページのコンポーネントディレクトリ内の `state.py` にて一元管理。
+  - (例: `talismans/state.py`): `r_form` (護石登録バッファ), `active_dialog` (スキル選択) 等。
+  - (例: `box/state.py`): `tracker_reg_w_id` (武器選択状態) 等。
 
 ## Storage (ストレージ)
 - **Primary (Anonymous)**: Local Browser Cookie (`streamlit-cookies-controller` を使用し、Streamlitのiframe Sandboxを回避)。

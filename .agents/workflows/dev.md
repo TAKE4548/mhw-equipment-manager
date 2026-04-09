@@ -13,7 +13,11 @@ Step 0: [Role: Dev Coordinator]
 - If the user says Yes, jump directly to that step. Otherwise, proceed to Step 1.
 
 Step 1: [Role: Dev Coordinator]
-- Present actionable items (new, ready, fix-needed) to the user.
+- Present items with `Status: ready` or `fix-needed` as primary development targets.
+- If there are items with `Status: new`, notify the user:
+  「未整理の要望 (Status: new) が {count} 件あります。開発の前にこれらを整理（掘り下げ）しますか？」
+  - ユーザーが「はい」と答えた場合 -> **BAロール**に切り替えて `task-requirement-analysis` を実行し、項目を `ready` にしてから /dev を継続する。
+  - ユーザーが「いいえ」または `ready` 項目を選択した場合 -> そのまま開発を進める。
 - The user selects an item (PO decision).
 - Update the item's status to `in-progress` and `Current step` to `Step 1`.
 - **Starting Step Assignment Logic**:

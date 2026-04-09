@@ -216,14 +216,15 @@ This document is the Single Source of Truth for all feature requests, bug report
 - **Acceptance Criteria**:
     - `pages/5_talismans.py` および `src/logic/talismans.py` 内の条件分岐（`if rarity == 8` 等）を共通定義の参照に置き換える。
 
-### REQ-021: 鑑定護石画面のコンポーネント分割と整理 (Audit 3-2)
-- **Status**: new
+### REQ-021: AIフレンドリーなコンポーネント指向リファクタリング
+- **Status**: completed
 - **Type**: maintenance
-- **Priority**: mid
-- **Description**: `pages/5_talismans.py` (約400行) を、目的別のUIコンポーネント（Dialogs, Form, List）に分割し、`src/components/talismans/` 配下に整理する。
-- **Problem**: 単一ファイルに UI、状態管理、バリデーションが混在しており、可読性と再利用性が低下している。
+- **Priority**: High
+- **Description**: AIエージェントによるメンテナンス効率を最大化するため、主要 4 ページ（護石管理、復元強化、装備ボックス、抽選結果）を State, Atoms, Dialogs, Form, List の 5 つの役割に物理分割した。これによりトークン消費が大幅に削減された。
 - **Acceptance Criteria**:
-    - メインページは全体構成とナビゲーションに集中し、詳細なUI実装は各コンポーネントへ委譲する。
+    - [x] `src/components/` 配下に各ページ専用のディレクトリ（talismans, reinforcement, box, lottery）が作成されている。
+    - [x] 各ページが `pages/` からクリーンにインポート呼び出しされている。
+    - [x] 手動・自動テストを通じて、既存機能の完全な維持を確認。
 
 ### REQ-022: 例外処理の握り潰し是正とエラー通知の導入 (Audit 3-3)
 - **Status**: new

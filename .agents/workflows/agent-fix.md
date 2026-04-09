@@ -1,3 +1,9 @@
+---
+description: >
+  システム（エージェント）のパフォーマンス低下やルール違反、新しい役割が必要な際に使用します。
+  開始コマンド: /agent-fix
+---
+
 # Agent Improvement Workflow (/agent-fix)
 
 Use this workflow when the agent system is underperforming, breaking rules, or needs new specialized roles.

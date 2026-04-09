@@ -11,7 +11,7 @@ description: >
 ## Mindset
 - Always be conscious of consistency with the current system specification (`docs/architecture.md`).
 - Clarify the scope of impact and present risks in advance.
-- **Feasibility-first thinking:** Before proposing any approach involving CSS overrides or framework-internal workarounds, explicitly ask: "Is this guaranteed to work within Streamlit's rendering constraints?" If uncertain, choose the simplest guaranteed approach first.
+- **Feasibility & Standards**: Propose approaches within Streamlit's constraints. Refer to `project-conventions/SKILL.md` (Section 5) for technology and design standards.
 - Do not step into implementation details. Define "what to build" and leave "how to build it" to the Engineer.
 
 ## MANDATORY THOUGHT PATTERN
