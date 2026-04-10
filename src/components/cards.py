@@ -33,12 +33,9 @@ def inject_card_css():
             margin-bottom: 0.5rem !important;
         }
 
-        /* 0. List Item Spacing - Direct margin for reliability */
-        [data-testid="stHorizontalBlock"]:has(.v12-marker),
-        [data-testid="stHorizontalBlock"]:has(.v15-marker) {
-            align-items: center !important;
-            margin-bottom: 8px !important;
-            gap: 12px !important;
+        /* 0. List Item Spacing - Native Vertical Block Gap */
+        [data-testid="stVerticalBlock"] {
+            gap: 0.5rem !important; /* Constant 8px gap */
         }
 
         /* 1. The Card - v15 Multi-line (64px) / v14 Slim (40px) */
@@ -76,9 +73,21 @@ def inject_card_css():
             height: 64px !important;
         }
 
-        /* Selection */
-        .v12-tag-card.v12-selected { border: 1px solid #f1c40f !important; background: #222 !important; }
-        [data-testid="stHorizontalBlock"]:has(.v12-unit-selected) button { background: #f1c40f !important; border: 1px solid #f1c40f !important; color: #000 !important; }
+        /* Selection (HUD Gold) - Targeted via native button type/kind */
+        .v12-tag-card.v12-unit-selected { border: 1px solid #f1c40f !important; }
+        
+        /* Button: Secondary (Default) */
+        div[data-testid="stButton"] button[kind="secondary"] {
+            /* Inherit common styles from section 2 below */
+        }
+
+        /* Button: Primary (Selected) */
+        div[data-testid="stButton"] button[kind="primary"] {
+            background-color: #f1c40f !important;
+            border: 1px solid #f1c40f !important;
+            color: #000 !important;
+            font-weight: bold !important;
+        }
 
         /* HUD STREAMS & ALIGNMENT */
         .v12-stream { display: flex; align-items: center; width: 100%; white-space: nowrap; overflow: hidden; height: 100%; }
@@ -185,14 +194,15 @@ def inject_card_css():
         </style>
     """, unsafe_allow_html=True)
 
-def _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle, is_selected, mode):
+def _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle, is_selected, mode, marker_cls=""):
     """v15: Unified Multi-line Card (Supports 'hud', 'long', and 'reinforcement')."""
-    selected_cls = "v12-selected" if is_selected else ""
+    selected_cls = "v12-unit-selected" if is_selected else ""
     is_long = mode.startswith("long")
     v15_cls = "v15-mode" if not is_long else ""
     card_mode_cls = "v14-mode-long" if is_long else ""
     
-    html = f'<div class="v12-tag-card {selected_cls} {v15_cls} {card_mode_cls}"><div class="v12-stream">'
+    # Marker classes integrated directly into the card div
+    html = f'<div class="v12-tag-card {marker_cls} {selected_cls} {v15_cls} {card_mode_cls}"><div class="v12-stream">'
     
     if is_long:
         # Legacy/Talisman Long mode (Stay 40px)
@@ -287,27 +297,24 @@ def _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle,
 def render_slim_card(badge_html, title_text, sub_text, bonus_html, subtitle=None, is_selected=False, mode="hud"):
     """Displays the v14 context-aware tag without button."""
     marker_cls = "v15-marker" if not mode.startswith("long") else "v12-marker"
-    st.markdown(f'<div class="{marker_cls}" style="display:none"></div>', unsafe_allow_html=True)
-    html = _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle, is_selected, mode)
+    html = _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle, is_selected, mode, marker_cls)
     st.markdown(html, unsafe_allow_html=True)
 
 def render_selectable_card(badge_html, title_text, sub_text, bonus_html, key, subtitle=None, is_selected=False, mode="hud"):
     """v14: Context-aware selection tag."""
-    selected_cls = "v12-unit-selected" if is_selected else ""
     icon = "✔" if is_selected else "❯"
-    
+    btn_type = "primary" if is_selected else "secondary"
     marker_cls = "v15-marker" if mode != "long" else "v12-marker"
     
     with st.container():
-        st.markdown(f'<div class="{marker_cls} {selected_cls}" style="display:none"></div>', unsafe_allow_html=True)
         # Always use the unified ratio defined in v14
         c_tag, c_btn = st.columns(CARD_ACTION_RATIO, gap="small")
         
         with c_tag:
-            html = _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle, is_selected, mode)
+            html = _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle, is_selected, mode, marker_cls)
             st.markdown(html, unsafe_allow_html=True)
             
         with c_btn:
-            clicked = st.button(icon, key=key, use_container_width=True)
+            clicked = st.button(icon, key=key, type=btn_type, use_container_width=True)
             
         return clicked
