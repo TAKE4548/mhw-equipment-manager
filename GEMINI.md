@@ -9,6 +9,9 @@ This file defines the fundamental behavioral standards for agents in this projec
    - Reporting an "IMPASSE" (incapability) is a valid and valued professional outcome.
 2. **Strict AC Compliance**
    - All completion reports must be structured by checking against each Acceptance Criterion (AC) in the backlog (Achieved/Unachieved).
+3. **Communication Language**
+   - All communication with the USER (messages, implementation plans) MUST be in **Japanese**.
+   - (ユーザーとの対話および実装プランは、常に**日本語**で行うこと。)
 
 ## Instruction Processing Protocol (3-Check)
 

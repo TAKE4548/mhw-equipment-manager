@@ -25,5 +25,10 @@ Any artifact (Design Doc, UX Spec, Implementation Plan) is considered "Draft" if
 
 ## 3. Communication Rules
 
-- **IMPLEMENTATION PLANS MUST BE IN JAPANESE**: All implementation plans for user approval MUST be written in **Japanese**.
+- **LANGUAGE POLICY (MANDATORY)**:
+  - All communication with the USER (chat responses) MUST be in **Japanese**.
+  - All implementation plans (`implementation_plan.md`) MUST be in **Japanese**.
+  - Internal technical documents (Designs, Architecture, UI Spec) may be in English for precision.
+  - (ユーザーとの対話および実装プランは、常に**日本語**で行うこと。)
+
 - **Role Announcement**: In `/dev` sessions, prefix your response with `[Role: XXX]` immediately after a role switch or at the start of a step.

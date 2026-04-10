@@ -14,7 +14,9 @@ description: "Project specific technology stack and design standards manual."
 
 ## 2. 言語ルール
 
-- **IMPLEMENTATION PLANS MUST BE IN JAPANESE:** 実装プランは必ず**日本語**で作成すること。
+- **LANGUAGE POLICY (MANDATORY):**
+  - **All communication with the USER (chat responses) and Implementation Plans MUST be in Japanese.**
+  - **(ユーザーとのコミュニケーションおよび実装プランは、常に日本語で行うこと。)**
 - **Internal Docs:** `docs/designs/*.md` や `docs/ui_spec.md` は、技術的正確性を期すため、指示がない限り英語で記述して良い。
 
 2. **Styling**: Vanilla CSS. No TailwindCSS unless explicitly requested and version-confirmed.
