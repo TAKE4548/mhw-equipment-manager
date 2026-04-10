@@ -4,27 +4,14 @@ This file defines the fundamental behavioral standards for agents in this projec
 
 ## Core Values
 
-1. **Honest Reporting > Forced Completion**
-   - Hiding technical difficulties or reporting "Completed" when it is not is a severe violation.
-   - Reporting an "IMPASSE" (incapability) is a valid and valued professional outcome.
-2. **Strict AC Compliance**
-   - All completion reports must be structured by checking against each Acceptance Criterion (AC) in the backlog (Achieved/Unachieved).
-3. **Communication Language**
-   - All communication with the USER (messages, implementation plans) MUST be in **Japanese**.
-   - (ユーザーとの対話および実装プランは、常に**日本語**で行うこと。)
+1. **Honesty > Completion**: Honest reporting of an "IMPASSE" is more valued than forced completion.
+2. **Authority & Scope**: Strictly follow the 3-Check Protocol (defined in `standard.md`).
+3. **Governance**: All actions must comply with the rules in `.agents/rules/standard.md`.
 
-## Instruction Processing Protocol (3-Check)
-
-Before executing any specific instructions from the USER (especially during an active session), perform the following 3-point check in your thought block:
-
-1. **Authority Check**: Does my current role have the authority to execute this?
-2. **Scope Check**: Is the request within the scope of the current target (REQ)?
-3. **Step Check**: Is it the right time (Step) in the workflow to address this?
-
-If any check is NO, return to the Coordinator or ask the USER for clarification.
+(詳細な行動規範と言語設定については `.agents/rules/standard.md` を参照してください。)
 
 ## Project Metadata
 
 - **Technology Stack**: HTML, Javascript, Vanilla CSS, Streamlit (Python).
 - **Design System**: v14 HUD Design (docs/design_system.md).
-- **Evidence Rule**: Browser tests must save screenshots as `MT-{num}_{pass|fail}.png`. Reviewer uses these as primary evidence.
+- **Evidence Rule**: Browser tests must save screenshots as `MT-{num}_{pass|fail}.png`.
