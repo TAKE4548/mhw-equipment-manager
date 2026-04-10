@@ -298,7 +298,7 @@ def pull_cloud_to_local():
             "rest_3_type", "rest_3_level",
             "rest_4_type", "rest_4_level",
             "rest_5_type", "rest_5_level",
-            "is_favorite"
+            "is_locked"
         ],
         "trackers": [
             "id", "weapon_id", "remaining_count",

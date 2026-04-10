@@ -18,7 +18,7 @@ EQUIPMENT_COLUMNS = [
     "rest_3_type", "rest_3_level",
     "rest_4_type", "rest_4_level",
     "rest_5_type", "rest_5_level",
-    "is_favorite"
+    "is_locked"
 ]
 
 ATTRIBUTE_COLORS = {
@@ -114,8 +114,14 @@ def load_equipment(user_id: str = "local") -> pd.DataFrame:
                 tc, lc = f"rest_{i}_type", f"rest_{i}_level"
                 nt, nl = normalize_bonus(row[tc], row[lc], is_restoration=True)
                 df.at[idx, tc] = nt; df.at[idx, lc] = nl
+        
+        # Migration from is_favorite to is_locked
         if "is_favorite" in df.columns:
-            df["is_favorite"] = df["is_favorite"].fillna(False).astype(bool)
+            if "is_locked" not in df.columns:
+                df["is_locked"] = df["is_favorite"]
+        
+        if "is_locked" in df.columns:
+            df["is_locked"] = df["is_locked"].fillna(False).astype(bool)
     return df
 
 def save_equipment(df: pd.DataFrame) -> bool:
@@ -131,7 +137,7 @@ def add_equipment(weapon_name: str, weapon_type: str, element: str,
         "id": new_id, "weapon_type": weapon_type, "element": element,
         "weapon_name": weapon_name or f"無銘の{weapon_type}", "enhancement_type": enhancement_type,
         "current_series_skill": current_series_skill, "current_group_skill": current_group_skill,
-        "is_favorite": False
+        "is_locked": False
     }
     for i, pb in enumerate(p_bonuses):
         if i < 3: new_row[f"p_bonus_{i+1}"] = pb
@@ -213,14 +219,14 @@ def update_equipment(record_id: str, weapon_name: str, weapon_type: str, element
         return True
     return False
 
-def toggle_favorite(equipment_id: str, user_id: str = "local") -> bool:
-    """Toggles the favorite status of a weapon."""
+def toggle_lock(equipment_id: str, user_id: str = "local") -> bool:
+    """Toggles the lock status of a weapon."""
     df = load_equipment(user_id)
     idx = df[df["id"].astype(str) == str(equipment_id)].index
     if not idx.empty:
-        curr = df.at[idx[0], "is_favorite"]
+        curr = df.at[idx[0], "is_locked"]
         if pd.isna(curr): curr = False
-        df.at[idx[0], "is_favorite"] = not bool(curr)
+        df.at[idx[0], "is_locked"] = not bool(curr)
         if save_equipment(df):
             load_equipment.clear()
             return True

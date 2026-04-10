@@ -82,21 +82,4 @@ def edit_equipment_dialog(row, user_id):
                 st.toast("更新しました！")
                 st.rerun()
             else: st.error("更新に失敗しました。")
-        
-@st.dialog("武器を削除しますか？")
-def confirm_delete_dialog(row, user_id):
-    """お気に入り武器の削除最終確認ダイアログ"""
-    st.warning(f"「{row['weapon_name']}」はお気に入り登録されています。本当に削除しますか？")
-    st.write("この操作は取り消せますが、誤操作防止のため確認が必要です。")
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("キャンセル", use_container_width=True):
-            st.rerun()
-    with c2:
-        if st.button("削除する", type="primary", use_container_width=True):
-            if delete_equipment(row['id'], user_id=user_id):
-                st.toast("武器を削除しました。")
-                st.rerun()
-            else:
-                st.error("削除に失敗しました。")
+
