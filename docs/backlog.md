@@ -184,12 +184,14 @@
     - ページヘッダー等で「保存済み」「同期中」「エラー」などの状況をステータス表示する。
 
 ### REQ-017: お気に入り武器の削除プロテクション (UX-12)
-- **Status**: new
+- **Status**: done (2026-04-10)
 - **Type**: enhancement
 - **Priority**: high
 - **Description**: 重大な誤操作の防止。
 - **Acceptance Criteria**:
-    - お気に入り設定された武器については、削除時に2段階の承認（追加の確認確認ボタンなど）を要求する。
+    - [x] お気に入り設定された武器については、削除時に2段階の承認（追加の確認確認ボタンなど）を要求する。
+- **Concerns**:
+  - Cloud Sync 使用時に `PGRST204` エラーが発生する。Supabase 側の `weapons` テーブルに `is_favorite` カラム (BOOLEAN, DEFAULT FALSE) を手動で追加する必要がある。
 
 ### REQ-018: Cookie 容量制限の警告機能の実装 (Audit 1-1)
 - **Status**: new

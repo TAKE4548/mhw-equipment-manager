@@ -17,7 +17,8 @@ EQUIPMENT_COLUMNS = [
     "rest_2_type", "rest_2_level",
     "rest_3_type", "rest_3_level",
     "rest_4_type", "rest_4_level",
-    "rest_5_type", "rest_5_level"
+    "rest_5_type", "rest_5_level",
+    "is_favorite"
 ]
 
 ATTRIBUTE_COLORS = {
@@ -113,6 +114,8 @@ def load_equipment(user_id: str = "local") -> pd.DataFrame:
                 tc, lc = f"rest_{i}_type", f"rest_{i}_level"
                 nt, nl = normalize_bonus(row[tc], row[lc], is_restoration=True)
                 df.at[idx, tc] = nt; df.at[idx, lc] = nl
+        if "is_favorite" in df.columns:
+            df["is_favorite"] = df["is_favorite"].fillna(False).astype(bool)
     return df
 
 def save_equipment(df: pd.DataFrame) -> bool:
@@ -127,7 +130,8 @@ def add_equipment(weapon_name: str, weapon_type: str, element: str,
     new_row = {
         "id": new_id, "weapon_type": weapon_type, "element": element,
         "weapon_name": weapon_name or f"無銘の{weapon_type}", "enhancement_type": enhancement_type,
-        "current_series_skill": current_series_skill, "current_group_skill": current_group_skill
+        "current_series_skill": current_series_skill, "current_group_skill": current_group_skill,
+        "is_favorite": False
     }
     for i, pb in enumerate(p_bonuses):
         if i < 3: new_row[f"p_bonus_{i+1}"] = pb
@@ -207,6 +211,19 @@ def update_equipment(record_id: str, weapon_name: str, weapon_type: str, element
         load_equipment.clear()
         push_action("UPDATE_EQUIPMENT", EQUIPMENT_TABLE, prev_df, df)
         return True
+    return False
+
+def toggle_favorite(equipment_id: str, user_id: str = "local") -> bool:
+    """Toggles the favorite status of a weapon."""
+    df = load_equipment(user_id)
+    idx = df[df["id"].astype(str) == str(equipment_id)].index
+    if not idx.empty:
+        curr = df.at[idx[0], "is_favorite"]
+        if pd.isna(curr): curr = False
+        df.at[idx[0], "is_favorite"] = not bool(curr)
+        if save_equipment(df):
+            load_equipment.clear()
+            return True
     return False
 
 def filter_equipment(df: pd.DataFrame, search_name: str = "", weapon_types: list = None, elements: list = None, 

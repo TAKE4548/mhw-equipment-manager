@@ -1,13 +1,13 @@
 import streamlit as st
 import pandas as pd
 from src.logic.equipment_box import (
-    load_equipment, delete_equipment,
+    load_equipment, delete_equipment, toggle_favorite,
     format_bonus_summary, filter_equipment
 )
 from src.components.common import render_item_count
 from src.components.cards import render_slim_card, CARD_ACTION_RATIO
 from src.components.box.atoms import render_weapon_badge
-from src.components.box.dialogs import edit_equipment_dialog
+from src.components.box.dialogs import edit_equipment_dialog, confirm_delete_dialog
 
 @st.fragment
 def render_equipment_list(master, user_id):
@@ -55,6 +55,8 @@ def render_equipment_list(master, user_id):
             for index, row in df.iterrows():
                 badge_html = render_weapon_badge(row['element'])
                 w_display = row['weapon_name'] if row['weapon_name'] and not str(row['weapon_name']).startswith("無銘の") else row['weapon_type']
+                if row.get('is_favorite', False):
+                    w_display = f"⭐ {w_display}"
                 
                 # Bonus Formatting
                 pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
@@ -79,11 +81,17 @@ def render_equipment_list(master, user_id):
                     with st.popover("⋮", help="操作メニュー", use_container_width=True, key=f"pop_w_{row['id']}"):
                         if st.button("✏️ 編集", key=f"edit_{row['id']}", use_container_width=True):
                             edit_equipment_dialog(row, user_id)
+                        if st.button("⭐" if row.get('is_favorite', False) else "☆", key=f"fav_{row['id']}", help="お気に入り登録", use_container_width=True):
+                            toggle_favorite(row['id'], user_id=user_id)
+                            st.rerun()
                         if st.button("🎯 強化厳選へ", key=f"tr_{row['id']}", use_container_width=True):
                             st.session_state.tracker_reg_w_id = row['id']
                             st.switch_page("pages/reinforcement_registration.py")
                         st.divider()
                         if st.button("🗑️ 削除", key=f"del_{row['id']}", type="primary", use_container_width=True):
-                            if delete_equipment(row['id'], user_id=user_id):
-                                st.toast("武器を削除しました。")
-                                st.rerun()
+                            if row.get('is_favorite', False):
+                                confirm_delete_dialog(row, user_id)
+                            else:
+                                if delete_equipment(row['id'], user_id=user_id):
+                                    st.toast("武器を削除しました。")
+                                    st.rerun()
