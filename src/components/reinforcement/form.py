@@ -74,14 +74,14 @@ def render_registration_section(master, eq_df, user_id):
                 # Bonus Text Formatting
                 p_bonuses = [w_row[f'p_bonus_{i}'] for i in range(1, 4) if w_row[f'p_bonus_{i}'] != "なし"]
                 r_bonuses = [f"{w_row[f'rest_{i}_type']}{w_row[f'rest_{i}_level'] if w_row[f'rest_{i}_level'] != '無印' else ''}" for i in range(1, 6) if w_row[f'rest_{i}_type'] != "なし"]
-                p_bonus_text = f"🛠️ {format_bonus_summary(p_bonuses)}" if p_bonuses else ""
-                r_bonus_text = f"✨ {format_bonus_list(r_bonuses)}"
+                p_bonus_text = f"🛠️ {format_bonus_summary(p_bonuses)}" if p_bonuses else "🛠️ なし"
+                r_bonus_text = f"✨ {format_bonus_summary(r_bonuses)}" if r_bonuses else "✨ なし"
                 
-                desc = f"<div style='margin-bottom:4px; color:#ddd;'>📋 {w_row['current_series_skill']} / {w_row['current_group_skill']}</div>"
-                desc += f"<div style='font-size:0.75rem; opacity:1.0; color:#bbb; line-height:1.2;'>{p_bonus_text}{'<br>' if p_bonus_text else ''}{r_bonus_text}</div>"
+                sub_text = f"📋 {w_row['enhancement_type']} | 🛡️ {w_row['current_series_skill']} | 👥 {w_row['current_group_skill']}"
+                bonus_html = f"{p_bonus_text} || {r_bonus_text}"
                 
                 if render_selectable_card(
-                    badge_html, w_display, desc, "", 
+                    badge_html, w_display, sub_text, bonus_html, 
                     key=f"hsel_{w_row['id']}", 
                     subtitle=w_row['weapon_type'], 
                     is_selected=is_selected,
