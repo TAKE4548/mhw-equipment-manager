@@ -1,30 +1,34 @@
 ---
 name: task-code-review
 description: >
-  Review completed implementation against architect and UX specifications
-  and check test quality. Use when engineer has finished
-  implementation and all tests pass.
+  Review code against design, AC, and evidence. 
+  Reports technical debt as "Concerns".
 ---
 
 # Code Review Task
 
-## Input
-- `docs/designs/{feature-name}.md` (Architect's design)
-- `docs/ui_spec.md` (UX Designer's spec)
-- Implementation code + test code
-- Test execution results:
-    - **Unit Test Logs**: Proof of logic correctness.
-    - **Browser Debug Results**: Proof of UI interaction stability.
+Your goal is to verify that the implementation is functionally correct, aligns with the designs, and does not introduce critical technical debt.
 
-## Review Items
-1. **Design Conformity**: Does the logic/DB layer match the Architect's design? Does the visual layer match the UX Designer's specific instructions?
-2. **Acceptance Criteria**: Are all ACs from the backlog fulfilled?
-3. **Test Quality**:
-   - Are the tests comprehensive?
-   - Do they avoid anti-patterns (brittle assertions, heavy dependency on internal implementation details)?
-4. **Edge Cases**: Empty states, out-of-bounds inputs, race conditions.
-5. **Regressions**: Are existing features unaffected?
+## 1. Compliance
+- Follow the **3-Check Protocol** in `GEMINI.md`.
+- Review the **Evidence (Screenshots/Logs)** provided by the Engineer. Do not take "Completed" at face value.
 
-## Output
-- **Passed**: Declare "Review Passed" as a standalone Verdict. Proceed only after this is stated.
-- **Failed**: Output a clear list of deficiencies along with concrete correction proposals. **Return to the Engineer.**
+## 2. Review Process
+
+1. **AC Match**: Compare the Engineer's "AC Check" results with the original `backlog.md` and evidence.
+2. **Design Fidelity**: Verify if the implementation matches `docs/designs/*.md` and `docs/ui_spec.md`.
+3. **Evidence Audit**:
+   - Check `MT-{num}_{pass|fail}.png` for UI correctness.
+   - Check Unit Test logs for logic correctness.
+4. **Impact Assessment**: Check for regressions in existing features.
+5. **Technical Debt (Concerns)**: Identify non-blocking issues that may cause future problems (Architecture violations, hardcodes, etc.).
+
+## 3. Output Format (Review Verdict)
+
+You MUST provide your verdict in this structured format:
+
+- **Verdict**: [PASS] | [FAIL]
+- **Correction Proposals**: (If [FAIL], list specific fixes)
+- **Concerns (懸念事項)**: (Architecture feedback or potential debt. This will be recorded in the backlog by the Coordinator.)
+
+**MANDATORY**: End your turn immediately after presenting this verdict.

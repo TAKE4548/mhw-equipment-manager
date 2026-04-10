@@ -1,14 +1,17 @@
 # Project Backlog (MHW Equipment Manager)
 
-This document is the Single Source of Truth for all feature requests, bug reports, and ongoing development tasks.
-
 ## Status Definitions
-- **new**: BAが登録済み。掘り下げ（真の課題の特定）が未完了の状態。
-- **ready**: 掘り下げが完了し、目的レベルの要求（Requirement）と受入基準が確定。開発着手可能。
-- **in-progress**: 現在 `/dev` セッションで開発中。
-- **fix-needed**: デグレード等が発見され、修正が必要な状態。
-- **needs-investigation**: 現象の再現や詳細な調査が必要な状態。
-- **done**: 開発・レビューが完了し、マージ済み。
+- **new**: Intake complete. Goal refinement or AC is not yet finalized.
+- **ready**: Deep-dive complete. Goal is clear, and AC is defined. Ready for `/dev`.
+- **in-progress**: Under development in a `/dev` session.
+- **fix-needed**: Defect detected. Needs prioritization for fixing.
+- **needs-investigation**: Root cause unknown. Requires investigation.
+- **done**: Implementation and Review complete.
+- **archived**: Deferred or cancelled.
+
+---
+## Architecture Review Items
+(Structural issues and technical debt recorded here. These are for `/arch-review`, not `/dev`.)
 
 ---
 ## Backlog Items

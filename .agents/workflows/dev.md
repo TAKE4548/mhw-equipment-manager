@@ -1,101 +1,86 @@
 ---
+name: dev
 description: >
-  Start a formal development session. Pick a requirement from the backlog
-  and take it through design, implementation, review, and completion.
-  Start with: /dev or resume an existing session.
+  Formal development session workflow. Tracks progress via session.md.
+  Includes Escalation and Architecture Feedback loops.
 ---
 
-# Development Session Pipeline
+# Development Workflow (/dev)
 
-Step 0: [Role: Dev Coordinator]
-- Read `docs/backlog.md`.
-- If an item with `Status: in-progress` and `Current step: {N}` is found, ask the user: "Would you like to resume REQ-XXX from Step {N}?"
-- If the user says Yes, jump directly to that step. Otherwise, proceed to Step 1.
+This workflow manages the lifecycle of a requirement from selection to deployment.
 
-Step 1: [Role: Dev Coordinator]
-- Present items with `Status: ready` or `fix-needed` as primary development targets.
-- If there are items with `Status: new`, notify the user:
-  「未整理の要望 (Status: new) が {count} 件あります。開発の前にこれらを整理（掘り下げ）しますか？」
-  - ユーザーが「はい」と答えた場合 -> **BAロール**に切り替えて `task-requirement-analysis` を実行し、項目を `ready` にしてから /dev を継続する。 (※BAは `backlog.md` 以外の更新を禁止)
-  - ユーザーが「いいえ」または `ready` 項目を選択した場合 -> そのまま開発を進める。
-- The user selects an item (PO decision).
-- Update the item's status to `in-progress` and `Current step` to `Step 1`.
-- **Starting Step Assignment Logic**:
-  - If the item is a NEW enhancement or major redesign -> Step 3 (Architect).
-  - If it is a fix or minor change involving **ANY UI adjustment** or UI specification update -> **Step 4 (UX Designer)**.
-  - If it is a PURE logic fix with **NO UI changes** and no design impact -> Step 6 (Engineer).
-- **Git Branching:** 
-  - Create and switch to a new feature branch: `git checkout -b <feat/fix>/REQ-XXX`.
-  - Confirm the branch is created before proceeding.
+## Step 0: Session Initialization [Role: Dev Coordinator]
+- Read `docs/session.md` and `docs/backlog.md`.
+- **Resumption Logic**: If `docs/session.md` contains an active REQ and a specific `Current Step`, ask the USER: "Would you like to resume {REQ-ID} from {Step Name}?"
+- If the USER says Yes, jump to that step. Otherwise, proceed to Step 1.
+- **Protocol**: Update `docs/session.md` with "active" status and Current REQ.
 
-Step 2: [Role: Dev Coordinator]
-- **Deliverables Verification Check:**
-  - [ ] `docs/backlog.md` is updated with the target requirement.
-  - [ ] The requirement has clear "Acceptance Criteria".
-  - [ ] The item status is `in-progress`.
-- If any item is missing, STOP and request a BA to refine the backlog.
-- Announce the role switch and hand off.
+## Step 1: Item Selection & Setup [Role: Dev Coordinator]
+- Present `ready` or `fix-needed` items from `docs/backlog.md`.
+- The USER selects a target (REQ).
+- **Git Setup**: 
+  - Create feature branch: `git checkout -b <feat/fix>/REQ-XXX`.
+- **Session Update**: Initialize `docs/session.md` for the new REQ.
+- **Starting Step Selection**:
+  - New feat/redesign -> Step 3 (Architect).
+  - UI refinement only -> Step 4 (UX Designer).
+  - Pure logic bug (no UI change) -> Step 6 (Engineer).
 
-Step 3: [Role: Architect]
-- Read `docs/architecture.md`.
-- Execute `task-system-design` to produce `docs/designs/{feature-name}.md`.
-- Handoff complete.
+## Step 2: Handoff Verification [Role: Dev Coordinator]
+- Verify target REQ has clear "Acceptance Criteria".
+- Confirm the branch is active.
+- Handoff to the next role.
 
-Step 4: [Role: UX Designer]
-- *Condition: Proceed only if the requirement involves UI changes or user interactions.*
+## Step 3: High-Level Design [Role: Architect]
+- **Session Entry**: Update `docs/session.md` (Step 3, Architect).
+- Execute `role-architect` responsibilities.
+- **Feasibility Check**: If the requirement is technically unfeasible -> report `[IMPASSE]` to Coordinator and END.
+- Output: `docs/designs/{feature}.md` or `docs/ui_spec.md`.
+- **Session Exit**: Update status in `docs/session.md`.
+
+## Step 4: UI/UX Specification [Role: UX Designer]
+- *Condition: Skip if no UI changes.*
 - Execute `task-ux-design`.
-- Ensure interaction specs (1-click workflows, dialog logic) align with the Architect's system boundary.
 - Update `docs/ui_spec.md` and `docs/design_system.md`.
-- Handoff complete.
 
-Step 5: [Role: Dev Coordinator]
-- **Phase Deliverables Check:**
-  - [ ] `docs/designs/{feature-name}.md` contains Architecture, Data Flow, and Testing Requirements.
-  - [ ] (If UI changes) `docs/ui_spec.md` is updated with specific interaction flows.
-- Present the Architect's technical design AND the UX Designer's UI spec to the user.
-- **MANDATORY STOP & TURN-END**:
-    - **One-Action Policy**: This presentation MUST be the final action of your current turn. Do NOT call `task-implementation-plan` or any other tool in the same turn.
-    - **Wait for user approval**: Do NOT proceed until the user provides an affirmative word (e.g., "OK", "進めて").
-- Update `Current step` to `Step 5`.
-- If the user rejects the logic -> return to Step 3. If they reject the UI -> return to Step 4.
-- Once approved, proceed to **Step 6**.
+## Step 5: Approval Gate [Role: Dev Coordinator]
+- **Session Entry**: Update `docs/session.md` (Step 5, Coordinator).
+- Present Architecture and UI designs to the USER.
+- **MANDATORY TURN-END**: Wait for explicit USER approval (Japanese context allowed).
+- **One-Action Policy**: No implementation tools in this turn.
+- Once approved, proceed to Step 6.
 
-Step 6: [Role: Engineer]
-- Execute `task-implementation-plan` to map out coding tasks.
-- Execute `task-tdd-implementation` for logic code.
-- Execute `task-manual-test-design` and `task-browser-debug` for UI interactions.
-- Strictly follow `docs/designs/{feature-name}.md` and `docs/ui_spec.md`.
-- Signal "implementation complete" when ready.
+## Step 6: Implementation [Role: Engineer]
+- **Session Entry**: Update `docs/session.md` (Step 6, Engineer).
+- **Escalation Watch**: If 3 attempts fail, report `[IMPASSE]` and END.
+- Implementation: Code + Unit Tests + Browser Verification.
+- Evidence: Save screenshots as `MT-{num}_{pass|fail}.png`.
+- **Structured Report**: Provide verdict and AC check.
+- **Session Exit**: Update `docs/session.md`.
 
-Step 6b: [Role: Dev Coordinator]
-- **Condition**: Proceed only if the task involves UI changes or if the user requests visual adjustments.
-- **Visual Polish Loop**:
-    1. Present the current UI state (via screenshots/browser verification) to the user.
-    2. Collect feedback.
-    3. **Triage Feedback**:
-        - **Refinement (Aesthetic)**: (e.g., margins, colors, labels) -> Return to **Step 6 (Engineer)** for a quick fix.
-        - **Structural/Functional**: (e.g., layout reorganization, new buttons, data flow change) -> Return to **Step 4 (UX Designer)** or **Step 3 (Architect)** for formal redesign.
-    4. **MANDATORY TURN-END**: After presenting the results, pause for user reaction. Do NOT proceed to Step 7 without visual confirmation or explicit "Done" from the user.
+## Step 7: Verification & Review [Role: Tester/Reviewer]
+- **Session Entry**: Update `docs/session.md` (Step 7, Reviewer).
+- Compare code against designs and verify AC via evidence.
+- **Architecture Feedback**: Identify "Concerns (懸念事項)" for future debt.
+- **Verdict**: PASS | FAIL (If Fail, return to Step 6).
+- **MANDATORY TURN-END**: Terminate turn after providing the verdict.
 
-Step 7: [Role: Tester/Reviewer]
-- **Handoff Acceptance Check (MUST verify):**
-  - [ ] Engineer has provided Unit Test Logs.
-  - [ ] Engineer has provided Browser Debug Results (for UI tasks).
-- Execute `task-code-review`.
-- **IMPORTANT:** The Engineer MUST NOT self-review. Only the Tester/Reviewer role can issue a review verdict. 
-- **MANDATORY TURN-END**: 
-    - Output the **Review Verdict (Pass/Fail)** as a standalone message and then END your turn immediately.
-    - Do NOT proceed to Step 8 in the same turn.
-- **DO NOT proceed to Step 8** without a "Pass" verdict.
+## Step 8: Finalization & SSoT [Role: Dev Coordinator]
+- **Session Entry**: Update `docs/session.md` (Step 8, Coordinator).
+- **Record Tech Debt**: If Reviewer reported "Concerns", record them in `docs/backlog.md`.
+- **SSoT Sync**: Ensure docs/design/ui_spec match the actual implementation.
+- **Backlog Update**: Set status to `done`, update `Current step` to `none`.
+- **Git Commit**: `git add . && git commit -m "<type>: implement REQ-XXX"`.
+- **Session Exit**: Mark `docs/session.md` as "inactive" (clear it for next session).
+- Present final walkthrough and merge instructions.
 
-Step 8: [Role: Dev Coordinator]
-- **SSoT Integrity Gate (MANDATORY before commit):**
-  1. Confirm `docs/ui_spec.md` matches the FINAL implemented state.
-  2. Confirm `docs/designs/*.md` is consistent with what was actually built.
-  3. **Update `docs/backlog.md`**: Change status to `done`, append the completion date, and set `Current step` to `none`. Update any other stale documents NOW.
-- **Walkthrough Creation:** Create the walkthrough ONCE at this step only.
-- **Git Committing (FINAL ACTION):** 
-  - Ensure all documentation updates (Backlog, Designs, Specs) are staged.
-  - Commit all changes: `git add . && git commit -m "<type>: implement REQ-XXX - [Short Description]"`.
-  - Present the commit hash to the user.
-- Present a final completion summary to the user (including instruction on how to merge the branch).
+---
+
+## Escalation Handling Path (IMPASSE Branch)
+If an `[IMPASSE]` is reported in Step 3 or Step 6:
+1. **Coordinator** updates `docs/session.md` status to `escalated`.
+2. **Coordinator** presents specific technical constraints to the USER.
+3. **USER Decision**:
+   - Change requirement -> Return to Step 1 (BA) or Step 3 (Architect).
+   - Accept tradeoff -> Architect updates design, resume from Step 5.
+   - Archive/Defer -> Coordinator marks REQ as `archived` in backlog, END session.
