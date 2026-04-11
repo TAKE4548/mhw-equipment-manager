@@ -64,6 +64,7 @@ class Icon:
             return None
 
     @staticmethod
+    @st.cache_resource
     def get_style_sheet():
         """Generates a CSS style sheet for all icons including Masking support."""
         styles = []

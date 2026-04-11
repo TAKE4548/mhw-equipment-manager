@@ -7,6 +7,9 @@ from src.components.tables import render_active_upgrades
 @st.fragment
 def render_tracker_list(master, user_id):
     """登録済みの抽選結果一覧を表示・管理する (Fragment化)"""
+    from src.components.cards import inject_card_css
+    inject_card_css()
+    
     # --- Search & Filter UI ---
     series_skills_master = master.get("series_skills", [])
     group_skills_master = master.get("group_skills", [])

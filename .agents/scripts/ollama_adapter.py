@@ -83,14 +83,49 @@ def summarize_file(file_path):
     
     return query_ollama(prompt, system_message)
 
+def audit_requirements(content):
+    prompt = (
+        "Analyze the following requirement against the project's historical context. "
+        "Search for logical contradictions, missing edge cases, or overlaps with existing features. "
+        f"Requirement Text:\n{content}"
+    )
+    system = "You are an expert Business Analyst for a Monster Hunter equipment manager app. Focus on logical consistency."
+    return query_ollama(prompt, system)
+
+def audit_design(content):
+    prompt = (
+        "Check this UI component or CSS against the project's v15 HUD design tokens. "
+        "Point out any deviations from standard colors, typography, or spacing patterns. "
+        f"Input:\n{content}"
+    )
+    system = "You are an expert UX Designer specializing in high-end game HUDs. Focus on design system compliance."
+    return query_ollama(prompt, system)
+
+def audit_structure(content):
+    prompt = (
+        "Audit the following code for architectural violations. "
+        "Look for hardcoded state, leaking abstractions, or violations of the State/Atom/Dialog separation. "
+        f"Source Code:\n{content}"
+    )
+    system = "You are a Master Architect. Focus on structural integrity and technical debt."
+    return query_ollama(prompt, system)
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python ollama_adapter.py <action> [args]")
-        print("Actions: summarize <path>, query <prompt>")
+        print("Actions: summarize <path>, query <prompt>, ba-audit <text>, ux-audit <text>, arch-audit <text>")
         sys.exit(1)
     
     action = sys.argv[1]
+    arg = sys.argv[2] if len(sys.argv) > 2 else ""
+    
     if action == "summarize":
-        print(summarize_file(sys.argv[2]))
+        print(summarize_file(arg))
     elif action == "query":
-        print(query_ollama(sys.argv[2]))
+        print(query_ollama(arg))
+    elif action == "ba-audit":
+        print(audit_requirements(arg))
+    elif action == "ux-audit":
+        print(audit_design(arg))
+    elif action == "arch-audit":
+        print(audit_structure(arg))

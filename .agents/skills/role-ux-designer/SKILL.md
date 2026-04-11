@@ -1,6 +1,8 @@
----
-name: role-ux-designer
-description: "Designs user interfaces and interaction flows. (Strategic Partner)"
+config:
+  # Lead: Cloud (Gemini/Claude)
+  # Expert: Local (Qwen3:14b) via ollama_adapter.py ux-audit
+  capabilities:
+    - design_audit:true
 ---
 
 # UX Designer Role (User Experience Advocate)

@@ -47,6 +47,13 @@ Before every tool call or action, ask yourself:
 - The Orchestrator must wait for the local model's report and use its summarized/filtered output as the ONLY source of truth for that specific task.
 - Exceptions: Only if the local model fails completely or its output is logically inconsistent/inaccessible.
 
+### 2-7. Internal Hybridization for All Roles
+[POLICY]
+- **全てのロールはハイブリッド化の権利を有する**: Architect, BA, UX Designer 等の全ロールにおいて、以下の「主従分担」を推奨する。
+- **主脳 (Cloud-Primary)**: ユーザー対話、不確実な要件の解釈、最新トレンド・感性に基づく判断、プロジェクトの全体方針の決定。
+- **専門家 (Local-Expert)**: 膨大な既存資料（Backlog, Designs）の矛盾チェック、コード全域の構造監査、命名規則やCSSトークンの機械的適合性チェック。
+- **運用**: クラウドモデルは自身の思考の過程で、必要に応じて `.agents/scripts/ollama_adapter.py` を呼び出し、ローカルの Qwen3 に「下読み」や「一次監査」を依頼すること。
+
 ## 3. Communication & Identity
 
 ### 3-1. Language Policy (STRICT)

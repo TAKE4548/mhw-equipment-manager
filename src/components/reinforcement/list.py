@@ -15,6 +15,9 @@ from src.components.reinforcement.dialogs import edit_tracker_dialog
 @st.fragment
 def render_active_tracker_list(master, eq_df, user_id):
     """トラッキング中の抽選結果一覧を表示・管理する」"""
+    from src.components.cards import inject_card_css
+    inject_card_css()
+    
     tracker_df = load_trackers(user_id)
     if tracker_df.empty:
         st.info("トラッキング中の強化抽選結果はありません。")
@@ -88,7 +91,9 @@ def render_active_tracker_list(master, eq_df, user_id):
             ]
             
             pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1, 4)]
-            bonuses = [f"📋 {row['enhancement_type']}", f"🛠️ {format_bonus_summary(pbs)}"]
+            # Move enhancement_type to dedicated parameter, remove from bonuses cluster
+            enhancement_type = row['enhancement_type']
+            bonuses = [f"🛠️ {format_bonus_summary(pbs)}"]
             
             # Weapon Display Name logic
             w_display = row['weapon_name'] if row['weapon_name'] and not str(row['weapon_name']).startswith("無銘の") else row['weapon_type']
@@ -100,6 +105,7 @@ def render_active_tracker_list(master, eq_df, user_id):
                     weapon_name=w_display,
                     element=row['element'],
                     element_val=f"{row['element']}属性",
+                    enhancement_type=enhancement_type,
                     skills=skills,
                     bonuses=bonuses,
                     comparison=comp_html,

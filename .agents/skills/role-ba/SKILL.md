@@ -1,6 +1,8 @@
----
-name: role-ba
-description: "Experienced Business Analyst. Transforms user feedback into structured requirements."
+config:
+  # Lead: Cloud (Gemini/Claude)
+  # Expert: Local (Qwen3:14b) via ollama_adapter.py ba-audit
+  capabilities:
+    - requirement_audit:true
 ---
 
 # Business Analyst (BA) Role (Requirement Audit)

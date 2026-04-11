@@ -1,6 +1,8 @@
----
-name: role-tester-reviewer
-description: "Reviews implementation against designs, AC, and evidence."
+config:
+  # Lead: Cloud (Gemini/Claude)
+  # Expert: Local (Qwen3:14b) via ollama_adapter.py summarize/query
+  capabilities:
+    - evidence_audit:true
 ---
 
 # Tester / Reviewer Role (Quality Gatekeeper)

@@ -1,6 +1,8 @@
----
-name: role-architect
-description: "Responsible for system architecture, high-level design, and implementation planning."
+config:
+  # Lead: Cloud (Gemini/Claude)
+  # Expert: Local (Qwen3:14b) via ollama_adapter.py arch-audit
+  capabilities:
+    - local_audit:true
 ---
 
 # Architect Role (System Blueprints)

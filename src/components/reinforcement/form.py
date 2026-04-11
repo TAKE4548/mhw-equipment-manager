@@ -11,6 +11,9 @@ from src.components.reinforcement.atoms import render_weapon_attribute_badge
 @st.fragment
 def render_registration_section(master, eq_df, user_id):
     """v14 Visual Selector: 武器選択と抽選結果の登録を行うフォーム"""
+    from src.components.cards import inject_card_css
+    inject_card_css()
+    
     st.markdown("### 1. 武器を選択")
     
     # --- Hierarchical Filters ---

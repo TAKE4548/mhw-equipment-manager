@@ -66,17 +66,18 @@ def inject_card_css():
             justify-content: center;
             overflow: hidden;
             height: 100%;
+            min-width: 0; /* Flexbox guard */
         }
         
-        /* Col 1: Weapon Anchor */
+        /* Col 1: Weapon Anchor (Composite Icon only) */
         .v15-col-anchor {
-            width: 42px;
+            width: 44px;
             flex-shrink: 0;
             align-items: center;
             margin-right: 8px;
         }
         
-        /* Col 2: Elemental Specs */
+        /* Col 2: Elemental Specs (Legacy/Talisman only - hidden for weapons) */
         .v15-col-spec {
             width: 58px;
             flex-shrink: 0;
@@ -87,26 +88,40 @@ def inject_card_css():
         }
         .v15-spec-label { font-size: 0.68rem; color: #888; text-transform: uppercase; font-weight: 600; line-height: 1; }
 
-        /* Col 3: Identity Stack (Narrower to shift bonus left) */
+        /* Col 3: Identity Stack (Name/Type + Element/Val) */
         .v15-col-id {
             flex: 0 0 160px;
-            margin-right: 8px;
+            margin-right: 12px;
             gap: 0px;
             overflow: hidden;
         }
         .v15-name-label { font-size: 0.9rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }
-        .v15-type-label { font-size: 0.68rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; margin-top: 1px; }
+        .v15-type-label { font-size: 0.72rem; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; margin-top: 1px; }
 
-        /* Col 4: Skills Stack */
-        .v15-col-skills { width: 130px; flex-shrink: 0; gap: 2px; }
-        .v15-row { font-size: 0.72rem; color: #ccc; display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Col 4: Skills Stack (Expanded) */
+        .v15-col-skills { 
+            width: 185px; 
+            flex-shrink: 0; 
+            gap: 2px; 
+            overflow: hidden;
+        }
+        .v15-row { 
+            font-size: 0.72rem; 
+            color: #ccc; 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
         
-        /* Col 5: Bonuses Stack (Flexible to fill space) */
-        .v15-col-bonuses { flex: 1; min-width: 150px; gap: 2px; align-items: flex-start; }
+        /* Col 5: Bonuses Stack (Flexible) */
+        .v15-col-bonuses { flex: 1; min-width: 120px; gap: 2px; align-items: flex-start; overflow: hidden; }
         .v15-row.muted { color: #888; font-size: 0.68rem; }
 
         /* Col 6: Remaining Count */
-        .v15-col-count { width: 90px; flex-shrink: 0; align-items: flex-end; }
+        .v15-col-count { width: 80px; flex-shrink: 0; align-items: flex-end; }
         .v15-count-label { color: #ff4b4b; font-weight: bold; font-size: 0.75rem; }
 
         /* Unified Button Heights */
@@ -139,7 +154,7 @@ def _render_v14_tag_body(
     badge_html=None, title_text=None, sub_text=None, bonus_html=None, subtitle=None, 
     is_selected=False, mode="hud", marker_cls="", 
     weapon_type=None, weapon_name=None, element=None, element_val=None, 
-    skills=None, bonuses=None, remaining_count=None, comparison=None
+    enhancement_type=None, skills=None, bonuses=None, remaining_count=None, comparison=None
 ):
     """v15+: Triple-Cluster Layout Engine."""
     selected_cls = "v12-unit-selected" if is_selected else ""
@@ -179,11 +194,10 @@ def _render_v14_tag_body(
             # Place Rarity Badge next to icon for talismans
             html += f'<div class="v15-cluster v15-col-spec">{badge_html}</div>'
         else:
-            # NEW: Hidden icon since it's now part of the composite anchor
-            e_label = element_val or element or "無"
-            html += f'<div class="v15-cluster v15-col-spec"><div class="v15-spec-label" style="font-size: 0.75rem; color: #fff; margin-top: 4px;">{e_label}</div></div>'
+            # REDUNDANT: Col 2 is now skipped for weapons as info moved to Col 3
+            pass
 
-        # Cluster 3: Skills (New priority for Talismans)
+        # Cluster 3: Skills (New priority for Talismans) OR ID/Element (Weapons)
         if is_long:
             skill_list = skills if isinstance(skills, list) else ([title_text] if title_text else [])
             if is_cleanup:
@@ -197,9 +211,33 @@ def _render_v14_tag_body(
                 s_text = " / ".join(skill_list)
                 html += f'<div class="v15-cluster v15-col-skills" style="flex: 1; margin-right: 20px;"><div class="v15-name-label" style="font-size:0.85rem; color:#fff;">{s_text}</div></div>'
         else:
-            name = weapon_name or title_text or "UNKNOWN"
+            # WEAPON IDENTITY: Name/Type + Element/Val
+            name = weapon_name or title_text or weapon_type or "UNKNOWN"
             w_type = weapon_type or subtitle or ""
-            html += f'<div class="v15-cluster v15-col-id"><div class="v15-name-label">{name}</div><div class="v15-type-label">{w_type}</div></div>'
+            # If name is same as type, use type for line 1
+            l1_text = name
+            
+            # Element Info + Enhancement Type for Line 2
+            e_name = element or ""
+            e_val = (element_val or "").replace("属性", "").strip()
+            e_type = enhancement_type or ""
+            
+            # Avoid redundant "雷 雷" if value is same as name
+            if e_name == e_val or not e_val:
+                # If numeric value is missing, only show (Weapon Type) if it's not already the main name
+                if l1_text == w_type:
+                    e_info = e_name if e_name != "無" else ""
+                else:
+                    e_info = f"{e_name} ({w_type})" if e_name != "無" else w_type
+            else:
+                # Numeric value exists
+                e_info = f"{e_name} {e_val}".strip() if e_name != "無" else w_type
+                
+            # Combine with Enhancement Type
+            if e_type and e_type != "なし":
+                e_info = f"{e_info} | {e_type}" if e_info else e_type
+            
+            html += f'<div class="v15-cluster v15-col-id"><div class="v15-name-label">{l1_text}</div><div class="v15-type-label">{e_info}</div></div>'
 
         # Cluster 4: Content Stack (Slots or Skills)
         if mode == "reinforcement" and comparison:
@@ -246,42 +284,68 @@ def _render_v14_tag_body(
     html += f'</div></div>'
     return html
 
-def render_weapon_card(
-    weapon_type, weapon_name, element=None, element_val=None, 
-    skills=None, bonuses=None, remaining_count=None, comparison=None,
-    is_selected=False, mode="hud"
-):
-    """v15+: Dedicated Weapon Card."""
-    marker_cls = "v15-marker"
-    html = _render_v14_tag_body(
-        weapon_type=weapon_type, weapon_name=weapon_name, 
-        element=element, element_val=element_val,
-        skills=skills, bonuses=bonuses, remaining_count=remaining_count, comparison=comparison,
-        is_selected=is_selected, mode=mode, marker_cls=marker_cls
+def render_weapon_card(weapon_type, weapon_name=None, element=None, element_val=None, 
+                       enhancement_type=None, skills=None, bonuses=None, action_html="",
+                       comparison=None, remaining_count=None, mode="hud"):
+    """
+    Renders a unified v15 HUD weapon card.
+    
+    Args:
+        weapon_type (str): The type icon to load.
+        weapon_name (str): Display name for line 1.
+        element (str): Element icon for composite anchor.
+        element_val (str): Numeric attribute value for line 2.
+        enhancement_type (str): Enhancement type (e.g. 攻撃激化) for line 2.
+        skills (list): Primary skills (series/group).
+        bonuses (list): Production/Restoration bonuses.
+        action_html (str): Optional right-side button HTML.
+        comparison (str): HTML string for reinforcement state comparison.
+        remaining_count (int): Optional remaining count for reinforcement tracker.
+        mode (str): "hud", "reinforcement", or "talisman".
+    """
+    body_html = _render_v14_tag_body(
+        weapon_type=weapon_type,
+        weapon_name=weapon_name,
+        element=element,
+        element_val=element_val,
+        enhancement_type=enhancement_type,
+        subtitle=weapon_type, # Fallback
+        skills=skills,
+        bonuses=bonuses,
+        mode=mode,
+        comparison=comparison,
+        remaining_count=remaining_count
     )
-    st.markdown(html, unsafe_allow_html=True)
+    st.markdown(body_html, unsafe_allow_html=True)
 
-def render_selectable_weapon_card(
-    weapon_type, weapon_name, key, element=None, element_val=None, 
-    skills=None, bonuses=None, remaining_count=None, comparison=None,
-    is_selected=False, mode="hud"
-):
-    """v15+: Selectable Weapon Card."""
-    icon = "✔" if is_selected else "❯"
-    btn_type = "primary" if is_selected else "secondary"
+def render_selectable_weapon_card(weapon_type, weapon_name, element=None, element_val=None, 
+                                   enhancement_type=None, skills=None, subtitle=None, bonuses=None,
+                                   is_selected=False, key=None, mode="hud"):
+    """
+    Legacy-compatible selectable card using v15 HUD styles under the hood.
+    """
     marker_cls = "v15-marker"
     
     with st.container():
         c_tag, c_btn = st.columns(CARD_ACTION_RATIO, gap="small")
         with c_tag:
             html = _render_v14_tag_body(
-                weapon_type=weapon_type, weapon_name=weapon_name, 
-                element=element, element_val=element_val,
-                skills=skills, bonuses=bonuses, remaining_count=remaining_count, comparison=comparison,
-                is_selected=is_selected, mode=mode, marker_cls=marker_cls
+                weapon_type=weapon_type,
+                weapon_name=weapon_name,
+                element=element,
+                element_val=element_val,
+                enhancement_type=enhancement_type,
+                skills=skills,
+                subtitle=subtitle or weapon_type,
+                bonuses=bonuses if isinstance(bonuses, list) else ([bonuses] if bonuses else []),
+                is_selected=is_selected,
+                mode=mode,
+                marker_cls=marker_cls
             )
             st.markdown(html, unsafe_allow_html=True)
         with c_btn:
+            icon = "✔" if is_selected else "❯"
+            btn_type = "primary" if is_selected else "secondary"
             clicked = st.button(icon, key=key, type=btn_type, use_container_width=True)
         return clicked
 

@@ -12,6 +12,9 @@ from src.components.box.dialogs import edit_equipment_dialog
 @st.fragment
 def render_equipment_list(master, user_id):
     """登録済みの武器一覧を表示・管理する (Fragment化)"""
+    from src.components.cards import inject_card_css
+    inject_card_css()
+    
     enhancement_opts = master.get("kyogeki_enhancements", [])
     p_bonus_opts = master.get("production_bonuses", [])
 
@@ -80,6 +83,7 @@ def render_equipment_list(master, user_id):
                         weapon_name=w_display,
                         element=row['element'],
                         element_val=f"{row['element']}属性",
+                        enhancement_type=row['enhancement_type'],
                         skills=skills,
                         bonuses=bonuses,
                         mode="hud"

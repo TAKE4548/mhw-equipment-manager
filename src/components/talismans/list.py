@@ -13,6 +13,9 @@ from src.components.talismans.cleanup_dialog import cleanup_talismans_dialog
 @st.fragment
 def render_talisman_list(user_id):
     """護石の一覧表示とフィルタUIを描画する (Fragment化)"""
+    from src.components.cards import inject_card_css
+    inject_card_css()
+    
     df = load_talismans(user_id)
     if df.empty:
         st.info("登録済みの護石はありません。")
