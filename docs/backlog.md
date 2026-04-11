@@ -92,7 +92,7 @@
 - **Design doc**: `docs/ui_spec.md`
 
 ### REQ-008: モンハン専用アイコンの導入と絵文字の排除
-- **Status**: completed
+- **Status**: done (2026-04-10)
 - **Type**: enhancement
 - **Priority**: mid
 - **Problem**: 現在、武器種や属性の表示に汎用の絵文字を使用しているため、ゲームの世界観と乖離しており、UIの質が損なわれている。
@@ -222,7 +222,7 @@
     - `pages/5_talismans.py` および `src/logic/talismans.py` 内の条件分岐（`if rarity == 8` 等）を共通定義の参照に置き換える。
 
 ### REQ-021: AIフレンドリーなコンポーネント指向リファクタリング
-- **Status**: completed
+- **Status**: done (2026-04-09)
 - **Type**: maintenance
 - **Priority**: High
 - **Description**: AIエージェントによるメンテナンス効率を最大化するため、主要 4 ページ（護石管理、復元強化、装備ボックス、抽選結果）を State, Atoms, Dialogs, Form, List の 5 つの役割に物理分割した。これによりトークン消費が大幅に削減された。
@@ -250,7 +250,7 @@
     - 描画パフォーマンスを最適化し、コードのクリーンさを保つ。
  
 ### REQ-024: 復元強化厳選のページの登録時の武器選択UIの見直し
-- **Status**: done
+- **Status**: done (2026-04-10)
 - **Current step**: Complete
 - **Type**: enhancement
 - **Priority**: P2

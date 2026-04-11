@@ -2,7 +2,7 @@
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-03-20
-**Feature**: [spec.md](file:///c:/Users/audih/ws/hogehoge/sdd-adk-antigravity-starter/specs/001-mhw-eq-manager/spec.md)
+**Feature**: [spec.md](./spec.md)
 
 ## Content Quality
 

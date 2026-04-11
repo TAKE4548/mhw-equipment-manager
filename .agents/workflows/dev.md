@@ -1,86 +1,58 @@
 ---
 name: dev
 description: >
-  Formal development session workflow. Tracks progress via session.md.
-  Includes Escalation and Architecture Feedback loops.
+  Formal development session workflow. Tracks progress via session.md. (v1.5)
 ---
 
 # Development Workflow (/dev)
 
-This workflow manages the lifecycle of a requirement from selection to deployment.
-
 ## Step 0: Session Initialization [Role: Dev Coordinator]
+- **Deterministic Check**: Run `.agents/scripts/` 以下の全ての Linter (backlog, asset, doc_link) を実行します。不備がある場合は、継続する前に修正を提案してください。
 - Read `docs/session.md` and `docs/backlog.md`.
-- **Resumption Logic**: If `docs/session.md` contains an active REQ and a specific `Current Step`, ask the USER: "Would you like to resume {REQ-ID} from {Step Name}?"
-- If the USER says Yes, jump to that step. Otherwise, proceed to Step 1.
-- **Protocol**: Update `docs/session.md` with "active" status and Current REQ.
+- **Resumption Logic**: `docs/session.md` が `active` の場合、再開するか新規に開始するかをユーザーに確認してください。
+- **Protocol**: `active` への移行と対象 REQ を `session.md` に記録します。
 
 ## Step 1: Item Selection & Setup [Role: Dev Coordinator]
-- Present `ready` or `fix-needed` items from `docs/backlog.md`.
-- The USER selects a target (REQ).
-- **Git Setup**: 
-  - Create feature branch: `git checkout -b <feat/fix>/REQ-XXX`.
-- **Session Update**: Initialize `docs/session.md` for the new REQ.
-- **Starting Step Selection**:
-  - New feat/redesign -> Step 3 (Architect).
-  - UI refinement only -> Step 4 (UX Designer).
-  - Pure logic bug (no UI change) -> Step 6 (Engineer).
+- `ready` または `fix-needed` アイテムを提示し、ユーザーが REQ を選択します。
+- **Git Setup**: `git checkout -b <feat/fix>/REQ-XXX` を実行します。
+- **Path Selection**: 新機能/大規模修正なら Step 3（Architect）、軽微なUIなら Step 4（UX）等を選択します。
 
 ## Step 2: Handoff Verification [Role: Dev Coordinator]
-- Verify target REQ has clear "Acceptance Criteria".
-- Confirm the branch is active.
-- Handoff to the next role.
+- REQ の AC が明確であることを確認し、次ロールへハンドオフします。
 
 ## Step 3: High-Level Design [Role: Architect]
-- **Session Entry**: Update `docs/session.md` (Step 3, Architect).
-- Execute `role-architect` responsibilities.
-- **Feasibility Check**: If the requirement is technically unfeasible -> report `[IMPASSE]` to Coordinator and END.
-- Output: `docs/designs/{feature}.md` or `docs/ui_spec.md`.
-- **Session Exit**: Update status in `docs/session.md`.
+- **UX Strategy Integration**: UI/UX 関連の場合、この段階で **UX Designer** と協議し、ユーザー体験の骨子を固めます。
+- インパクト分析を行い、設計（`docs/designs/*.md` 等）と `implementation_plan.md` を作成します。
+- **Trade-off Disclosure**: プラン内に「弊害・制約」セクションを設けることが必須です。
+- **UX Review**: 設計完了後、UX Designer による監査フィードバックを受けます。
 
 ## Step 4: UI/UX Specification [Role: UX Designer]
-- *Condition: Skip if no UI changes.*
-- Execute `task-ux-design`.
-- Update `docs/ui_spec.md` and `docs/design_system.md`.
+- *Condition: UI変更がある場合のみ。*
+- 具体的なビジュアル仕様（`docs/ui_spec.md`）を作成します。
+- 専門家として、ユーザーの要望に対する改善案や異論を積極的に提示してください。
 
 ## Step 5: Approval Gate [Role: Dev Coordinator]
-- **Session Entry**: Update `docs/session.md` (Step 5, Coordinator).
-- Present Architecture and UI designs to the USER.
-- **MANDATORY TURN-END**: Wait for explicit USER approval (Japanese context allowed).
-- **One-Action Policy**: No implementation tools in this turn.
-- Once approved, proceed to Step 6.
+- 設計案とプランをユーザーに提示します。
+- **MANDATORY TURN-END**: ユーザーの明示的な承認を待つため、ターンを終了してください。
 
 ## Step 6: Implementation [Role: Engineer]
-- **Session Entry**: Update `docs/session.md` (Step 6, Engineer).
-- **Escalation Watch**: If 3 attempts fail, report `[IMPASSE]` and END.
-- Implementation: Code + Unit Tests + Browser Verification.
-- Evidence: Save screenshots as `MT-{num}_{pass|fail}.png`.
-- **Structured Report**: Provide verdict and AC check.
-- **Session Exit**: Update `docs/session.md`.
+- コード実装、ユニットテスト、およびブラウザ検証を実施します。
+- **Evidence Management**: 証跡画像をリポジトリ外の `.gemini/` 配下に保存し、Walkthrough でリンクします。
+- **AC Checklist**: 完了報告にはテーブル形式の AC 判定を含めてください。
 
 ## Step 7: Verification & Review [Role: Tester/Reviewer]
-- **Session Entry**: Update `docs/session.md` (Step 7, Reviewer).
-- Compare code against designs and verify AC via evidence.
-- **Architecture Feedback**: Identify "Concerns (懸念事項)" for future debt.
-- **Verdict**: PASS | FAIL (If Fail, return to Step 6).
-- **MANDATORY TURN-END**: Terminate turn after providing the verdict.
+- **Red Teaming**: 「どうすれば壊れるか」の視点で実装を監査し、AC検証テーブルを提示します。
+- **Verdict**: PASS / FAIL / CONCERNS を発行し、不備があれば Step 6 へ差し戻します。
+- **MANDATORY TURN-END**: 判定後は直ちにターンを終了してください。
 
 ## Step 8: Finalization & SSoT [Role: Dev Coordinator]
-- **Session Entry**: Update `docs/session.md` (Step 8, Coordinator).
-- **Record Tech Debt**: If Reviewer reported "Concerns", record them in `docs/backlog.md`.
-- **SSoT Sync**: Ensure docs/design/ui_spec match the actual implementation.
-- **Backlog Update**: Set status to `done`, update `Current step` to `none`.
-- **Git Commit**: `git add . && git commit -m "<type>: implement REQ-XXX"`.
-- **Session Exit**: Mark `docs/session.md` as "inactive" (clear it for next session).
-- Present final walkthrough and merge instructions.
+- **Linter Final Check**: 完了前に再度全ての Linter スクリプトを実行し、整合性を確認します。
+- **Backlog Sync**: Status を `done` にし、完了日 `(YYYY-MM-DD)` を追記します。
+- **SSoT Sync**: 設計ドキュメントと実装の最終的な整合性をとります。
+- **Session Exit**: `session.md` を `inactive` にリセットし、セッションを閉じます。
+- Walkthrough 提示とブランチのマージ案内を行い、セッションを完了します。
 
 ---
 
-## Escalation Handling Path (IMPASSE Branch)
-If an `[IMPASSE]` is reported in Step 3 or Step 6:
-1. **Coordinator** updates `docs/session.md` status to `escalated`.
-2. **Coordinator** presents specific technical constraints to the USER.
-3. **USER Decision**:
-   - Change requirement -> Return to Step 1 (BA) or Step 3 (Architect).
-   - Accept tradeoff -> Architect updates design, resume from Step 5.
-   - Archive/Defer -> Coordinator marks REQ as `archived` in backlog, END session.
+## Escalation Path (IMPASSE Branch)
+- Step 3 または 6 で `[IMPASSE]` が発生した場合、Coordinator はセッションを `escalated` に変更し、ユーザーと対策（要件緩和、アーカイブ等）を協議してください。
