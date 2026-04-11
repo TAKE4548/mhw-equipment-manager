@@ -239,9 +239,25 @@ def _render_v14_tag_body(
             
             html += f'<div class="v15-cluster v15-col-id"><div class="v15-name-label">{l1_text}</div><div class="v15-type-label">{e_info}</div></div>'
 
-        # Cluster 4: Content Stack (Slots or Skills)
+        # Cluster 4 & 5 Ordering Logic
+        # In reinforcement mode, production bonuses appear BEFORE comparison
+        def _render_bonuses():
+            b_list = bonuses if isinstance(bonuses, list) else (bonus_html.split("||") if bonus_html else [])
+            out = ""
+            for b in b_list:
+                if b.strip():
+                    out += f'<div class="v15-row">{b.strip()}</div>'
+            # Fixed width for reinforcement mode to prevent squeezing, flexible otherwise
+            b_style = ' style="flex: 0 0 130px;"' if mode == "reinforcement" else ""
+            return f'<div class="v15-cluster v15-col-bonuses"{b_style}>{out}</div>'
+            
+        if mode == "reinforcement":
+            html += _render_bonuses()
+
+        # Cluster 4: Content Stack (Slots or Skills or Comparison)
         if mode == "reinforcement" and comparison:
-            html += f'<div class="v15-cluster v15-col-skills" style="width:200px;">{comparison}</div>'
+            # Grant flex: 1 to ensure the long comparison string never gets cut off
+            html += f'<div class="v15-cluster v15-col-skills" style="flex: 1; min-width: 240px;">{comparison}</div>'
         elif is_long:
             # Slot info - Differentiated widths for list vs cleanup
             slot_width = "100px" if is_cleanup else "140px"
@@ -261,13 +277,9 @@ def _render_v14_tag_body(
                     s_html += f'<div class="v15-row">{s_icon}{s1_2}</div>'
             html += f'<div class="v15-cluster v15-col-skills">{s_html}</div>'
 
-        # Cluster 5: Bonuses Stack
-        bonus_list = bonuses if isinstance(bonuses, list) else (bonus_html.split("||") if bonus_html else [])
-        b_html = ""
-        for b in bonus_list:
-            if b.strip():
-                b_html += f'<div class="v15-row">{b.strip()}</div>'
-        html += f'<div class="v15-cluster v15-col-bonuses">{b_html}</div>'
+        # Cluster 5: Bonuses Stack (non-reinforcement mode)
+        if mode != "reinforcement":
+            html += _render_bonuses()
 
         # Cluster 6: Remaining Count (Right Aligned)
         count_val = remaining_count
