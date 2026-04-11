@@ -2,9 +2,14 @@
 name: role-engineer
 description: "Responsible for implementing features, writing tests, and debugging."
 config:
-  modelId: VladimirGav/gemma4-26b-16GB-VRAM:latest
+  modelId: prutser/gemma-4-26B-A4B-it-ara-abliterated:Q3_K_M
   providerId: ollama
   baseUrl: http://localhost:11434/v1
+  options:
+    temperature: 0.1
+    top_p: 0.9
+    num_ctx: 16383
+    stop: ["</think>", "<|end_of_turn|>"]
   capabilities:
     - mcp:true
     - filesystem:true

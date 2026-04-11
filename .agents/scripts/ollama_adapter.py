@@ -14,7 +14,14 @@ Connects to local Gemma4:26B via native API on localhost:11434.
 """
 
 OLLAMA_API_URL = "http://localhost:11434/api/chat"
-MODEL_ID = "VladimirGav/gemma4-26b-16GB-VRAM:latest"
+MODEL_ID = "prutser/gemma-4-26B-A4B-it-ara-abliterated:Q3_K_M"
+
+def strip_thinking(text: str) -> str:
+    """Strip <think>...</think> block from model output and return only the answer."""
+    import re
+    # Remove everything inside <think>...</think> (including the tags)
+    cleaned = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    return cleaned.strip()
 
 def query_ollama(prompt, system_prompt="You are a helpful assistant.", max_tokens=2048):
     data = {
@@ -26,7 +33,10 @@ def query_ollama(prompt, system_prompt="You are a helpful assistant.", max_token
         "stream": False,
         "options": {
             "num_predict": max_tokens,
-            "temperature": 0.1
+            "temperature": 0.1,
+            "top_p": 0.9,
+            "num_ctx": 16383,
+            "stop": ["</think>", "<|end_of_turn|>"]
         }
     }
     
@@ -36,7 +46,17 @@ def query_ollama(prompt, system_prompt="You are a helpful assistant.", max_token
     try:
         with urllib.request.urlopen(req) as response:
             res_data = json.loads(response.read().decode("utf-8"))
-            return res_data["message"]["content"]
+            message = res_data.get("message", {})
+            content = message.get("content", "")
+            thinking = message.get("thinking", "")
+            
+            # If the model is a 'Thinking' model, Ollama might separate the reasoning.
+            # We prioritize the final answer (content), but fall back to 'thinking' 
+            # if content is empty (common in some reasoning-heavy configurations).
+            if not content.strip() and thinking.strip():
+                return strip_thinking(thinking)
+            
+            return strip_thinking(content)
     except Exception as e:
         return f"Error querying Ollama Native API: {str(e)}"
 
@@ -55,8 +75,16 @@ def summarize_file(file_path):
     if len(content) > MAX_CHARS:
         content = content[:MAX_CHARS] + "\n... (omitted due to length)"
     
-    prompt = f"Please summarize the following content in Japanese, highlighting the key points for a developer:\n\n{content}"
-    system_message = "You are an expert developer assistant specialized in Monster Hunter project maintenance."
+    prompt = (
+        "Summarize the following source code for a developer. "
+        "List the key responsibilities, main functions, and any notable patterns or issues. "
+        "Be concise and use bullet points.\n\n"
+        f"{content}"
+    )
+    system_message = (
+        "You are an expert Python developer reviewing code for a Monster Hunter equipment management app. "
+        "Always respond in English with clear, structured bullet points."
+    )
     
     return query_ollama(prompt, system_message)
 
