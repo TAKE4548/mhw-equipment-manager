@@ -36,7 +36,8 @@ ICON_MAP = {
     
     # Skills
     "series": "グループスキル.png",
-    "group": "シリーズスキル.png"
+    "group": "シリーズスキル.png",
+    "護石": "護石.png"
 }
 
 class Icon:
@@ -113,6 +114,11 @@ class Icon:
     def get_group_icon(size=16):
         """Returns Group Skill icon (Bronze)."""
         return Icon.get_html("group", size=size)
+
+    @staticmethod
+    def get_talisman_icon(size=32):
+        """Returns Talisman icon (Magatama)."""
+        return Icon.get_html("護石", size=size)
 
 def get_attr_icon_stack(attr_key, size_icon=20, size_text="0.65rem", show_text=True):
     """Returns a stacked layout for attribute icon + name."""

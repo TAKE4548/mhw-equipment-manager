@@ -129,8 +129,9 @@ def inject_card_css():
         [data-testid="stHorizontalBlock"]:has(.v12-marker) > div { padding: 0 !important; margin: 0 !important; }
         
         /* Responsive */
+        /* Responsive - Keep skills visible but hide less critical specs */
         @media (max-width: 1000px) { .v15-col-spec { display: none; } }
-        @media (max-width: 800px) { .v15-col-skills { display: none; } }
+        /* Removed auto-hide for skills as they are critical in v15 HUD */
         </style>
     """, unsafe_allow_html=True)
 
@@ -143,37 +144,68 @@ def _render_v14_tag_body(
     """v15+: Triple-Cluster Layout Engine."""
     selected_cls = "v12-unit-selected" if is_selected else ""
     is_long = mode.startswith("long")
-    is_v15 = not is_long
-    v15_cls = "v15-mode" if is_v15 else ""
+    is_cleanup = (mode == "long-cleanup")
+    is_v15 = True # v15 Unified height (64px) for all, except maybe explicitly slim items
+    v15_cls = "v15-mode"
     card_mode_cls = "v14-mode-long" if is_long else ""
+    
+    # Handle skill list passed as title_text (common in legacy calls)
+    if skills is None and isinstance(title_text, list):
+        skills = title_text
+        title_text = ""
+    elif skills is None and isinstance(title_text, str) and "[" in title_text:
+        # Emergency fix for stringified lists
+        try:
+            import ast
+            skills = ast.literal_eval(title_text)
+            title_text = ""
+        except: pass
     
     html = f'<div class="v12-tag-card {marker_cls} {selected_cls} {v15_cls} {card_mode_cls}"><div class="v12-stream">'
     
-    if is_long:
-        # Legacy/Talisman Slim Mode (40px)
-        html += f'<div class="legacy-col-id">{badge_html}</div>'
-        html += f'<div class="v12-col-spec-legacy"><div class="v15-row" style="color:#aaa;">{title_text}</div></div>'
-        html += f'<span class="v11-sep">|</span><div class="v12-col-slots">{sub_text}</div>'
-        html += f'<span class="v11-sep">|</span><div class="v12-bonus-area">{bonus_html}</div>'
-    
-    elif is_v15:
-        # Cluster 1: Weapon Anchor
-        w_icon = Icon.get_weapon_icon(weapon_type or subtitle or "")
-        html += f'<div class="v15-cluster v15-col-anchor">{w_icon}</div>'
+    if is_v15:
+        # Cluster 1: Icon Anchor
+        if is_long:
+            # No icon for talismans as requested
+            pass
+        else:
+            w_icon = Icon.get_weapon_icon(weapon_type or subtitle or "")
+            html += f'<div class="v15-cluster v15-col-anchor">{w_icon}</div>'
 
-        # Cluster 2: Elemental Specs
-        e_icon = Icon.get_element_icon(element or "")
-        e_label = element_val or element or "無"
-        html += f'<div class="v15-cluster v15-col-spec"><div style="height:20px; display:flex; align-items:center;">{e_icon}</div><div class="v15-spec-label">{e_label}</div></div>'
+        # Cluster 2: Elemental Specs or Rarity Badge (Talisman)
+        if is_long:
+            # Place Rarity Badge next to icon for talismans
+            html += f'<div class="v15-cluster v15-col-spec">{badge_html}</div>'
+        else:
+            e_icon = Icon.get_element_icon(element or "")
+            e_label = element_val or element or "無"
+            html += f'<div class="v15-cluster v15-col-spec"><div style="height:20px; display:flex; align-items:center;">{e_icon}</div><div class="v15-spec-label">{e_label}</div></div>'
 
-        # Cluster 3: Identity Stack
-        name = weapon_name or title_text or "UNKNOWN"
-        w_type = weapon_type or subtitle or ""
-        html += f'<div class="v15-cluster v15-col-id"><div class="v15-name-label">{name}</div><div class="v15-type-label">{w_type}</div></div>'
+        # Cluster 3: Skills (New priority for Talismans)
+        if is_long:
+            skill_list = skills if isinstance(skills, list) else ([title_text] if title_text else [])
+            if is_cleanup:
+                # Vertical 3 rows for Dialog Comparison - Compact Fixed Width
+                s_html = ""
+                for s in skill_list[:3]: 
+                    s_html += f'<div class="v15-row" style="font-size:0.75rem; color:#fff; line-height:1.1;">{s}</div>'
+                html += f'<div class="v15-cluster v15-col-skills" style="width:200px; gap:1px;">{s_html}</div>'
+            else:
+                # Horizontal joined string for Main List - Flexible width to prevent cutoff
+                s_text = " / ".join(skill_list)
+                html += f'<div class="v15-cluster v15-col-skills" style="flex: 1; margin-right: 20px;"><div class="v15-name-label" style="font-size:0.85rem; color:#fff;">{s_text}</div></div>'
+        else:
+            name = weapon_name or title_text or "UNKNOWN"
+            w_type = weapon_type or subtitle or ""
+            html += f'<div class="v15-cluster v15-col-id"><div class="v15-name-label">{name}</div><div class="v15-type-label">{w_type}</div></div>'
 
-        # Cluster 4: Skills Stack
+        # Cluster 4: Content Stack (Slots or Skills)
         if mode == "reinforcement" and comparison:
             html += f'<div class="v15-cluster v15-col-skills" style="width:200px;">{comparison}</div>'
+        elif is_long:
+            # Slot info - Differentiated widths for list vs cleanup
+            slot_width = "100px" if is_cleanup else "140px"
+            html += f'<div class="v15-cluster v15-col-id" style="flex:0 0 {slot_width}; text-align: right;"><div class="v15-type-label" style="font-size:0.75rem; color:#888;">{sub_text}</div></div>'
         else:
             skill_list = skills if isinstance(skills, list) else (sub_text.split("|") if sub_text else [])
             s_html = ""
@@ -183,10 +215,10 @@ def _render_v14_tag_body(
                     s_icon = Icon.get_series_icon()
                     s_html += f'<div class="v15-row">{s_icon}{s1}</div>'
             if len(skill_list) > 1:
-                s2 = skill_list[1].strip()
-                if s2 != "なし":
+                s1_2 = skill_list[1].strip()
+                if s1_2 != "なし":
                     s_icon = Icon.get_group_icon()
-                    s_html += f'<div class="v15-row">{s_icon}{s2}</div>'
+                    s_html += f'<div class="v15-row">{s_icon}{s1_2}</div>'
             html += f'<div class="v15-cluster v15-col-skills">{s_html}</div>'
 
         # Cluster 5: Bonuses Stack
@@ -199,13 +231,15 @@ def _render_v14_tag_body(
 
         # Cluster 6: Remaining Count (Right Aligned)
         count_val = remaining_count
-        if not count_val and bonus_html:
+        if not count_val and bonus_html and not is_long:
             # Fallback for legacy calls in reinforcement mode
             c_match = re.search(r"残り\s*(\d+)\s*回", bonus_html)
             if c_match: count_val = c_match.group(1)
         
         if count_val:
             html += f'<div class="v15-cluster v15-col-count"><div class="v15-count-label">残り {count_val} 回</div></div>'
+        
+        # Talisman badge is now in Cluster 2, Cluster 6 stays empty or for actions
 
     html += f'</div></div>'
     return html

@@ -21,7 +21,8 @@ description: >
 
 ## 2. Decision Heuristics
 
-- **Simplicity vs Power**: ルールの追加は慎重に行い、トークン効率と精度のバランスが崩れないよう配慮してください。
+- **Rule Minimalism**: ルールの追加は慎重に行い、トークン効率と精度のバランスが崩れないよう配慮してください。既存ルールの削除や統合（Consolidation）を優先的に検討します。
+- **Counter-Governance Avoidance**: ルールが「形骸化（空文化）」して、単にチェックボックスを埋めるだけの作業にならないよう、実効性のあるガードレールを設計します。
 - **Modularization**: 役割の重複（Role Overlap）を排除し、各ロールが独自の専門性を発揮できる環境を整えます。
 
 ## 3. Boundaries

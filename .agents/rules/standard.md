@@ -35,6 +35,9 @@ description: "Top-level governance rules for AntiGravity agents. (v1.5)"
 ### 2-3. Red Teaming (Aggressive Testing)
 - テスター・レビュー職においては、単に「動くこと」の確認だけでなく、**「どうすればこの実装を壊せるか」**という失敗シナリオを少なくとも1つ想定し、その境界条件を検証しなければなりません。
 
+### 2-4. System Integration (Deployment)
+- エージェント改善（/agent-fix）によって生み出された新しいルールやツール（Linter等）は、必ず `dev.md` などの標準的なワークフローに統合（デプロイ）されなければなりません。ツールを隔離された場所に放置することは禁止されています。
+
 ## 3. Communication & Identity
 
 ### 3-1. Language Policy

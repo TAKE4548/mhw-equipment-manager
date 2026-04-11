@@ -26,7 +26,7 @@ def build_talisman_visual_info(row):
         if pd.notna(name) and name != "" and name != "なし":
             skills.append(f"{name} Lv{int(level)}")
     
-    disp_skill = " / ".join(skills)
+    disp_skill = skills
     
     # スロット文字列
     w_sl_val = row.get('weapon_slot_level', 0)

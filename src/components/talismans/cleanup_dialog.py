@@ -57,24 +57,36 @@ def cleanup_talismans_dialog(user_id: str):
                 ref_t = df[df['id'] == eq_ids[0]].iloc[0]
 
             with st.container(border=True):
-                c1, c2 = st.columns([1, 1])
-                with c1:
-                    st.caption("🗑️ 整理候補 (下位/重複)")
-                    badge, skills, slots = build_talisman_visual_info(pd.Series(t))
-                    render_slim_card(badge, skills, slots, "", mode="long-text")
+                # Candidate Section
+                st.caption("🗑️ 整理候補 (下位/重複)")
+                skills, slots, badge = build_talisman_visual_info(pd.Series(t))
+                render_slim_card(badge, skills, slots, "", mode="long-cleanup")
                 
-                with c2:
-                    if ref_t is not None:
-                        st.caption(f"✨ {reason_text}")
-                        badge_s, skills_s, slots_s = build_talisman_visual_info(ref_t)
-                        render_slim_card(badge_s, skills_s, slots_s, "", mode="long-text")
+                # Visual Indicator
+                if ref_t is not None:
+                    st.markdown(
+                        f"""
+                        <div style="display: flex; align-items: center; justify-content: center; margin: 4px 0; color: #888; font-size: 0.8rem; gap: 8px;">
+                            <div style="flex: 1; height: 1px; background: #333;"></div>
+                            <span>▼ {reason_text} ▼</span>
+                            <div style="flex: 1; height: 1px; background: #333;"></div>
+                        </div>
+                        """, 
+                        unsafe_allow_html=True
+                    )
+                    
+                    # Superior Section
+                    skills_s, slots_s, badge_s = build_talisman_visual_info(ref_t)
+                    render_slim_card(badge_s, skills_s, slots_s, "", mode="long-cleanup")
                 
+                st.write("") # Spacer
+
                 # Delete individual button
-                if st.button(f"削除する {'(⭐お気に入り)' if is_fav else ''}", key=f"del_clean_{t['id']}", type="primary", use_container_width=True):
-                    if is_fav:
-                        st.error("お気に入り登録されているため、一覧画面から個別にお気に入り解除してから削除してください。")
-                    else:
-                        if delete_talisman(t['id'], user_id=user_id):
-                            st.rerun()
+                if st.button(f"この護石を削除する {'(⭐お気に入りにつき保護中)' if is_fav else ''}", key=f"del_clean_{t['id']}", type="primary", use_container_width=True, disabled=is_fav):
+                    if delete_talisman(t['id'], user_id=user_id):
+                        st.rerun()
+                
+                if is_fav:
+                    st.caption("⚠️ お気に入り登録されている護石を削除するには、一覧画面で解除が必要です。")
         
     show_dialog()
