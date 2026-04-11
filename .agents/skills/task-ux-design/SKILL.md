@@ -1,9 +1,6 @@
 ---
 name: task-ux-design
-description: >
-  Design the user interface and interaction flow for a requirement.
-  Translate abstract usablity needs into concrete UI specifications.
-  Use when the developer session dictates a UI/UX change.
+description: "Design the user interface and interaction flow for a requirement."
 ---
 
 # UX Design Task

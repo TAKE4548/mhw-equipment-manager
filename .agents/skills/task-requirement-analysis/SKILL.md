@@ -1,8 +1,6 @@
 ---
 name: task-requirement-analysis
-description: >
-  Initial requirement intake and deep-dive. 
-  Focus on the Root Cause and Purpose-level Goals.
+description: "Initial requirement intake and deep-dive focusing on Root Cause and Purpose-level Goals."
 ---
 
 # Requirement Analysis Task
@@ -11,7 +9,7 @@ Your goal is to transform vague user feedback into a structured, actionable "Rea
 
 ## 1. Compliance (Always ON)
 - Strictly follow the **3-Check Protocol** in `GEMINI.md`.
-- Ensure all implementation plans for requirement updates are in **Japanese**.
+- **LANGUAGE POLICY**: All final reports and implementation plans for requirement updates MUST be in **Japanese**.
 
 ## 2. Deep-Dive Framework: Surface to Requirement
 

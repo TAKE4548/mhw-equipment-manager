@@ -1,9 +1,6 @@
 ---
 name: task-backlog-management
-description: >
-  Read, update, or query the project backlog at docs/backlog.md.
-  Use when answering questions about the backlog, changing priority,
-  updating item status, or tracking progress across sessions.
+description: "Read, update, or query the project backlog at docs/backlog.md."
 ---
 
 # Backlog Management Task
@@ -15,8 +12,8 @@ description: >
 ### REQ-{n}: {title}
 - **Type**: enhancement | defect
 - **Status**: 
-  - `new`: BAが登録したが、Root Cause の掘り下げが不十分な状態。
-  - `ready`: 要件と受入条件が特定され、**設計フェーズ（Step 3/4）を開始できる状態**。
+  - `new`: Registered by BA, but Root Cause analysis is still insufficient.
+  - `ready`: Requirements and Acceptance Criteria are identified, and the **Design Phase (Step 3/4) can begin**.
   - `in-progress` | `done` | `fix-needed` | `needs-investigation`
 - **Current step**: {Step 1-8 | none} (Updated by Dev Coordinator)
 - **Priority**: unset | P1 | P2 | P3

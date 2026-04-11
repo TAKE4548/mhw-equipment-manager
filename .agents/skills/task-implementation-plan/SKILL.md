@@ -1,8 +1,6 @@
 ---
 name: task-implementation-plan
-description: >
-  Create a low-level implementation design from the architect's and UX designer's
-  specifications. Use when engineer role starts working on an approved design.
+description: "Create a low-level implementation design from the architect's and UX designer's specifications."
 ---
 
 # Implementation Plan Task
@@ -12,18 +10,17 @@ description: >
 - `docs/ui_spec.md` (UX Designer's interaction and layout design, if applicable)
 
 ## Output
-- Implementation Sequence (ordered by dependency).
-- Granular step-by-step logic updates (which files and functions to change).
-- Test Design Strategies:
-  - Unit Tests: Logic paths.
-  - Manual Tests: UI interactions, step-by-step verifications.
+- **Implementation Sequence** (ordered by dependency).
+- **Granular logic updates** (files and functions).
+- **Test Design Strategies** (Unit / Manual).
+- **Trade-off Disclosure (MANDATORY)**: Following `project-conventions/resources/templates.md`, you must explicitly document downsides, constraints, or side effects of the implementation.
 
 ## Steps
 1. Break down the high-level designs into concrete coding tasks.
-2. Order the tasks based on module dependencies (e.g., models -> logic -> UI layer).
-3. Determine the testing strategy for each subtask (unit test vs manual/browser test).
-4. Outline the exact test cases and manual test scenarios to be written.
+2. Order the tasks based on module dependencies.
+3. Determine the testing strategy for each subtask.
+4. **Define Red Teaming Scenarios**: Following `project-conventions/resources/templates.md`, include failure scenarios ("How could this feature break?") in the verification plan.
 
 ## MANDATORY GATE: Approval & Questions
-- すべてのゲート管理（質問がある場合のターン停止、ユーザー承認の待機等）については、**`project-conventions/SKILL.md` の「Universal Integrity Gates」** を厳守してください。
-- 計画内に質問（Open Questions）が含まれる場合は、無条件でターンを終了し、回答を待つ必要があります。
+- Strictly follow the **"Universal Integrity Gates"** in `project-conventions/SKILL.md`.
+- If the plan contains "Open Questions," you must end your turn immediately and wait for user feedback.
