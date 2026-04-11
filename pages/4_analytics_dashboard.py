@@ -6,7 +6,7 @@ from src.components.sidebar import render_shared_sidebar
 from src.logic.master import get_master_data
 from src.components.cards import inject_card_css
 
-st.set_page_config(page_title="分析統計", page_icon="📊", layout="wide")
+st.set_page_config(page_title="分析統計", layout="wide")
 inject_card_css()
 
 # Sidebar & Handshake
@@ -16,7 +16,7 @@ if not st.session_state.get('mhw_ready') and not st.session_state.get('user'):
     st.info("⏳ データを読み込み中...")
     st.stop()
 
-st.title("分析統計 📊")
+st.title("分析統計")
 st.markdown("所持している武器の傾向を統計的に分析し、今後の厳選の参考にします。")
 
 df_raw = load_equipment()
@@ -30,7 +30,7 @@ master = get_master_data()
 st.divider()
 
 # --- Section 1: Overall Summary (Pie Chart) ---
-st.subheader("⚔️ 武器種別シェア (所持数・比率)")
+st.subheader("武器種別シェア (所持数・比率)")
 
 # Calculate counts and percentages
 w_counts = df_raw['weapon_type'].value_counts().reset_index()
@@ -90,7 +90,7 @@ st.markdown(f"**総所持数:** `{total_weapons}` 本")
 st.divider()
 
 # --- Section 2: Drill-down Analysis ---
-st.subheader("🔍 武器種別ドリルダウン")
+st.subheader("武器種別ドリルダウン")
 c_f1, c_f2 = st.columns([1, 2])
 with c_f1:
     selected_w_type = st.selectbox("分析対象の武器種を選択", ["全て"] + master.get("weapon_types", []))
@@ -108,7 +108,7 @@ else:
     col_left, col_right = st.columns(2)
     
     with col_left:
-        st.markdown(f"**🔮 {selected_w_type} の属性内訳**")
+        st.markdown(f"**{selected_w_type} の属性内訳**")
         e_counts = df['element'].value_counts().reset_index()
         e_counts.columns = ['属性', '本数']
         
@@ -130,7 +130,7 @@ else:
         st.altair_chart(e_chart, use_container_width=True)
 
     with col_right:
-        st.markdown(f"**🛡️ {selected_w_type} のシリーズスキル内訳**")
+        st.markdown(f"**{selected_w_type} のシリーズスキル内訳**")
         s_counts = df['current_series_skill'].value_counts().reset_index()
         s_counts.columns = ['スキル', '本数']
         s_chart = alt.Chart(s_counts.head(10)).mark_bar(color="#4d90fe").encode(
@@ -140,7 +140,7 @@ else:
         ).properties(height=300)
         st.altair_chart(s_chart, use_container_width=True)
 
-    st.markdown(f"**👥 {selected_w_type} のグループスキル内訳**")
+    st.markdown(f"**{selected_w_type} のグループスキル内訳**")
     g_counts = df['current_group_skill'].value_counts().reset_index()
     g_counts.columns = ['グループスキル', '本数']
     g_chart = alt.Chart(g_counts.head(10)).mark_bar(color="#27ae60").encode(

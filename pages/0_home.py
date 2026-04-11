@@ -6,7 +6,7 @@ from src.components.cards import inject_card_css
 from src.components.auth import get_current_user_id
 from src.utils.i18n import t
 
-st.set_page_config(page_title=t("NAV.HOME"), page_icon="🏠", layout="wide")
+st.set_page_config(page_title=t("NAV.HOME"), layout="wide")
 inject_card_css()
 
 # Safety First: Simplified Styling for st.button

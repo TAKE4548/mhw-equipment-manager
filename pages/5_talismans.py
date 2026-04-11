@@ -11,7 +11,7 @@ from src.components.talismans.form import render_registration_form
 from src.components.talismans.list import render_talisman_list
 
 # ページ設定
-st.set_page_config(page_title="鑑定護石管理", page_icon="📿", layout="wide")
+st.set_page_config(page_title="鑑定護石管理", layout="wide")
 inject_card_css()
 render_shared_sidebar()
 
@@ -25,8 +25,7 @@ if st.session_state.get("active_dialog"):
 # 3. ヘッダー描画
 render_lean_header(
     "鑑定護石管理", 
-    "マカ錬金で入手した護石の登録・検索・お気に入り管理を行います。", 
-    icon="📿"
+    "マカ錬金で入手した護石の登録・検索・お気に入り管理を行います。"
 )
 
 user_id = get_current_user_id()

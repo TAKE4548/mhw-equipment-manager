@@ -4,7 +4,8 @@ from src.logic.restoration_tracker import (
     load_trackers, delete_tracker, execute_apply_and_advance
 )
 from src.components.common import render_item_count
-from src.components.cards import render_slim_card, CARD_ACTION_RATIO
+from src.components.cards import render_weapon_card, CARD_ACTION_RATIO
+from src.logic.equipment_box import format_bonus_summary, format_bonus_list
 from src.components.reinforcement.atoms import (
     render_weapon_attribute_badge, build_visual_comparison_bar, 
     get_restoration_labels
@@ -80,25 +81,31 @@ def render_active_tracker_list(master, eq_df, user_id):
             comp_html = build_visual_comparison_bar(curr_labels, target_labels)
         
             rem = row['remaining_count']
-            badge_html = render_weapon_attribute_badge(row['element'])
+            # Structured data for reinforcement mode
+            skills = [
+                row['current_series_skill'] if row['current_series_skill'] != "なし" else "なし",
+                row['current_group_skill'] if row['current_group_skill'] != "なし" else "なし"
+            ]
+            
+            pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1, 4)]
+            bonuses = [f"📋 {row['enhancement_type']}", f"🛠️ {format_bonus_summary(pbs)}"]
+            
+            # Weapon Display Name logic
             w_display = row['weapon_name'] if row['weapon_name'] and not str(row['weapon_name']).startswith("無銘の") else row['weapon_type']
-            
-            col_c = "#ff4b4b" if rem <= 1 else ("#f39c12" if rem < 5 else "#27ae60")
-            
-            # Re-format sub_text for reinforcement mode: "Skills 📋 Enh | 🛠️ Prod"
-            pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
-            from src.logic.equipment_box import format_bonus_summary
-            prod_bonus_text = f"🛠️ {format_bonus_summary(pbs)}"
-            
-            skills_html = f"🛡️ {row['current_series_skill']} / 👥 {row['current_group_skill']}"
-            sub_text = f"{skills_html} 📋 {row['enhancement_type']} | {prod_bonus_text}"
-            
-            # metric_html: wrap remaining count and comparison bars
-            metric_html = f"<div class='v15-row' style='justify-content:flex-end; color:{col_c}; font-weight:bold;'>残り {rem} 回</div>{comp_html}"
             
             col_card, col_act = st.columns(CARD_ACTION_RATIO, vertical_alignment="center")
             with col_card:
-                render_slim_card(badge_html, w_display, sub_text, metric_html, subtitle=row['weapon_type'], mode="reinforcement")
+                render_weapon_card(
+                    weapon_type=row['weapon_type'],
+                    weapon_name=w_display,
+                    element=row['element'],
+                    element_val=f"{row['element']}属性",
+                    skills=skills,
+                    bonuses=bonuses,
+                    comparison=comp_html,
+                    remaining_count=rem,
+                    mode="reinforcement"
+                )
             with col_act:
                 with st.popover("⋮", use_container_width=True, key=f"pop_{row['id']}"):
                     if st.button("🔨 進行/適用", key=f"ap_{row['id']}", use_container_width=True):

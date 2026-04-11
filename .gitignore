@@ -15,6 +15,7 @@ secrets.toml
 *.db
 *.sqlite
 *.sqlite3
+assets/icons_backup
 
 # Python
 __pycache__/

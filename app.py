@@ -14,12 +14,12 @@ from src.utils.i18n import t
 init_session_state()
 
 # Navigation setup (v1.55+)
-home_page = st.Page("pages/0_home.py", title=t("NAV.HOME"), icon="🏠", default=True)
-box_page = st.Page("pages/equipment_box.py", title=t("NAV.BOX"), icon="📦")
-skill_page = st.Page("pages/0_skill_lottery.py", title=t("NAV.SKILL"), icon="⚔️")
-rein_page = st.Page("pages/reinforcement_registration.py", title=t("NAV.REIN"), icon="✨")
-talisman_page = st.Page("pages/5_talismans.py", title=t("NAV.TALI"), icon="📿")
-dashboard_page = st.Page("pages/4_analytics_dashboard.py", title=t("NAV.DASH"), icon="📊")
+home_page = st.Page("pages/0_home.py", title=t("NAV.HOME"), default=True)
+box_page = st.Page("pages/equipment_box.py", title=t("NAV.BOX"))
+skill_page = st.Page("pages/0_skill_lottery.py", title=t("NAV.SKILL"))
+rein_page = st.Page("pages/reinforcement_registration.py", title=t("NAV.REIN"))
+talisman_page = st.Page("pages/5_talismans.py", title=t("NAV.TALI"))
+dashboard_page = st.Page("pages/4_analytics_dashboard.py", title=t("NAV.DASH"))
 
 pg = st.navigation({
     t("NAV.GROUP.PORTAL"): [home_page],

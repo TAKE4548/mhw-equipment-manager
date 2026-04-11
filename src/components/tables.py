@@ -1,6 +1,6 @@
 import streamlit as st
 from src.logic.equipment import execute_upgrade, execute_all_upgrades, delete_upgrade, update_upgrade
-from src.components.cards import render_slim_card, get_badge_html, inject_card_css, CARD_ACTION_RATIO
+from src.components.cards import render_weapon_card, get_badge_html, inject_card_css, CARD_ACTION_RATIO
 
 @st.dialog("強化抽選結果を編集")
 def edit_upgrade_dialog(row, user_id):
@@ -49,29 +49,28 @@ def render_active_upgrades(df, user_id, eq_df_all):
             rem = row['remaining_count']
             col_c = "#ff4b4b" if rem <= 1 else ("#f39c12" if rem < 5 else "#27ae60")
             
-            # Badge
-            elem = row['element']
-            bg = ATTRIBUTE_COLORS.get(elem, "#444")
-            txt_c = "black" if elem in ["氷", "雷", "無", "睡眠"] else "white"
-            badge_html = get_badge_html(elem, bgcolor=bg, color=txt_c)
-            
-            # Build Content
-            title_text = f"{row['weapon_type']}"
-            
-            skill_part = row['series_skill']
-            skill_name = series_map.get(skill_part, "")
-            display_ser = f"{skill_part} ({skill_name})" if skill_name and skill_part != "なし" else skill_part
-            
-            group_part = row['group_skill']
-            group_name = group_map.get(group_part, "")
-            display_grp = f"{group_part} ({group_name})" if group_name and group_part != "なし" else group_part
-            
-            sub_text = f"🛡️ {display_ser} | 👥 {display_grp}"
-            bonus_html = f"✨ 残り {rem} 回 || "
+            # Display labels for skills
+            display_ser = series_map.get(row['series_skill'], row['series_skill'])
+            display_grp = group_map.get(row['group_skill'], row['group_skill'])
+
+            # Structured skills (remove emojis as cards.py adds them)
+            skills = [
+                display_ser if display_ser != "なし" else "なし",
+                display_grp if display_grp != "なし" else "なし"
+            ]
             
             col_card, col_act = st.columns(CARD_ACTION_RATIO, vertical_alignment="center")
             with col_card:
-                render_slim_card(badge_html, title_text, sub_text, bonus_html, subtitle=row['weapon_type'], mode="hud")
+                render_weapon_card(
+                    weapon_type=row['weapon_type'],
+                    weapon_name=None, # It's a seed, not a specific weapon
+                    element=row['element'],
+                    element_val=f"{row['element']}属性",
+                    skills=skills,
+                    bonuses=[], # No bonuses on seeds yet
+                    remaining_count=rem,
+                    mode="hud"
+                )
                 
             with col_act:
                 with st.popover("⋮", help="操作メニュー", use_container_width=True):

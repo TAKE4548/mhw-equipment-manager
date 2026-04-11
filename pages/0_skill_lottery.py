@@ -10,7 +10,7 @@ from src.components.lottery.form import render_registration_form
 from src.components.lottery.list import render_tracker_list
 
 # 1. ページ設定
-st.set_page_config(page_title="スキル抽選管理", page_icon="⚔️", layout="wide")
+st.set_page_config(page_title="スキル抽選管理", layout="wide")
 render_shared_sidebar()
 
 # 2. 状態の初期化
@@ -19,8 +19,7 @@ init_lottery_state()
 # 3. ヘッダー描画
 render_lean_header(
     "スキル抽選結果", 
-    "スキル抽選の順序を確認し、武器へ割り当てます。", 
-    icon="⚔️"
+    "スキル抽選の順序を確認し、武器へ割り当てます。"
 )
 
 user_id = get_current_user_id()

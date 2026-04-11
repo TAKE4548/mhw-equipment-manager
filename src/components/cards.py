@@ -1,8 +1,9 @@
 import streamlit as st
+import re
+from src.components.icons import Icon
 
 # v14 Unified Layout Ratios
 # Use these constants across all list pages to ensure menu vertical alignment
-# Standard List: [CardArea, ActionArea]
 CARD_ACTION_RATIO = [11.5, 1.0]
 
 def get_badge_html(text, bgcolor="#444", color="white"):
@@ -10,10 +11,17 @@ def get_badge_html(text, bgcolor="#444", color="white"):
     return f'<span style="background-color: {bgcolor}; color: {color}; padding: 0px 5px; border-radius: 3px; font-size: 0.7rem; font-weight: bold; display: inline-block; min-width: 32px; text-align: center; margin-right: 8px;">{text}</span>'
 
 def inject_card_css():
-    """Injects high-precision CSS for v14 (Context-Aware HUD & Unified Alignment)."""
+    """Injects high-precision CSS for v15 (Triple-Cluster Layout)."""
+    # Performance opt: Icon Base64 data is now centralized in a single CSS block
+    icon_styles = Icon.get_style_sheet()
+    
+    # Inject Icon Styles
+    st.markdown(f"<style>{icon_styles}</style>", unsafe_allow_html=True)
+    
+    # Inject Layout Styles
     st.markdown("""
         <style>
-        /* v14: CONTEXT-AWARE SMART HUD (Weapons & Talismans) */
+        /* v15: TRIPLE-CLUSTER LAYOUT */
         
         /* 0. Global Lean UI Adjustments */
         [data-testid="stForm"] {
@@ -27,15 +35,9 @@ def inject_card_css():
             width: 100%;
         }
 
-        /* Heading Margin Compression (Polished for balance) */
-        h1, h2, h3, h4, h5 {
-            margin-top: 1.5rem !important;
-            margin-bottom: 0.5rem !important;
-        }
-
-        /* 0. List Item Spacing - Native Vertical Block Gap */
-        [data-testid="stVerticalBlock"] {
-            gap: 0.5rem !important; /* Constant 8px gap */
+        /* 0. List Item Spacing - Target only main card containers (v15 only) */
+        .v12-tag-card.v15-mode {
+            margin-bottom: 8px;
         }
 
         /* 1. The Card - v15 Multi-line (64px) / v14 Slim (40px) */
@@ -54,267 +56,224 @@ def inject_card_css():
         }
         .v12-tag-card.v15-mode {
             height: 64px !important;
-            padding: 8px 16px;
+            padding: 4px 12px;
         }
 
-        /* 2. Unified Button Height & Style */
-        [data-testid="stHorizontalBlock"]:has(.v12-marker) div[data-testid="stButton"] button {
-            height: 40px !important;
-            border-radius: 6px !important;
-            border: 1px solid #333 !important;
-            background: #252525 !important;
-            color: #ccc !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-        /* v15 Button Sync */
-        [data-testid="stHorizontalBlock"]:has(.v15-marker) div[data-testid="stButton"] button {
-            height: 64px !important;
-        }
-
-        /* Selection (HUD Gold) - Targeted via native button type/kind */
-        .v12-tag-card.v12-unit-selected { border: 1px solid #f1c40f !important; }
-        
-        /* Button: Secondary (Default) */
-        div[data-testid="stButton"] button[kind="secondary"] {
-            /* Inherit common styles from section 2 below */
-        }
-
-        /* Button: Primary (Selected) */
-        div[data-testid="stButton"] button[kind="primary"] {
-            background-color: #f1c40f !important;
-            border: 1px solid #f1c40f !important;
-            color: #000 !important;
-            font-weight: bold !important;
-        }
-
-        /* HUD STREAMS & ALIGNMENT */
-        .v12-stream { display: flex; align-items: center; width: 100%; white-space: nowrap; overflow: hidden; height: 100%; }
-        .v15-mode .v12-stream { white-space: normal; }
-        
-        /* v15 ID Cluster (Stacked) */
-        .v15-id-stack {
+        /* Cluster System */
+        .v15-cluster {
             display: flex;
             flex-direction: column;
             justify-content: center;
-            width: 140px;
-            flex-shrink: 0;
             overflow: hidden;
-            margin-right: 12px;
+            height: 100%;
         }
-        .v15-type-label { font-size: 0.85rem; font-weight: 700; color: #fff; text-transform: uppercase; line-height: 1.2; }
-        .v15-name-label { font-size: 0.7rem; color: #888; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
-
-        /* v15 Attribute/Enhancement (Center) - Refined: Stacked */
-        .v15-col-center {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            width: 140px;
+        
+        /* Col 1: Weapon Anchor */
+        .v15-col-anchor {
+            width: 42px;
             flex-shrink: 0;
-            overflow: hidden;
+            align-items: center;
             margin-right: 8px;
         }
-        .v15-enh-label { font-size: 0.72rem; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .v15-attr-label { font-size: 0.65rem; color: #666; text-transform: uppercase; }
-
-        /* v15 Spec/Bonus stacks */
-        .v15-stack {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 2px;
-            overflow: hidden;
-        }
-        .v15-col-skills { flex: 1; min-width: 0; }
-        .v15-col-bonuses { width: 280px; flex-shrink: 0; align-items: flex-start; } /* Expanded to prevent 5-slot clipping */
         
-        .v15-row {
-            font-size: 0.72rem;
-            color: #ccc;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: flex;
+        /* Col 2: Elemental Specs */
+        .v15-col-spec {
+            width: 58px;
+            flex-shrink: 0;
             align-items: center;
-            gap: 4px;
+            text-align: center;
+            margin-right: 12px;
+            gap: 1px;
         }
+        .v15-spec-label { font-size: 0.68rem; color: #888; text-transform: uppercase; font-weight: 600; line-height: 1; }
+
+        /* Col 3: Identity Stack (Narrower to shift bonus left) */
+        .v15-col-id {
+            flex: 0 0 160px;
+            margin-right: 8px;
+            gap: 0px;
+            overflow: hidden;
+        }
+        .v15-name-label { font-size: 0.9rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }
+        .v15-type-label { font-size: 0.68rem; color: #777; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; margin-top: 1px; }
+
+        /* Col 4: Skills Stack */
+        .v15-col-skills { width: 130px; flex-shrink: 0; gap: 2px; }
+        .v15-row { font-size: 0.72rem; color: #ccc; display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* Col 5: Bonuses Stack (Flexible to fill space) */
+        .v15-col-bonuses { flex: 1; min-width: 150px; gap: 2px; align-items: flex-start; }
         .v15-row.muted { color: #888; font-size: 0.68rem; }
 
-        /* Legacy HUD Alignment (for Talismans/Slim) */
-        .v12-col-id { display: flex; align-items: center; flex-shrink: 0; overflow: hidden; height: 40px; }
-        .v14-mode-hud .v12-col-id { width: 180px; } 
-        .v14-mode-long .v12-col-id { width: auto; max-width: 60px; margin-right: 12px; }
+        /* Col 6: Remaining Count */
+        .v15-col-count { width: 90px; flex-shrink: 0; align-items: flex-end; }
+        .v15-count-label { color: #ff4b4b; font-weight: bold; font-size: 0.75rem; }
 
-        /* v12-col-spec: Base spec area */
-        .v12-col-spec { display: flex; align-items: center; flex-shrink: 0; overflow: hidden; height: 40px; }
-        .v14-mode-long .v12-col-spec { width: 260px; } /* Adjusted width for X-axis alignment */
+        /* Unified Button Heights */
+        [data-testid="stHorizontalBlock"]:has(.v12-marker) div[data-testid="stButton"] button { height: 40px !important; }
+        [data-testid="stHorizontalBlock"]:has(.v15-marker) div[data-testid="stButton"] button { height: 64px !important; }
 
-        .v12-main-label { font-weight: 600; font-size: 0.9rem; color: #fff; overflow: hidden; text-overflow: ellipsis; }
-        .v12-col-metric { display: flex; align-items: center; width: 100px; flex-shrink: 0; overflow: hidden; font-size: 0.75rem; justify-content: center; }
-        .v12-skill-label { font-size: 0.85rem; color: #eee; display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; white-space: nowrap; overflow: hidden; line-height: 40px; }
-        .v14-mode-long .v12-skill-label { font-size: 0.85rem; color: #eee; }
-        .v11-sep { color: #333; margin: 0 8px; font-weight: 300; flex-shrink: 0; }
-        .v12-bonus-area { font-size: 0.76rem; color: #888; flex: 1; overflow: hidden; text-overflow: ellipsis; }
-        .v12-sub-label { font-size: 0.65rem; color: #666; text-transform: uppercase; min-width: 60px; flex-shrink: 0; }
+        .v12-tag-card.v12-unit-selected { border: 1px solid #f1c40f !important; }
+        .v12-stream { display: flex; align-items: center; width: 100%; height: 100%; }
         
-        /* v12-col-slots: Specialized fixed-width column for X-axis alignment in slim cards */
-        .v12-col-slots {
-            width: 120px;
-            flex-shrink: 0;
-            font-size: 0.75rem;
-            color: #888;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-        }
+        /* Legacy Slim Card Support (Talismans) */
+        .legacy-col-id { display: flex; align-items: center; flex-shrink: 0; overflow: hidden; height: 40px; }
+        .v14-mode-long .legacy-col-id { width: auto; max-width: 60px; margin-right: 12px; }
+        .v12-col-spec-legacy { display: flex; align-items: center; flex-shrink: 0; overflow: hidden; height: 40px; width: 260px; }
+        .v12-col-slots { width: 120px; flex-shrink: 0; display: flex; align-items: center; }
+        .v12-bonus-area { flex: 1; overflow: hidden; font-size: 0.76rem; color: #888; }
+        .v11-sep { color: #333; margin: 0 8px; }
 
-        /* Sync container heights - NO line-height:0 as it squashes text */
+        /* Streamlit Padding Overrides */
         [data-testid="stHorizontalBlock"]:has(.v12-marker) [data-testid="stMarkdownContainer"] { padding: 0 !important; margin: 0 !important; }
         [data-testid="stHorizontalBlock"]:has(.v12-marker) > div { padding: 0 !important; margin: 0 !important; }
-        [data-testid="stHorizontalBlock"]:has(.v12-marker) div[data-testid="stPopover"] button,
-        [data-testid="stHorizontalBlock"]:has(.v12-marker) div[data-testid="stPopover"] { height: 40px !important; min-height: 40px !important; }
-
-        /* v15 Height Sync */
-        [data-testid="stHorizontalBlock"]:has(.v15-marker) div[data-testid="stPopover"] button,
-        [data-testid="stHorizontalBlock"]:has(.v15-marker) div[data-testid="stPopover"] { height: 64px !important; min-height: 64px !important; }
-
-        /* v14 Responsive Grid Container */
-        .v14-grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 8px;
-            width: 100%;
-            margin-top: 0.5rem;
-        }
-
-        @media (max-width: 1000px) { .v15-col-center { display: none; } }
+        
+        /* Responsive */
+        @media (max-width: 1000px) { .v15-col-spec { display: none; } }
         @media (max-width: 800px) { .v15-col-skills { display: none; } }
         </style>
     """, unsafe_allow_html=True)
 
-def _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle, is_selected, mode, marker_cls=""):
-    """v15: Unified Multi-line Card (Supports 'hud', 'long', and 'reinforcement')."""
+def _render_v14_tag_body(
+    badge_html=None, title_text=None, sub_text=None, bonus_html=None, subtitle=None, 
+    is_selected=False, mode="hud", marker_cls="", 
+    weapon_type=None, weapon_name=None, element=None, element_val=None, 
+    skills=None, bonuses=None, remaining_count=None, comparison=None
+):
+    """v15+: Triple-Cluster Layout Engine."""
     selected_cls = "v12-unit-selected" if is_selected else ""
     is_long = mode.startswith("long")
-    v15_cls = "v15-mode" if not is_long else ""
+    is_v15 = not is_long
+    v15_cls = "v15-mode" if is_v15 else ""
     card_mode_cls = "v14-mode-long" if is_long else ""
     
-    # Marker classes integrated directly into the card div
     html = f'<div class="v12-tag-card {marker_cls} {selected_cls} {v15_cls} {card_mode_cls}"><div class="v12-stream">'
     
     if is_long:
-        # Legacy/Talisman Long mode (Stay 40px)
-        html += f'<div class="v12-col-id">{badge_html}</div>'
-        html += f'<div class="v12-col-spec"><div class="v12-skill-label" style="color:#aaa;">{title_text}</div></div>'
+        # Legacy/Talisman Slim Mode (40px)
+        html += f'<div class="legacy-col-id">{badge_html}</div>'
+        html += f'<div class="v12-col-spec-legacy"><div class="v15-row" style="color:#aaa;">{title_text}</div></div>'
         html += f'<span class="v11-sep">|</span><div class="v12-col-slots">{sub_text}</div>'
         html += f'<span class="v11-sep">|</span><div class="v12-bonus-area">{bonus_html}</div>'
     
-    elif mode == "hud":
-        # Standard V15 (Used in Equipment Box / Lottery)
-        # 0. Attribute Icon (Badge)
-        html += f'<div style="flex-shrink:0; margin-right:8px;">{badge_html}</div>'
+    elif is_v15:
+        # Cluster 1: Weapon Anchor
+        w_icon = Icon.get_weapon_icon(weapon_type or subtitle or "")
+        html += f'<div class="v15-cluster v15-col-anchor">{w_icon}</div>'
 
-        # 1. ID Cluster (Type above Name)
-        html += f'<div class="v15-id-stack"><div class="v15-type-label">{subtitle or "UNKNOWN"}</div><div class="v15-name-label">{title_text}</div></div>'
-        
-        # 2. Center: Enhancement (Top) + Attribute Name (Bottom)
-        enh_type = ""
-        skills_raw = sub_text
-        if "📋" in sub_text:
-            parts = sub_text.split("|", 1)
-            enh_type = parts[0].strip()
-            skills_raw = parts[1].strip() if len(parts) > 1 else ""
-        
-        # Extract Attribute Name from badge_html
-        import re
-        attr_match = re.search(r'>(.*?)</span>', badge_html)
-        attr_name = attr_match.group(1) if attr_match else ""
-        
-        html += f'<div class="v15-col-center"><div class="v15-enh-label">{enh_type}</div><div class="v15-attr-label">{attr_name}属性</div></div>'
-        
-        # 3. Skills Stack
-        s_parts = skills_raw.split("|")
-        s1 = s_parts[0].strip() if len(s_parts) > 0 else ""
-        s2 = s_parts[1].strip() if len(s_parts) > 1 else ""
-        html += f'<div class="v15-stack v15-col-skills"><div class="v15-row">{s1}</div><div class="v15-row">{s2}</div></div>'
-        
-        # 4. Bonuses Stack
-        b_parts = bonus_html.split("||")
-        b1 = b_parts[0].strip() if len(b_parts) > 0 else ""
-        b2 = b_parts[1].strip() if len(b_parts) > 1 else ""
-        html += f'<div class="v15-stack v15-col-bonuses"><div class="v15-row">{b1}</div><div class="v15-row">{b2}</div></div>'
+        # Cluster 2: Elemental Specs
+        e_icon = Icon.get_element_icon(element or "")
+        e_label = element_val or element or "無"
+        html += f'<div class="v15-cluster v15-col-spec"><div style="height:20px; display:flex; align-items:center;">{e_icon}</div><div class="v15-spec-label">{e_label}</div></div>'
 
-    elif mode == "reinforcement":
-        # Special Reinforcement comparison mode
-        # 0. Badge
-        html += f'<div style="flex-shrink:0; margin-right:8px;">{badge_html}</div>'
+        # Cluster 3: Identity Stack
+        name = weapon_name or title_text or "UNKNOWN"
+        w_type = weapon_type or subtitle or ""
+        html += f'<div class="v15-cluster v15-col-id"><div class="v15-name-label">{name}</div><div class="v15-type-label">{w_type}</div></div>'
 
-        # 1. ID Cluster
-        html += f'<div class="v15-id-stack" style="width:120px;"><div class="v15-type-label">{subtitle or "UNKNOWN"}</div><div class="v15-name-label">{title_text}</div></div>'
-        
-        # 2. Center Cluster: Attribute Name stack
-        import re
-        attr_match = re.search(r'>(.*?)</span>', badge_html)
-        attr_name = attr_match.group(1) if attr_match else ""
-        html += f'<div class="v15-col-center" style="width:70px;"><div class="v15-attr-label">{attr_name}属性</div></div>'
-        
-        # 3. Info Cluster (Prod Bonus + Enh Type)
-        prod_bonus = ""
-        enh_type = ""
-        if "📋" in sub_text:
-            parts = sub_text.split("📋")
-            if len(parts) > 1:
-                sub_parts = parts[1].split("|")
-                enh_type = f"📋 {sub_parts[0].strip()}"
-                if len(sub_parts) > 1: prod_bonus = sub_parts[1].strip()
-        
-        if not prod_bonus and "🛠️" in sub_text:
-            p_parts = sub_text.split("🛠️")
-            prod_bonus = f"🛠️ {p_parts[1].strip()}"
-            
-        html += f'<div class="v15-stack" style="width:160px; margin-right:12px;">'
-        html += f'<div class="v15-row">{prod_bonus}</div><div class="v15-row muted">{enh_type}</div></div>'
-        
-        # 4. Comparison Area (Before/After Restoration)
-        # We wrap it in its own stream to treat it as a block
-        clean_bonus = re.sub(r'<div.*?残り.*?回.*?</div>', '', bonus_html)
-        html += f'<div class="v15-stack v15-col-bonuses" style="flex:1;">{clean_bonus}</div>'
+        # Cluster 4: Skills Stack
+        if mode == "reinforcement" and comparison:
+            html += f'<div class="v15-cluster v15-col-skills" style="width:200px;">{comparison}</div>'
+        else:
+            skill_list = skills if isinstance(skills, list) else (sub_text.split("|") if sub_text else [])
+            s_html = ""
+            if len(skill_list) > 0:
+                s1 = skill_list[0].strip()
+                if s1 != "なし":
+                    s_icon = Icon.get_series_icon()
+                    s_html += f'<div class="v15-row">{s_icon}{s1}</div>'
+            if len(skill_list) > 1:
+                s2 = skill_list[1].strip()
+                if s2 != "なし":
+                    s_icon = Icon.get_group_icon()
+                    s_html += f'<div class="v15-row">{s_icon}{s2}</div>'
+            html += f'<div class="v15-cluster v15-col-skills">{s_html}</div>'
 
-        # 5. Remaining Count (Right End)
-        count_html = ""
-        # Match "残り X 回" with or without space/stars
-        c_match = re.search(r'残り\s*(\d+)\s*回', bonus_html)
-        if c_match:
-            c_val = c_match.group(1)
-            count_html = f'<div class="v15-stack" style="width:100px; align-items:flex-end;"><div class="v15-row" style="color:#ff4b4b; font-weight:bold;">残り {c_val} 回</div></div>'
-        html += count_html
+        # Cluster 5: Bonuses Stack
+        bonus_list = bonuses if isinstance(bonuses, list) else (bonus_html.split("||") if bonus_html else [])
+        b_html = ""
+        for b in bonus_list:
+            if b.strip():
+                b_html += f'<div class="v15-row">{b.strip()}</div>'
+        html += f'<div class="v15-cluster v15-col-bonuses">{b_html}</div>'
+
+        # Cluster 6: Remaining Count (Right Aligned)
+        count_val = remaining_count
+        if not count_val and bonus_html:
+            # Fallback for legacy calls in reinforcement mode
+            c_match = re.search(r"残り\s*(\d+)\s*回", bonus_html)
+            if c_match: count_val = c_match.group(1)
+        
+        if count_val:
+            html += f'<div class="v15-cluster v15-col-count"><div class="v15-count-label">残り {count_val} 回</div></div>'
 
     html += f'</div></div>'
     return html
 
+def render_weapon_card(
+    weapon_type, weapon_name, element=None, element_val=None, 
+    skills=None, bonuses=None, remaining_count=None, comparison=None,
+    is_selected=False, mode="hud"
+):
+    """v15+: Dedicated Weapon Card."""
+    marker_cls = "v15-marker"
+    html = _render_v14_tag_body(
+        weapon_type=weapon_type, weapon_name=weapon_name, 
+        element=element, element_val=element_val,
+        skills=skills, bonuses=bonuses, remaining_count=remaining_count, comparison=comparison,
+        is_selected=is_selected, mode=mode, marker_cls=marker_cls
+    )
+    st.markdown(html, unsafe_allow_html=True)
+
+def render_selectable_weapon_card(
+    weapon_type, weapon_name, key, element=None, element_val=None, 
+    skills=None, bonuses=None, remaining_count=None, comparison=None,
+    is_selected=False, mode="hud"
+):
+    """v15+: Selectable Weapon Card."""
+    icon = "✔" if is_selected else "❯"
+    btn_type = "primary" if is_selected else "secondary"
+    marker_cls = "v15-marker"
+    
+    with st.container():
+        c_tag, c_btn = st.columns(CARD_ACTION_RATIO, gap="small")
+        with c_tag:
+            html = _render_v14_tag_body(
+                weapon_type=weapon_type, weapon_name=weapon_name, 
+                element=element, element_val=element_val,
+                skills=skills, bonuses=bonuses, remaining_count=remaining_count, comparison=comparison,
+                is_selected=is_selected, mode=mode, marker_cls=marker_cls
+            )
+            st.markdown(html, unsafe_allow_html=True)
+        with c_btn:
+            clicked = st.button(icon, key=key, type=btn_type, use_container_width=True)
+        return clicked
+
+# --- LEGACY WRAPPERS ---
+
 def render_slim_card(badge_html, title_text, sub_text, bonus_html, subtitle=None, is_selected=False, mode="hud"):
-    """Displays the v14 context-aware tag without button."""
+    """Legacy wrapper for backward compatibility."""
     marker_cls = "v15-marker" if not mode.startswith("long") else "v12-marker"
-    html = _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle, is_selected, mode, marker_cls)
+    html = _render_v14_tag_body(
+        badge_html=badge_html, title_text=title_text, sub_text=sub_text, bonus_html=bonus_html, 
+        subtitle=subtitle, is_selected=is_selected, mode=mode, marker_cls=marker_cls
+    )
     st.markdown(html, unsafe_allow_html=True)
 
 def render_selectable_card(badge_html, title_text, sub_text, bonus_html, key, subtitle=None, is_selected=False, mode="hud"):
-    """v14: Context-aware selection tag."""
+    """Legacy wrapper for backward compatibility."""
     icon = "✔" if is_selected else "❯"
     btn_type = "primary" if is_selected else "secondary"
     marker_cls = "v15-marker" if mode != "long" else "v12-marker"
     
     with st.container():
-        # Always use the unified ratio defined in v14
         c_tag, c_btn = st.columns(CARD_ACTION_RATIO, gap="small")
-        
         with c_tag:
-            html = _render_v14_tag_body(badge_html, title_text, sub_text, bonus_html, subtitle, is_selected, mode, marker_cls)
+            html = _render_v14_tag_body(
+                badge_html=badge_html, title_text=title_text, sub_text=sub_text, bonus_html=bonus_html, 
+                subtitle=subtitle, is_selected=is_selected, mode=mode, marker_cls=marker_cls
+            )
             st.markdown(html, unsafe_allow_html=True)
-            
         with c_btn:
             clicked = st.button(icon, key=key, type=btn_type, use_container_width=True)
-            
         return clicked

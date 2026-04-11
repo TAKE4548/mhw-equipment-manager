@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 from src.logic.equipment_box import (
     load_equipment, delete_equipment, toggle_lock,
-    format_bonus_summary, filter_equipment
+    format_bonus_summary, format_bonus_list, filter_equipment
 )
 from src.components.common import render_item_count
-from src.components.cards import render_slim_card, CARD_ACTION_RATIO
+from src.components.cards import render_weapon_card, CARD_ACTION_RATIO
 from src.components.box.atoms import render_weapon_badge
 from src.components.box.dialogs import edit_equipment_dialog
 
@@ -53,29 +53,37 @@ def render_equipment_list(master, user_id):
     else:
         with st.container():
             for index, row in df.iterrows():
-                badge_html = render_weapon_badge(row['element'])
-                w_display = row['weapon_name'] if row['weapon_name'] and not str(row['weapon_name']).startswith("無銘の") else row['weapon_type']
-                if row.get('is_locked', False):
-                    w_display = f"🔒 {w_display}"
+                # Skills: Multi-line list (remove emojis as cards.py adds them)
+                skills = [
+                    row['current_series_skill'] if row['current_series_skill'] != "なし" else "なし",
+                    row['current_group_skill'] if row['current_group_skill'] != "なし" else "なし"
+                ]
+
+                # Bonuses: Multi-line list (using emojis for bonuses as per design)
+                pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1, 4)]
+                bonuses = [f"🛠️ {format_bonus_summary(pbs)}"]
                 
-                # Bonus Formatting
-                pbs = [row.get(f'p_bonus_{i}', 'なし') for i in range(1,4)]
-                prod_bonus_text = f"🛠️ {format_bonus_summary(pbs)}"
-                
-                # Restoration Bonuses
                 rbs_with_lv = []
                 for i in range(1, 6):
                     rt, rl = row.get(f'rest_{i}_type', 'なし'), row.get(f'rest_{i}_level', 'なし')
                     if rt != 'なし': rbs_with_lv.append(f"{rt}{rl if rl and rl != '無印' else ''}")
-                rest_bonus_text = f"✨ {format_bonus_summary(rbs_with_lv)}"
-                
-                # Combined strings for v15 parser
-                bonus_html = f"{prod_bonus_text} || {rest_bonus_text}"
-                sub_text = f"📋 {row['enhancement_type']} | 🛡️ {row['current_series_skill']} | 👥 {row['current_group_skill']}"
-                
+                if rbs_with_lv:
+                    bonuses.append(f"✨ {' / '.join(rbs_with_lv)}")
+
+                # Weapon Display Name logic
+                w_display = row['weapon_name'] if row['weapon_name'] and not str(row['weapon_name']).startswith("無銘の") else row['weapon_type']
+
                 col_card, col_act = st.columns(CARD_ACTION_RATIO, vertical_alignment="center")
                 with col_card:
-                    render_slim_card(badge_html, w_display, sub_text, bonus_html, subtitle=row['weapon_type'], mode="hud")
+                    render_weapon_card(
+                        weapon_type=row['weapon_type'],
+                        weapon_name=w_display,
+                        element=row['element'],
+                        element_val=f"{row['element']}属性",
+                        skills=skills,
+                        bonuses=bonuses,
+                        mode="hud"
+                    )
                     
                 with col_act:
                     with st.popover("⋮", help="操作メニュー", use_container_width=True, key=f"pop_w_{row['id']}"):

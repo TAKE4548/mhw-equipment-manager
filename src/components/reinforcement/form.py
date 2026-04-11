@@ -5,7 +5,7 @@ from src.logic.equipment_box import (
     format_bonus_summary, format_bonus_list
 )
 from src.logic.restoration_tracker import register_tracker
-from src.components.cards import render_selectable_card
+from src.components.cards import render_selectable_weapon_card
 from src.components.reinforcement.atoms import render_weapon_attribute_badge
 
 @st.fragment
@@ -68,22 +68,33 @@ def render_registration_section(master, eq_df, user_id):
             st.markdown('<div class="v12-dense-list" style="display:none"></div>', unsafe_allow_html=True)
             for idx, w_row in cur_df.iterrows():
                 is_selected = (st.session_state.get("tracker_reg_w_id") == w_row['id'])
-                badge_html = render_weapon_attribute_badge(w_row['element'])
+                # Structured data for Triple-Cluster layout
+                skills = [
+                    w_row['current_series_skill'] if w_row['current_series_skill'] != "なし" else "なし",
+                    w_row['current_group_skill'] if w_row['current_group_skill'] != "なし" else "なし"
+                ]
+                
+                pbs = [w_row.get(f'p_bonus_{i}', 'なし') for i in range(1, 4)]
+                rbs_with_lv = []
+                for i in range(1, 6):
+                    rt, rl = w_row.get(f'rest_{i}_type', 'なし'), w_row.get(f'rest_{i}_level', 'なし')
+                    if rt != 'なし': rbs_with_lv.append(f"{rt}{rl if rl and rl != '無印' else ''}")
+                
+                bonuses = [f"📋 {w_row['enhancement_type']}", f"🛠️ {format_bonus_summary(pbs)}"]
+                if rbs_with_lv:
+                    bonuses.append(f"✨ {' / '.join(rbs_with_lv)}")
+                
+                # Weapon Display Name logic
                 w_display = w_row['weapon_name'] if w_row['weapon_name'] and not str(w_row['weapon_name']).startswith("無銘の") else w_row['weapon_type']
-                
-                # Bonus Text Formatting
-                p_bonuses = [w_row[f'p_bonus_{i}'] for i in range(1, 4) if w_row[f'p_bonus_{i}'] != "なし"]
-                r_bonuses = [f"{w_row[f'rest_{i}_type']}{w_row[f'rest_{i}_level'] if w_row[f'rest_{i}_level'] != '無印' else ''}" for i in range(1, 6) if w_row[f'rest_{i}_type'] != "なし"]
-                p_bonus_text = f"🛠️ {format_bonus_summary(p_bonuses)}" if p_bonuses else "🛠️ なし"
-                r_bonus_text = f"✨ {format_bonus_summary(r_bonuses)}" if r_bonuses else "✨ なし"
-                
-                sub_text = f"📋 {w_row['enhancement_type']} | 🛡️ {w_row['current_series_skill']} | 👥 {w_row['current_group_skill']}"
-                bonus_html = f"{p_bonus_text} || {r_bonus_text}"
-                
-                if render_selectable_card(
-                    badge_html, w_display, sub_text, bonus_html, 
+
+                if render_selectable_weapon_card(
+                    weapon_type=w_row['weapon_type'],
+                    weapon_name=w_display,
+                    element=w_row['element'],
+                    element_val=f"{w_row['element']}属性",
+                    skills=skills,
+                    bonuses=bonuses,
                     key=f"hsel_{w_row['id']}", 
-                    subtitle=w_row['weapon_type'], 
                     is_selected=is_selected,
                     mode="hud"
                 ):

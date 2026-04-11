@@ -92,7 +92,7 @@
 - **Design doc**: `docs/ui_spec.md`
 
 ### REQ-008: モンハン専用アイコンの導入と絵文字の排除
-- **Status**: new
+- **Status**: completed
 - **Type**: enhancement
 - **Priority**: mid
 - **Problem**: 現在、武器種や属性の表示に汎用の絵文字を使用しているため、ゲームの世界観と乖離しており、UIの質が損なわれている。
