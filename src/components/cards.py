@@ -164,22 +164,24 @@ def _render_v14_tag_body(
     html = f'<div class="v12-tag-card {marker_cls} {selected_cls} {v15_cls} {card_mode_cls}"><div class="v12-stream">'
     
     if is_v15:
-        # Cluster 1: Icon Anchor
+        # Cluster 1: Icon Anchor (Composite Weapon + Element)
         if is_long:
             # No icon for talismans as requested
             pass
         else:
-            w_icon = Icon.get_weapon_icon(weapon_type or subtitle or "")
-            html += f'<div class="v15-cluster v15-col-anchor">{w_icon}</div>'
+            w_type = weapon_type or subtitle or ""
+            # NEW: Using composite icon with element overlay for weapons
+            comp_icon = Icon.get_composite_html(w_type, element, size=46)
+            html += f'<div class="v15-cluster v15-col-anchor">{comp_icon}</div>'
 
         # Cluster 2: Elemental Specs or Rarity Badge (Talisman)
         if is_long:
             # Place Rarity Badge next to icon for talismans
             html += f'<div class="v15-cluster v15-col-spec">{badge_html}</div>'
         else:
-            e_icon = Icon.get_element_icon(element or "")
+            # NEW: Hidden icon since it's now part of the composite anchor
             e_label = element_val or element or "無"
-            html += f'<div class="v15-cluster v15-col-spec"><div style="height:20px; display:flex; align-items:center;">{e_icon}</div><div class="v15-spec-label">{e_label}</div></div>'
+            html += f'<div class="v15-cluster v15-col-spec"><div class="v15-spec-label" style="font-size: 0.75rem; color: #fff; margin-top: 4px;">{e_label}</div></div>'
 
         # Cluster 3: Skills (New priority for Talismans)
         if is_long:

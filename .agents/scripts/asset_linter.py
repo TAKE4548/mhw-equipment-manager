@@ -17,14 +17,26 @@ def lint_icons():
 
     # 1. Parse ICON_MAP from py file
     content = ICON_PY_PATH.read_text(encoding="utf-8")
+    
+    # Extract ICON_MAP block to avoid collision with other dicts like attr_colors
+    map_match = re.search(r'ICON_MAP = \{(.*?)\}', content, re.DOTALL)
+    if not map_match:
+        print(f"Error: ICON_MAP not found in {ICON_PY_PATH}.")
+        return False
+        
+    map_content = map_match.group(1)
     # Simple regex to find "Key": "File"
     pattern = r'"([^"]+)":\s*(?:"([^"]+)"|None)'
-    matches = re.findall(pattern, content)
+    matches = re.findall(pattern, map_content)
     
     icon_map_definitions = {k: v for k, v in matches if v}
     
-    # 2. Get actual files in assets/icons
-    actual_files = {f.name for f in ICON_DIR.iterdir() if f.is_file()}
+    # 2. Get actual files in assets/icons (Recursive)
+    actual_files = set()
+    for f in ICON_DIR.rglob("*"):
+        if f.is_file():
+            # Get path relative to ICON_DIR
+            actual_files.add(f.relative_to(ICON_DIR).as_posix())
     
     errors = []
     
