@@ -4,7 +4,7 @@ This file tracks the current state of an active `/dev` session. It is maintained
 
 ## Current Session Details
 - **Active REQ**: none
-- **Current Step**: Step 1: Item Selection
+- **Current Step**: none
 - **Current Role**: Dev Coordinator
 - **Status**: inactive
 
@@ -16,6 +16,7 @@ This file tracks the current state of an active `/dev` session. It is maintained
 - 2026-04-11: REQ-030 (Talisman Cleanup & V15 HUD Upgrade) completed and verified.
 - 2026-04-11: REQ-034 (SVG Migration & Composite Icons) completed and verified.
 - 2026-04-11: REQ-035 (v15 HUD Optimized Layout) completed and verified by Reviewer.
+- 2026-04-11: REQ-036 (Restoration Bonus Order Revision) completed and verified.
 
 ## Escalation / Block Notes
 - **Reason**: 
