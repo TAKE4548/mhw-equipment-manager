@@ -1,11 +1,12 @@
 ---
 name: dev
-description: "Formal development session workflow. Tracks progress via session.md. (v1.6)"
+description: "Formal development session workflow. Tracks progress via session.md. (v1.7)"
 ---
 
 # Development Workflow (/dev)
 
 ## Step 0: Session Initialization [Role: Dev Coordinator]
+- **Environment Check**: Ensure the Streamlit application is running (localhost:8501). If not, start it using `./start.ps1` or `start.bat`.
 - **Deterministic Check**: Run all Linters under `.agents/scripts/` (backlog, asset, doc_link). Propose fixes if deficiencies are found before proceeding.
 - Read `docs/session.md` and `docs/backlog.md`.
 - **Resumption Logic**: If `docs/session.md` is `active`, confirm with the user whether to resume or start a new session.
@@ -32,7 +33,8 @@ description: "Formal development session workflow. Tracks progress via session.m
 
 ## Step 5: Approval Gate [Role: Dev Coordinator]
 - Present the design and implementation plan to the user in Japanese.
-- **MANDATORY TURN-END**: End your turn and wait for explicit user approval.
+- **MANDATORY TURN-END**: You MUST set `RequestFeedback: true` in the `implementation_plan.md` artifact metadata OR output a direct question using the `ask_question` tool.
+- DO NOT proceed to Step 6 until explicit user approval is received.
 
 ## Step 6: Implementation [Role: Engineer]
 - Perform code implementation, unit testing, and browser verification.
