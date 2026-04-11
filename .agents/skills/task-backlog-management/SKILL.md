@@ -20,11 +20,11 @@ description: "Read, update, or query the project backlog at docs/backlog.md."
 - **Surface**: {original statement}
 - **Root Cause**: {core issue - ends level}
 - **Requirement**: {goal state - ends level}
-- **Acceptance criteria**: {testable conditions, NO implementation details}
+- **Acceptance criteria**: {testable conditions, STRICTLY NO implementation details, code references, or CSS properties}
 - **Design doc**: {path or "none"}
 
 ## 3. Instructions
-- **BA Role**: Register/Detail requirements. Ensure `Acceptance criteria` do not contain implementation solutions.
+- **BA Role**: Register/Detail requirements. Ensure `Acceptance criteria` do not contain implementation solutions. Do NOT reference line numbers, codebase specifics, or technical feasibility. Leave all technical considerations to the Architect.
 - **Architect Role**: Check if requirement is `ready` for Step 3 design.
 
 ## 4. Rules

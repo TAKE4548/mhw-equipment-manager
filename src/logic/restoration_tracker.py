@@ -3,7 +3,8 @@ import streamlit as st
 import uuid
 from src.database.storage_manager import load_data, save_data
 from src.logic.history import push_action
-from src.logic.equipment_box import load_equipment, save_equipment
+from src.logic.equipment_box import load_equipment, save_equipment, validate_restoration_bonuses
+from src.utils.exceptions import LogicValidationError
 
 TRACKER_TABLE = "trackers"
 TRACKER_COLUMNS = [
@@ -33,6 +34,13 @@ def save_trackers(df: pd.DataFrame) -> bool:
 
 def register_tracker(weapon_id: str, remaining_count: int, target_bonuses: list[dict], user_id: str = "local") -> bool:
     """Registers a new restoration tracker and records history."""
+    # 0. Validation
+    if int(remaining_count) <= 0:
+        raise LogicValidationError("残り回数は1以上である必要があります。")
+    is_v, msg = validate_restoration_bonuses(target_bonuses)
+    if not is_v:
+        raise LogicValidationError(msg)
+        
     df = load_trackers(user_id)
     prev_df = df.copy()
     new_id = str(uuid.uuid4())
@@ -106,6 +114,13 @@ def delete_tracker(tracker_id: str, user_id: str = "local") -> bool:
 
 def update_tracker(tracker_id: str, remaining_count: int, target_bonuses: list[dict], user_id: str = "local") -> bool:
     """Updates an existing tracker and records history."""
+    # 0. Validation
+    if int(remaining_count) <= 0:
+        raise LogicValidationError("残り回数は1以上である必要があります。")
+    is_v, msg = validate_restoration_bonuses(target_bonuses)
+    if not is_v:
+        raise LogicValidationError(msg)
+        
     df = load_trackers(user_id)
     idx = df[df["id"].astype(str) == str(tracker_id)].index
     if idx.empty: return False

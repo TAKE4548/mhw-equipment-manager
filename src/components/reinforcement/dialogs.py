@@ -54,7 +54,10 @@ def edit_tracker_dialog(row, w_row, user_id):
                 parsed_rbs.append({"type": parts[0], "level": parts[1][:-1]})
             else: parsed_rbs.append({"type": rb, "level": "無印"})
             
-        if update_tracker(row['id'], new_count, parsed_rbs, user_id=user_id):
-            st.toast("更新しました")
-            st.rerun()
-        else: st.error("更新に失敗しました")
+        try:
+            if update_tracker(row['id'], new_count, parsed_rbs, user_id=user_id):
+                st.toast("更新しました")
+                st.rerun()
+            else: st.error("更新に失敗しました")
+        except Exception as e:
+            st.error(f"更新失敗: {str(e)}")

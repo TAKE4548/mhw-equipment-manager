@@ -141,11 +141,14 @@ def render_registration_section(master, eq_df, user_id):
                     parts = rb.split(" [")
                     parsed_rbs.append({"type": parts[0], "level": parts[1][:-1]})
                 else: parsed_rbs.append({"type": rb, "level": "無印"})
-            if register_tracker(st.session_state.tracker_reg_w_id, count_val, parsed_rbs, user_id=user_id):
-                st.session_state.tracker_reg_w_id = None
-                st.toast("トラッキングに追加しました", icon="📋")
-                st.rerun()
-            else: st.error("保存に失敗しました")
+            try:
+                if register_tracker(st.session_state.tracker_reg_w_id, count_val, parsed_rbs, user_id=user_id):
+                    st.session_state.tracker_reg_w_id = None
+                    st.toast("トラッキングに追加しました", icon="📋")
+                    st.rerun()
+                else: st.error("保存に失敗しました")
+            except Exception as e:
+                st.error(f"登録失敗: {str(e)}")
         
         if b_c2.button("キャンセル", use_container_width=True):
             st.session_state.tracker_reg_w_id = None

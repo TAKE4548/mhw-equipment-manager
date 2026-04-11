@@ -76,10 +76,13 @@ def edit_equipment_dialog(row, user_id):
         is_valid, err = validate_restoration_bonuses(parsed_rbs)
         if not is_valid: st.error(err)
         else:
-            if update_equipment(row['id'], new_name, w_type, element, 
-                                 sel_s, sel_g,
-                                 enhancement, [pb1, pb2, pb3], parsed_rbs, user_id=user_id):
-                st.toast("更新しました！")
-                st.rerun()
-            else: st.error("更新に失敗しました。")
+            try:
+                if update_equipment(row['id'], new_name, w_type, element, 
+                                     sel_s, sel_g,
+                                     enhancement, [pb1, pb2, pb3], parsed_rbs, user_id=user_id):
+                    st.toast("更新しました！")
+                    st.rerun()
+                else: st.error("更新に失敗しました。")
+            except Exception as e:
+                st.error(f"更新失敗: {str(e)}")
 

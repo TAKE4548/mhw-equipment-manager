@@ -69,12 +69,15 @@ def render_registration_section(master, user_id):
             is_valid, err_msg = validate_restoration_bonuses(parsed_rbs)
             if not is_valid: st.error(err_msg)
             else:
-                record_id = add_equipment(
-                    final_weapon_name, w_type, element, 
-                    current_series, current_group, enhancement,
-                    [pb1, pb2, pb3], parsed_rbs, user_id=user_id
-                )
-                if record_id:
-                    st.toast(f"{final_weapon_name} を登録しました！", icon="✅")
-                    st.rerun()
-                else: st.error("登録に失敗しました。")
+                try:
+                    record_id = add_equipment(
+                        final_weapon_name, w_type, element, 
+                        current_series, current_group, enhancement,
+                        [pb1, pb2, pb3], parsed_rbs, user_id=user_id
+                    )
+                    if record_id:
+                        st.toast(f"{final_weapon_name} を登録しました！", icon="✅")
+                        st.rerun()
+                    else: st.error("登録に失敗しました。")
+                except Exception as e:
+                    st.error(f"登録失敗: {str(e)}")

@@ -81,8 +81,11 @@ def render_registration_form(user_id):
             is_v, msg = validate_talisman(f["rarity"], skills_p, final_slots)
             if not is_v: st.error(f"整合性エラー: {msg}")
             else:
-                nid = add_talisman(f["rarity"], skills_p, final_slots, user_id=user_id)
-                if nid:
-                    st.toast("登録完了！", icon="✅")
-                    f["rarity"] = None; reset_from_rarity(); st.rerun()
-                else: st.error("保存失敗")
+                try:
+                    nid = add_talisman(f["rarity"], skills_p, final_slots, user_id=user_id)
+                    if nid:
+                        st.toast("登録完了！", icon="✅")
+                        f["rarity"] = None; reset_from_rarity(); st.rerun()
+                    else: st.error("保存失敗")
+                except Exception as e:
+                    st.error(f"保存失敗: {str(e)}")

@@ -40,18 +40,25 @@ Streamlit Community Cloud 等へデプロイする場合、以下の Secrets 設
 
 ## ローカルでの実行方法
 
-1. リポジリをクローンし、仮想環境を作成します。
-```bash
+### 初回セットアップ
+1. リポジトリをクローンします。
+2. 仮想環境を作成し、依存関係をインストールします。
+```powershell
 python -m venv .venv
-source .venv/Scripts/activate # Windowsの場合は .venv\Scripts\activate
-```
-
-2. 依存関係をインストールします。
-```bash
+.\.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. Streamlitアプリを起動します。
-```bash
+### 起動方法 (自動)
+以下のいずれかの方法で簡単に起動できます：
+
+- **PowerShell**: `./start.ps1` を実行（仮想環境の有効化も自動で行われます）
+- **コマンドプロンプト**: `start.bat` を実行
+- **VS Code**: ワークスペースを開くと自動的にタスクが実行されます（`.vscode/tasks.json` により設定済み）
+- **Antigravityエージェント**: `/dev` セッション開始時に自動的にアプリの状態を確認・起動します
+
+### 起動方法 (手動)
+```powershell
+. .venv\Scripts\activate
 streamlit run app.py
 ```

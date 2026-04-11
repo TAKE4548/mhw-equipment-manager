@@ -5,6 +5,7 @@ import os
 import streamlit as st
 from src.database.storage_manager import load_data, save_data
 from src.logic.history import push_action
+from src.utils.exceptions import LogicValidationError
 
 TALISMANS_TABLE = "talismans"
 TALISMANS_COLUMNS = [
@@ -309,6 +310,11 @@ def validate_talisman(rarity: int, skills: list, slots: list) -> tuple[bool, str
 
 
 def add_talisman(rarity: int, skills: list, slots: list, user_id: str = "local") -> str:
+    # 0. Validation
+    is_v, msg = validate_talisman(rarity, skills, slots)
+    if not is_v:
+        raise LogicValidationError(msg)
+        
     df = load_talismans(user_id)
     prev_df = df.copy()
     
@@ -352,6 +358,11 @@ def delete_talisman(talisman_id: str, user_id: str = "local") -> bool:
 
 def update_talisman(talisman_id: str, rarity: int, skills: list, slots: list, user_id: str = "local") -> bool:
     """Updates an existing talisman and records history."""
+    # 0. Validation
+    is_v, msg = validate_talisman(rarity, skills, slots)
+    if not is_v:
+        raise LogicValidationError(msg)
+        
     df = load_talismans(user_id)
     idx = df[df["id"].astype(str) == str(talisman_id)].index
     if idx.empty: return False

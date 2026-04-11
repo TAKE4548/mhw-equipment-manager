@@ -5,9 +5,23 @@ from src.logic.master import get_master_data
 from src.database.storage_manager import load_data, save_data, delete_record
 from src.logic.history import push_action
 from src.logic.equipment_box import update_equipment_skills
+from src.utils.exceptions import LogicValidationError
 
 UPGRADES_TABLE = "upgrades"
 UPGRADES_COLUMNS = ["id", "weapon_type", "element", "series_skill", "group_skill", "remaining_count"]
+
+def validate_upgrade(weapon_type: str, element: str, count: int):
+    """Validates upgrade record fields."""
+    if not weapon_type or not element:
+        raise LogicValidationError("武器種と属性は必須項目です。")
+    if int(count) <= 0:
+        raise LogicValidationError("残り回数は1以上である必要があります。")
+    
+    master = get_master_data()
+    if weapon_type not in master.get("weapon_types", []):
+        raise LogicValidationError(f"無効な武器種です: {weapon_type}")
+    if element not in master.get("elements", []):
+        raise LogicValidationError(f"無効な属性です: {element}")
 
 @st.cache_data
 def load_upgrades(user_id: str = "local") -> pd.DataFrame:
@@ -20,6 +34,9 @@ def load_upgrades(user_id: str = "local") -> pd.DataFrame:
 
 def register_upgrade(weapon_type: str, element: str, series_skill: str, group_skill: str, count: int, user_id: str = "local") -> str:
     """Registers a new skill upgrade in storage and returns its ID."""
+    # 0. Validation
+    validate_upgrade(weapon_type, element, count)
+    
     df = load_upgrades(user_id)
     new_id = str(uuid.uuid4())
     new_row = {
@@ -127,6 +144,9 @@ def filter_upgrades(df: pd.DataFrame,
 def update_upgrade(record_id: str, weapon_type: str, element: str, 
                    series_skill: str, group_skill: str, count: int, user_id: str = "local") -> bool:
     """Updates an existing skill upgrade record."""
+    # 0. Validation
+    validate_upgrade(weapon_type, element, count)
+    
     df = load_upgrades(user_id)
     if df.empty: return False
     idx = df[df["id"].astype(str) == str(record_id)].index

@@ -6,6 +6,7 @@ from collections import Counter
 from src.database.storage_manager import load_data, save_data, delete_record
 from src.logic.history import push_action
 from src.logic.master import get_master_data
+from src.utils.exceptions import LogicValidationError
 
 EQUIPMENT_TABLE = "weapons" # Matches Supabase table name
 EQUIPMENT_COLUMNS = [
@@ -131,6 +132,20 @@ def add_equipment(weapon_name: str, weapon_type: str, element: str,
                   current_series_skill: str, current_group_skill: str, enhancement_type: str,
                   p_bonuses: list, restoration_bonuses: list, user_id: str = "local"):
     """Adds a new equipment and records history."""
+    # 0. Validation
+    if not weapon_type or not element:
+        raise LogicValidationError("武器種と属性は必須項目です。")
+    
+    master = get_master_data()
+    if weapon_type not in master.get("weapon_types", []):
+        raise LogicValidationError(f"無効な武器種です: {weapon_type}")
+    if element not in master.get("elements", []):
+        raise LogicValidationError(f"無効な属性です: {element}")
+        
+    is_v, msg = validate_restoration_bonuses(restoration_bonuses)
+    if not is_v:
+        raise LogicValidationError(msg)
+
     df = load_equipment(user_id); prev_df = df.copy()
     new_id = str(uuid.uuid4())
     new_row = {
@@ -191,6 +206,20 @@ def update_equipment(record_id: str, weapon_name: str, weapon_type: str, element
                      series_skill: str, group_skill: str, enhancement_type: str,
                      p_bonuses: list, r_bonuses: list, user_id: str = "local") -> bool:
     """Updates all fields of an existing equipment record and records history."""
+    # 0. Validation
+    if not weapon_type or not element:
+        raise LogicValidationError("武器種と属性は必須項目です。")
+    
+    master = get_master_data()
+    if weapon_type not in master.get("weapon_types", []):
+        raise LogicValidationError(f"無効な武器種です: {weapon_type}")
+    if element not in master.get("elements", []):
+        raise LogicValidationError(f"無効な属性です: {element}")
+        
+    is_v, msg = validate_restoration_bonuses(r_bonuses)
+    if not is_v:
+        raise LogicValidationError(msg)
+
     df = load_equipment(user_id)
     idx = df[df["id"].astype(str) == str(record_id)].index
     if idx.empty: return False

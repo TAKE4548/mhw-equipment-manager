@@ -125,8 +125,11 @@ def edit_talisman_dialog(talisman_id: str, user_id: str):
         if not is_v:
             st.error(f"整合性エラー: {msg}")
         else:
-            if update_talisman(talisman_id, ef["rarity"], skills_p, final_slots, user_id=user_id):
-                st.toast("更新しました！")
-                st.rerun()
-            else:
-                st.error("保存に失敗しました。")
+            try:
+                if update_talisman(talisman_id, ef["rarity"], skills_p, final_slots, user_id=user_id):
+                    st.toast("更新しました！")
+                    st.rerun()
+                else:
+                    st.error("保存に失敗しました。")
+            except Exception as e:
+                st.error(f"更新失敗: {str(e)}")

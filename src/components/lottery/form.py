@@ -25,9 +25,12 @@ def render_registration_form(master, user_id):
             if not series_skill.strip() or not group_skill.strip():
                 st.error("スキルを選択してください")
             else:
-                record_id = register_upgrade(w_type, element, series_skill, group_skill, count, user_id=user_id)
-                if record_id:
-                    st.toast("登録完了")
-                    st.rerun()
-                else:
-                    st.error("登録失敗")
+                try:
+                    record_id = register_upgrade(w_type, element, series_skill, group_skill, count, user_id=user_id)
+                    if record_id:
+                        st.toast("登録完了")
+                        st.rerun()
+                    else:
+                        st.error("登録失敗")
+                except Exception as e:
+                    st.error(f"登録失敗: {str(e)}")
