@@ -3,46 +3,55 @@ import urllib.request
 import os
 import sys
 
+# Force UTF-8 output on Windows terminals
+if sys.stdout.encoding != "utf-8":
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+
 """
-Ollama Adapter for AntiGravity Agents
-Connects to local Gemma4:26B via OpenAI-compatible API on localhost:11434.
+Ollama Adapter for AntiGravity Agents (Native API v2)
+Connects to local Gemma4:26B via native API on localhost:11434.
 """
 
-OLLAMA_BASE_URL = "http://localhost:11434/v1"
-MODEL_ID = "gemma4:26b"
+OLLAMA_API_URL = "http://localhost:11434/api/chat"
+MODEL_ID = "VladimirGav/gemma4-26b-16GB-VRAM:latest"
 
 def query_ollama(prompt, system_prompt="You are a helpful assistant.", max_tokens=2048):
-    url = f"{OLLAMA_BASE_URL}/chat/completions"
     data = {
         "model": MODEL_ID,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": max_tokens,
-        "temperature": 0.1
+        "stream": False,
+        "options": {
+            "num_predict": max_tokens,
+            "temperature": 0.1
+        }
     }
     
     headers = {"Content-Type": "application/json"}
-    req = urllib.request.Request(url, data=json.dumps(data).encode("utf-8"), headers=headers)
+    req = urllib.request.Request(OLLAMA_API_URL, data=json.dumps(data).encode("utf-8"), headers=headers)
     
     try:
         with urllib.request.urlopen(req) as response:
             res_data = json.loads(response.read().decode("utf-8"))
-            return res_data["choices"][0]["message"]["content"]
+            return res_data["message"]["content"]
     except Exception as e:
-        return f"Error querying Ollama: {str(e)}"
+        return f"Error querying Ollama Native API: {str(e)}"
 
 def summarize_file(file_path):
     if not os.path.exists(file_path):
         return f"File not found: {file_path}"
     
-    with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read()
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+    except Exception as e:
+        return f"Reading error: {str(e)}"
     
-    # Simple chunking if content is extremely large (v1 implementation)
-    # Target 32k tokens (approx 120k characters for English, lower for Japanese)
-    MAX_CHARS = 100000 
+    # Context window management (approx 32k tokens)
+    MAX_CHARS = 120000 
     if len(content) > MAX_CHARS:
         content = content[:MAX_CHARS] + "\n... (omitted due to length)"
     

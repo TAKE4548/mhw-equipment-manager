@@ -2,7 +2,7 @@
 name: role-engineer
 description: "Responsible for implementing features, writing tests, and debugging."
 config:
-  modelId: gemma4:26b
+  modelId: VladimirGav/gemma4-26b-16GB-VRAM:latest
   providerId: ollama
   baseUrl: http://localhost:11434/v1
   capabilities:

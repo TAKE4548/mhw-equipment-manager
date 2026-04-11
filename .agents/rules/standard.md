@@ -42,6 +42,11 @@ Before every tool call or action, ask yourself:
 - Agents should prioritize using the local model (Gemma4/Ollama) for context-heavy tasks (e.g., summarizing logs, filtering many files) when the cumulative input exceeds 32k tokens.
 - **Pre-filtering**: Before sending a 10,000+ line log to the cloud, use the local model to identify relevant sections and extract only the necessary lines.
 
+### 2-6. Strict Delegation Protocol
+- When a task is delegated to the local model for token saving, the **Cloud Orchestrator (Gemini) MUST NOT read the source files directly**.
+- The Orchestrator must wait for the local model's report and use its summarized/filtered output as the ONLY source of truth for that specific task.
+- Exceptions: Only if the local model fails completely or its output is logically inconsistent/inaccessible.
+
 ## 3. Communication & Identity
 
 ### 3-1. Language Policy (STRICT)

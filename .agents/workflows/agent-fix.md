@@ -8,7 +8,9 @@ description: "Workflow for addressing agent performance issues, rule violations,
 Use this workflow when the agent system is underperforming, breaking rules, or needs new specialized roles.
 
 ## Step 1: Intake & Analysis [Role: Agent Architect]
-- **Intake**: Read the provided conversation log (`overview.txt`) and artifacts (`task.md`, `walkthrough.md`).
+- **Intake**: Read the provided items.
+  - **Token Saving**: If `overview.txt` is large, use the local model (Gemma4) to generate an initial summary/incident report.
+  - Read artifacts (`task.md`, `walkthrough.md`).
 - **Analysis**: 
   - **Identify Incident**: Specify at least one Conversation ID and Turn/Message where the issue occurred.
   - Identify where the agent deviated from the workflow.
