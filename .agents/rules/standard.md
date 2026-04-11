@@ -38,6 +38,10 @@ Before every tool call or action, ask yourself:
 ### 2-4. System Integration (Deployment)
 - New rules or tools created via agent-fix must be integrated into standard workflows (e.g., `dev.md`). Leaving tools in isolation is prohibited.
 
+### 2-5. Token Efficiency (Local-First)
+- Agents should prioritize using the local model (Gemma4/Ollama) for context-heavy tasks (e.g., summarizing logs, filtering many files) when the cumulative input exceeds 32k tokens.
+- **Pre-filtering**: Before sending a 10,000+ line log to the cloud, use the local model to identify relevant sections and extract only the necessary lines.
+
 ## 3. Communication & Identity
 
 ### 3-1. Language Policy (STRICT)
