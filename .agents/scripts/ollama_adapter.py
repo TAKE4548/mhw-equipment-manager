@@ -10,16 +10,15 @@ if sys.stdout.encoding != "utf-8":
 
 """
 Ollama Adapter for AntiGravity Agents (Native API v2)
-Connects to local Gemma4:26B via native API on localhost:11434.
+Optimized for Qwen3:14b (32k context support)
 """
 
 OLLAMA_API_URL = "http://localhost:11434/api/chat"
-MODEL_ID = "prutser/gemma-4-26B-A4B-it-ara-abliterated:Q3_K_M"
+MODEL_ID = "qwen3:14b"
 
 def strip_thinking(text: str) -> str:
     """Strip <think>...</think> block from model output and return only the answer."""
     import re
-    # Remove everything inside <think>...</think> (including the tags)
     cleaned = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
     return cleaned.strip()
 
@@ -35,8 +34,7 @@ def query_ollama(prompt, system_prompt="You are a helpful assistant.", max_token
             "num_predict": max_tokens,
             "temperature": 0.1,
             "top_p": 0.9,
-            "num_ctx": 16383,
-            "stop": ["</think>", "<|end_of_turn|>"]
+            "num_ctx": 32768  # Support for Qwen3:14b 32k context
         }
     }
     
@@ -50,13 +48,9 @@ def query_ollama(prompt, system_prompt="You are a helpful assistant.", max_token
             content = message.get("content", "")
             thinking = message.get("thinking", "")
             
-            # If the model is a 'Thinking' model, Ollama might separate the reasoning.
-            # We prioritize the final answer (content), but fall back to 'thinking' 
-            # if content is empty (common in some reasoning-heavy configurations).
-            if not content.strip() and thinking.strip():
-                return strip_thinking(thinking)
-            
-            return strip_thinking(content)
+            # Universal handling: Use content if available, fallback to thinking field
+            final_text = content if content.strip() else thinking
+            return strip_thinking(final_text)
     except Exception as e:
         return f"Error querying Ollama Native API: {str(e)}"
 
@@ -70,20 +64,21 @@ def summarize_file(file_path):
     except Exception as e:
         return f"Reading error: {str(e)}"
     
-    # Context window management (approx 32k tokens)
-    MAX_CHARS = 120000 
+    # Qwen3:14b 32k allows for larger file chunks (approx 100k chars)
+    MAX_CHARS = 100000 
     if len(content) > MAX_CHARS:
         content = content[:MAX_CHARS] + "\n... (omitted due to length)"
     
     prompt = (
-        "Summarize the following source code for a developer. "
-        "List the key responsibilities, main functions, and any notable patterns or issues. "
-        "Be concise and use bullet points.\n\n"
+        "Analyze the following source code for a developer. "
+        "Summarize its purpose, core logic, and key data structures. "
+        "Point out any technical debt or potential improvements. "
+        "Respond in Japanese with professional tone.\n\n"
         f"{content}"
     )
     system_message = (
-        "You are an expert Python developer reviewing code for a Monster Hunter equipment management app. "
-        "Always respond in English with clear, structured bullet points."
+        "You are an expert Python engineer specialized in Monster Hunter equipment management systems. "
+        "Provide a high-quality, technical summary."
     )
     
     return query_ollama(prompt, system_message)
