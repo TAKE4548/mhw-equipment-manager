@@ -13,6 +13,7 @@ This file tracks the current state of an active `/dev` session. It is maintained
 - 2026-04-10: Step 6 (Implementation) completed by Engineer.
 - 2026-04-10: Step 7 (Verification & Review) completed by Reviewer. Verdict: PASS.
 - 2026-04-11: Agent Governance Upgrade v1.3 implemented and verified.
+- 2026-04-11: REQ-030 (Talisman Cleanup & V15 HUD Upgrade) completed and verified.
 
 ## Escalation / Block Notes
 - **Reason**: 
