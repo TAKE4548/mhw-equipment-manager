@@ -8,6 +8,7 @@ from src.components.common import render_item_count
 from src.components.cards import render_slim_card, CARD_ACTION_RATIO
 from src.components.talismans.atoms import build_talisman_visual_info
 from src.components.talismans.dialogs import edit_talisman_dialog
+from src.components.talismans.cleanup_dialog import cleanup_talismans_dialog
 
 @st.fragment
 def render_talisman_list(user_id):
@@ -56,7 +57,12 @@ def render_talisman_list(user_id):
         return
 
     # --- Main Results Grid ---
-    render_item_count(len(df))
+    col_count, col_cleanup = st.columns([1, 1])
+    with col_count:
+        render_item_count(len(df))
+    with col_cleanup:
+        if st.button("🧹 重複・下位互換を整理", use_container_width=True):
+            cleanup_talismans_dialog(user_id)
     
     with st.container():
 
