@@ -110,10 +110,43 @@ def audit_structure(content):
     system = "You are a Master Architect. Focus on structural integrity and technical debt."
     return query_ollama(prompt, system)
 
+def sync_docs(docs_dir="docs"):
+    """Scan and concatenate all .md files in the docs directory for a global spec audit."""
+    if not os.path.exists(docs_dir):
+        return f"Docs directory not found: {docs_dir}"
+    
+    combined_content = []
+    # Recursive scan for .md files
+    for root, dirs, files in os.walk(docs_dir):
+        for file in files:
+            if file.endswith(".md"):
+                path = os.path.join(root, file)
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        file_body = f.read()
+                        combined_content.append(f"### FILE: {path}\n{file_body}\n")
+                except Exception as e:
+                    combined_content.append(f"### ERROR READING: {path} ({str(e)})\n")
+    
+    total_specs = "\n".join(combined_content)
+    # Check if total length is reasonable for 32k context (~100k-120k chars)
+    if len(total_specs) > 120000:
+        total_specs = total_specs[:120000] + "\n... (omitted to fit context limit)"
+    
+    prompt = (
+        "Analyze the following full project documentation. "
+        "Memorize the key rules, design systems, and backlog status. "
+        "Summarize the project's current 'Core Values' and 'Unfinished Tasks' to prove your understanding. "
+        "Respond in Japanese.\n\n"
+        f"{total_specs}"
+    )
+    system = "You are an expert system auditor. You have just ingested the full project documentation."
+    return query_ollama(prompt, system)
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python ollama_adapter.py <action> [args]")
-        print("Actions: summarize <path>, query <prompt>, ba-audit <text>, ux-audit <text>, arch-audit <text>")
+        print("Actions: summarize <path>, query <prompt>, ba-audit <text>, ux-audit <text>, arch-audit <text>, sync-docs [dir]")
         sys.exit(1)
     
     action = sys.argv[1]
@@ -129,3 +162,5 @@ if __name__ == "__main__":
         print(audit_design(arg))
     elif action == "arch-audit":
         print(audit_structure(arg))
+    elif action == "sync-docs":
+        print(sync_docs(arg if arg else "docs"))

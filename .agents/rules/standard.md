@@ -1,6 +1,6 @@
 ---
 name: standard-rules
-description: "Top-level governance rules for AntiGravity agents. (v1.6)"
+description: "Top-level governance rules for AntiGravity agents. (v2.3 - High-Reliability Hybrid)"
 ---
 
 # Standard Governance Rules
@@ -49,17 +49,21 @@ Before every tool call or action, ask yourself:
 
 ### 2-7. Internal Hybridization for All Roles
 [POLICY]
-- **全てのロールはハイブリッド化の権利を有する**: Architect, BA, UX Designer 等の全ロールにおいて、以下の「主従分担」を推奨する。
-- **主脳 (Cloud-Primary)**: ユーザー対話、不確実な要件の解釈、最新トレンド・感性に基づく判断、プロジェクトの全体方針の決定。
-- **専門家 (Local-Expert)**: 膨大な既存資料（Backlog, Designs）の矛盾チェック、コード全域の構造監査、命名規則やCSSトークンの機械的適合性チェック。
-- **運用**: クラウドモデルは自身の思考の過程で、必要に応じて `.agents/scripts/ollama_adapter.py` を呼び出し、ローカルの Qwen3 に「下読み」や「一次監査」を依頼すること。
+- **All roles are Hybrid-Ready**: The Architect, BA, UX Designer, etc., are encouraged to use the following Cloud-Local model:
+- **Cloud Orchestrator (Lead)**: User interaction, abstract reasoning, fresh trends, and high-level strategy decisions.
+- **Local Expert (Audit)**: Deep scanning of `docs/`, backlog consistency checks, structural debt audit, and naming conventions.
+- **Execution**: The Cloud model SHOULD run `.agents/scripts/ollama_adapter.py` for "pre-audit" or "deep reading" before making design or strategy decisions.
+
+### 2-8. Proactive Investigation Rule
+[MANDATORY]
+- Before using `view_file` on unknown or massive files (500+ lines), agents SHOULD first use `ollama_adapter.py summarize` to identify the relevant code sections and structural context.
 
 ## 3. Communication & Identity
 
 ### 3-1. Language Policy (STRICT)
-- **Internal Instructions (Agents)**: All instructions, skills, workflows, and rules within the `.agents/` directory MUST be written in **English** for maximum precision.
-- **External Outputs (User)**: All chat responses to the USER and implementation plans (`implementation_plan.md`, `walkthrough.md`) MUST be in **Japanese**.
-- **Domain Context**: Game-specific terms (e.g., 護石, 復元強化) should be maintained in Japanese or mapped clearly.
+- **Internal Instructions (System)**: All `.agents/` directory files (skills, workflows, rules) MUST be in **English**.
+- **External Deliverables (User Review)**: All chat responses and review-artifacts (**`implementation_plan.md`**, **`walkthrough.md`**, **`task.md`**) MUST be in **Japanese**.
+- **Context Preservation**: Avoid forced translation for game-specific technical terms (e.g., 護石, 復元強化).
 
 ### 3-2. Role Announcement
 At the start of a turn or when switching roles, explicitly state the role: `[Role: XXX]`.
