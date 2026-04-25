@@ -1,0 +1,128 @@
+name: Build NotebookLM Source
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'skills/**'
+      - 'workflows/**'
+      - 'GEMINI.md'
+      - '.github/workflows/notebooklm-pages.yml'
+  workflow_dispatch: # Actionsの画面から手動で実行するためのトリガー
+
+# GitHub Pagesへデプロイするための権限設定
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install PyYAML
+
+      - name: Generate aggregated Markdown
+        # ヒアドキュメント(EOF)を使ってPythonスクリプトを安全に生成・実行します
+        run: |
+          cat << 'EOF' > generate.py
+          import os, yaml, glob
+          from datetime import datetime
+
+          output_dir = "public"
+          os.makedirs(output_dir, exist_ok=True)
+          
+          # NotebookLMに読ませるためのファイル
+          output_file = os.path.join(output_dir, "notebooklm-source.md")
+
+          with open(output_file, "w", encoding="utf-8") as f:
+              f.write("# Antigravity Knowledge Base\n\n")
+              f.write(f"**最終更新日時:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+              f.write("---\n\n")
+
+              # 1. ガバナンス (優先度最高のため先頭に配置)
+              f.write("## 1. ガバナンス\n\n")
+              if os.path.exists("GEMINI.md"):
+                  with open("GEMINI.md", "r", encoding="utf-8") as g:
+                      f.write(g.read() + "\n\n")
+              else:
+                  f.write("GEMINI.mdが見つかりませんでした。\n\n")
+
+              f.write("---\n\n")
+
+              # 2. Skills集
+              f.write("## 2. Skills集\n\n")
+              skill_files = glob.glob("skills/*.yaml") + glob.glob("skills/*.yml")
+              if skill_files:
+                  for filepath in skill_files:
+                      try:
+                          with open(filepath, "r", encoding="utf-8") as sf:
+                              data = yaml.safe_load(sf)
+                              # YAML内に 'name' キーがあればそれを、なければファイル名を使用
+                              skill_name = data.get("name", os.path.basename(filepath)) if isinstance(data, dict) else os.path.basename(filepath)
+                              
+                              f.write(f"### スキル: {skill_name}\n")
+                              
+                              # YAMLの辞書構造をMarkdownの箇条書きに展開
+                              if isinstance(data, dict):
+                                  for key, value in data.items():
+                                      # descriptionや長いテキストは改行を保持
+                                      if isinstance(value, str) and '\n' in value:
+                                          f.write(f"- **{key}**:\n  ```text\n  {value.replace('\n', '\n  ')}\n  ```\n")
+                                      else:
+                                          f.write(f"- **{key}**: {value}\n")
+                              else:
+                                  # 辞書型でない場合はそのままダンプ
+                                  f.write(f"```yaml\n{yaml.dump(data, allow_unicode=True)}```\n")
+                              f.write("\n")
+                      except Exception as e:
+                          f.write(f"### {os.path.basename(filepath)} (Parse Error)\nエラー: {e}\n\n")
+              else:
+                  f.write("スキル定義ファイルが見つかりませんでした。\n\n")
+
+              f.write("---\n\n")
+
+              # 3. ワークフロー集
+              f.write("## 3. ワークフロー集\n\n")
+              workflow_files = glob.glob("workflows/*.md")
+              if workflow_files:
+                  for filepath in workflow_files:
+                      workflow_name = os.path.basename(filepath).replace(".md", "")
+                      f.write(f"### ワークフロー: {workflow_name}\n\n")
+                      with open(filepath, "r", encoding="utf-8") as wf:
+                          f.write(wf.read() + "\n\n")
+              else:
+                  f.write("ワークフローファイルが見つかりませんでした。\n\n")
+          EOF
+          
+          # 生成したPythonスクリプトを実行
+          python generate.py
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './public' # Markdownが生成されたディレクトリをアップロード
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
